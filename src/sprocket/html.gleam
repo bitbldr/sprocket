@@ -1,39 +1,11 @@
-import gleam/list
-import gleam/string
-import sprocket/component.{Component, Element, raw}
-import sprocket/render.{render}
-import sprocket/html/attrs.{HtmlAttr, Key}
+import sprocket/component.{Element, raw}
+import sprocket/html/attrs.{HtmlAttr}
 
 pub type Children =
   List(Element)
 
 pub fn el(tag: String, attrs: List(HtmlAttr), children: Children) {
-  Component(fn(ctx) {
-    let rendered_attrs =
-      list.fold(
-        attrs,
-        "",
-        fn(acc, a) {
-          case a {
-            HtmlAttr(name, value) ->
-              string.concat([acc, " ", name, "=\"", value, "\""])
-
-            Key(k) -> string.concat([acc, " key=\"", k, "\""])
-          }
-        },
-      )
-
-    let inner_html =
-      children
-      |> list.map(fn(child) { render(child, ctx) })
-      |> string.concat
-
-    [
-      ["<", tag, rendered_attrs, ">", inner_html, "</", tag, ">"]
-      |> string.concat()
-      |> raw(),
-    ]
-  })
+  Element(tag, attrs, children)
 }
 
 pub fn text(text: String) -> Element {

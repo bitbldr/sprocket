@@ -1,12 +1,16 @@
 import gleam/list.{at}
+import sprocket/html/attrs.{HtmlAttr}
 
 type StateValue =
   String
 
 pub type Element {
+  Element(tag: String, attrs: List(HtmlAttr), children: List(Element))
   Component(c: fn(ComponentContext) -> List(Element))
   RawHtml(html: String)
 }
+
+// LiveRoot
 
 pub fn raw(html: String) {
   RawHtml(html)
