@@ -11,7 +11,7 @@ pub fn index(
 ) -> Response(String) {
   let view = hello_view(HelloViewProps)
 
-  let context = context_agent.fetch_context(ca)
+  let context = context_agent.render_context(ca)
 
   let body = render(view, context)
 

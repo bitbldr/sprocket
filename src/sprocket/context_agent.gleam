@@ -1,21 +1,17 @@
 import gleam/otp/actor
 import gleam/erlang/process.{Subject}
 import gleam/list
-import gleam/io
 import gleam/result
 import sprocket/component.{Hook}
 import sprocket/render.{RenderContext}
 
+// TODO: hooks should be stored in a map for better access performance o(1), lists are o(n)
+pub type ContextState {
+  ContextState(hooks: List(Hook), h_index: Int)
+}
+
 pub fn start() {
-  let initial_context =
-    RenderContext(
-      hooks: [],
-      h_index: 0,
-      pop_hook_index: fn() { 0 },
-      push_hook: fn(_h) { todo },
-      fetch_hook: fn(_h) { todo },
-      state_updater: fn(_index) { fn(s) { s } },
-    )
+  let initial_context = ContextState(hooks: [], h_index: 0)
 
   let assert Ok(actor) = actor.start(initial_context, handle_message)
 
@@ -26,9 +22,7 @@ pub fn stop(actor) {
   process.send(actor, Shutdown)
 }
 
-pub fn fetch_context(actor) {
-  let assert Ok(context) = process.call(actor, FetchContext, 10)
-
+pub fn render_context(actor) {
   let push_hook = fn(h: Hook) {
     process.send(actor, PushHook(h))
     h
@@ -45,8 +39,6 @@ pub fn fetch_context(actor) {
   let state_updater = fn(_index) { fn(s) { s } }
 
   RenderContext(
-    hooks: context.hooks,
-    h_index: context.h_index,
     pop_hook_index: pop_hook_index,
     push_hook: push_hook,
     fetch_hook: fetch_hook,
@@ -58,22 +50,22 @@ pub type ContextMessage {
   Shutdown
   PushHook(hook: Hook)
   FetchHook(reply_with: Subject(Result(Hook, Nil)), index: Int)
-  FetchContext(reply_with: Subject(Result(RenderContext, Nil)))
+  FetchContext(reply_with: Subject(Result(ContextState, Nil)))
   ResetHookIndex
   PopHookIndex(reply_with: Subject(Result(Int, Nil)))
 }
 
 fn handle_message(
   message: ContextMessage,
-  context: RenderContext,
-) -> actor.Next(RenderContext) {
+  context: ContextState,
+) -> actor.Next(ContextState) {
   case message {
     Shutdown -> actor.Stop(process.Normal)
 
     PushHook(hook) -> {
       let r_hooks = list.reverse(context.hooks)
       let updated_hooks = list.reverse([hook, ..r_hooks])
-      let new_state = RenderContext(..context, hooks: updated_hooks)
+      let new_state = ContextState(..context, hooks: updated_hooks)
 
       actor.Continue(new_state)
     }
@@ -98,11 +90,11 @@ fn handle_message(
       actor.Continue(context)
     }
 
-    ResetHookIndex -> actor.Continue(RenderContext(..context, h_index: 0))
+    ResetHookIndex -> actor.Continue(ContextState(..context, h_index: 0))
 
     PopHookIndex(client) -> {
       process.send(client, Ok(context.h_index))
-      actor.Continue(RenderContext(..context, h_index: context.h_index + 1))
+      actor.Continue(ContextState(..context, h_index: context.h_index + 1))
     }
   }
 }

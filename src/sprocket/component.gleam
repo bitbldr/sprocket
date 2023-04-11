@@ -22,7 +22,6 @@ pub type Hook {
 
 pub type ComponentContext {
   ComponentContext(
-    hooks: List(Hook),
     push_hook: fn(Hook) -> Hook,
     fetch_hook: fn(Int) -> Result(Hook, Nil),
     pop_hook_index: fn() -> Int,
@@ -32,7 +31,6 @@ pub type ComponentContext {
 
 pub fn use_state(ctx: ComponentContext, initial: StateValue) -> Hook {
   let ComponentContext(
-    hooks: hooks,
     pop_hook_index: pop_hook_index,
     push_hook: push_hook,
     fetch_hook: fetch_hook,

@@ -5,11 +5,8 @@ import sprocket/component.{
 }
 import sprocket/html/attrs.{HtmlAttr, Key}
 
-// TODO: hooks should be stored in a map for better access performance o(1), lists are o(n)
 pub type RenderContext {
   RenderContext(
-    hooks: List(Hook),
-    h_index: Int,
     push_hook: fn(Hook) -> Hook,
     fetch_hook: fn(Int) -> Result(Hook, Nil),
     pop_hook_index: fn() -> Int,
@@ -56,7 +53,6 @@ fn element(
 
 fn component(fc: fn(ComponentContext) -> List(Element), rcx: RenderContext) {
   fc(ComponentContext(
-    hooks: rcx.hooks,
     push_hook: rcx.push_hook,
     fetch_hook: rcx.fetch_hook,
     pop_hook_index: rcx.pop_hook_index,
