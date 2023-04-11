@@ -6,11 +6,12 @@ import gleam/result
 import gleam/erlang/os
 import gleam/erlang/process
 import mist
+import sprocket/context_agent
 
 pub fn main() {
   log.configure_backend()
   let port = load_port()
-  let web = routes.stack()
+  let web = routes.stack(context_agent.start())
 
   string.concat(["Listening on localhost:", int.to_string(port), " ✨"])
   |> log.info

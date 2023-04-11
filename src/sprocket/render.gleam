@@ -1,21 +1,35 @@
 import gleam/list
 import gleam/string
-import sprocket/component.{Component, ComponentContext, Element, RawHtml}
+import sprocket/component.{
+  Component, ComponentContext, Element, Hook, RawHtml, StateValue,
+}
 import sprocket/html/attrs.{HtmlAttr, Key}
 
-pub fn render(el: Element, ctx: ComponentContext) -> String {
+// TODO: hooks should be stored in a map for better access performance o(1), lists are o(n)
+pub type RenderContext {
+  RenderContext(
+    hooks: List(Hook),
+    h_index: Int,
+    push_hook: fn(Hook) -> Hook,
+    fetch_hook: fn(Int) -> Result(Hook, Nil),
+    pop_hook_index: fn() -> Int,
+    state_updater: fn(Int) -> fn(StateValue) -> StateValue,
+  )
+}
+
+pub fn render(el: Element, rcx: RenderContext) -> String {
   case el {
-    Element(tag, attrs, children) -> render_element(tag, attrs, children, ctx)
-    Component(c) -> render_component(c, ctx)
+    Element(tag, attrs, children) -> element(tag, attrs, children, rcx)
+    Component(c) -> component(c, rcx)
     RawHtml(raw_html) -> raw_html
   }
 }
 
-fn render_element(
+fn element(
   tag: String,
   attrs: List(HtmlAttr),
   children: List(Element),
-  ctx: ComponentContext,
+  rcx: RenderContext,
 ) {
   let rendered_attrs =
     list.fold(
@@ -33,18 +47,21 @@ fn render_element(
 
   let inner_html =
     children
-    |> list.map(fn(child) { render(child, ctx) })
+    |> list.map(fn(child) { render(child, rcx) })
     |> string.concat
 
   ["<", tag, rendered_attrs, ">", inner_html, "</", tag, ">"]
   |> string.concat()
 }
 
-fn render_component(
-  fc: fn(ComponentContext) -> List(Element),
-  ctx: ComponentContext,
-) {
-  fc(ComponentContext(..ctx, h_index: 0))
-  |> list.map(fn(child) { render(child, ctx) })
+fn component(fc: fn(ComponentContext) -> List(Element), rcx: RenderContext) {
+  fc(ComponentContext(
+    hooks: rcx.hooks,
+    push_hook: rcx.push_hook,
+    fetch_hook: rcx.fetch_hook,
+    pop_hook_index: rcx.pop_hook_index,
+    state_updater: rcx.state_updater,
+  ))
+  |> list.map(fn(child) { render(child, rcx) })
   |> string.concat
 }

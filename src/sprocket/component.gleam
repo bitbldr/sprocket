@@ -1,8 +1,8 @@
 import gleam/list.{at}
 import sprocket/html/attrs.{HtmlAttr}
 
-type StateValue =
-  String
+pub type StateValue =
+  Int
 
 pub type Element {
   Element(tag: String, attrs: List(HtmlAttr), children: List(Element))
@@ -24,7 +24,8 @@ pub type ComponentContext {
   ComponentContext(
     hooks: List(Hook),
     push_hook: fn(Hook) -> Hook,
-    h_index: Int,
+    fetch_hook: fn(Int) -> Result(Hook, Nil),
+    pop_hook_index: fn() -> Int,
     state_updater: fn(Int) -> fn(StateValue) -> StateValue,
   )
 }
@@ -32,12 +33,15 @@ pub type ComponentContext {
 pub fn use_state(ctx: ComponentContext, initial: StateValue) -> Hook {
   let ComponentContext(
     hooks: hooks,
-    h_index: h_index,
+    pop_hook_index: pop_hook_index,
     push_hook: push_hook,
+    fetch_hook: fetch_hook,
     state_updater: state_updater,
   ) = ctx
 
-  case at(hooks, h_index) {
+  let h_index = pop_hook_index()
+
+  case fetch_hook(h_index) {
     Ok(h) -> h
     Error(Nil) -> push_hook(State(initial, state_updater(h_index)))
   }

@@ -4,24 +4,28 @@ import gleam/http
 import gleam/http/request.{Request}
 import gleam/http/response.{Response}
 import gleam/http/service.{Service}
+import gleam/erlang/process.{Subject}
 import example/log_requests
 import example/static
 import example/controllers/index.{index}
+import sprocket/context_agent.{ContextMessage}
 
-pub fn router(request: Request(String)) -> Response(String) {
-  case request.path_segments(request) {
-    [] ->
-      case request.method {
-        http.Get -> index(request)
-        _ -> method_not_allowed()
-      }
+pub fn router(ca: Subject(ContextMessage)) {
+  fn(request: Request(String)) -> Response(String) {
+    case request.path_segments(request) {
+      [] ->
+        case request.method {
+          http.Get -> index(request, ca)
+          _ -> method_not_allowed()
+        }
 
-    _ -> not_found()
+      _ -> not_found()
+    }
   }
 }
 
-pub fn stack() -> Service(BitString, BitBuilder) {
-  router
+pub fn stack(ca: Subject(ContextMessage)) -> Service(BitString, BitBuilder) {
+  router(ca)
   |> string_body_middleware
   |> log_requests.middleware
   |> static.middleware()
