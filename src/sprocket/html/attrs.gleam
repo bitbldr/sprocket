@@ -5,10 +5,26 @@ pub type HtmlAttr {
   Key(value: String)
 }
 
+pub fn attr(name: String, value: String) -> HtmlAttr {
+  HtmlAttr(name, value)
+}
+
 pub fn class(value: String) -> HtmlAttr {
-  HtmlAttr("class", value)
+  attr("class", value)
 }
 
 pub fn classes(value: List(String)) -> HtmlAttr {
-  HtmlAttr("class", string.join(value, " "))
+  attr("class", string.join(value, " "))
+}
+
+pub fn href(value: String) -> HtmlAttr {
+  attr("href", value)
+}
+
+pub fn rel(value: String) -> HtmlAttr {
+  attr("rel", value)
+}
+
+pub fn src(value: String) -> HtmlAttr {
+  attr("src", value)
 }

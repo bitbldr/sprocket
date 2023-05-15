@@ -21,6 +21,18 @@ pub fn html(attrs: List(HtmlAttr), children: Children) {
   el("html", attrs, children)
 }
 
+pub fn head(attrs: List(HtmlAttr), children: Children) {
+  el("head", attrs, children)
+}
+
+pub fn link(attrs: List(HtmlAttr)) {
+  el("link", attrs, [])
+}
+
+pub fn script(attrs: List(HtmlAttr), children: Children) {
+  el("script", attrs, children)
+}
+
 pub fn body(attrs: List(HtmlAttr), children: Children) {
   el("body", attrs, children)
 }

@@ -1,0 +1,18 @@
+{
+  "type": "module",
+  "devDependencies": {
+    "chokidar-cli": "^3.0.0",
+    "concurrently": "^8.0.1",
+    "parcel": "^2.8.3",
+    "process": "^0.11.10"
+  },
+  "scripts": {
+    "clean": "rm -rf build dist .parcel-cache",
+    "watch": "gleam build && concurrently --kill-others \"chokidar 'src/**' -c 'gleam build'\" \"parcel src/client.mjs --no-hmr --dist-dir ../priv/static\"",
+    "build": "npm run clean && gleam build && parcel build src/client.mjs --dist-dir ../priv/static --no-source-maps"
+  },
+  "alias": {
+    "app": "./build/dev/javascript/client/main.mjs",
+    "ffi": "./src/ffi/"
+  }
+}

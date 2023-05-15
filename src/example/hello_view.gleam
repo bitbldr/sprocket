@@ -2,8 +2,8 @@ import gleam/option.{Some}
 import sprocket/component.{Component}
 import example/components/clock.{ClockProps, clock}
 import example/components/counter.{CounterProps, counter}
-import sprocket/html.{body, div, h1, html, text}
-import sprocket/html/attrs.{class}
+import sprocket/html.{body, div, h1, head, html, link, script, text}
+import sprocket/html/attrs.{class, href, rel, src}
 
 pub type HelloViewProps {
   HelloViewProps
@@ -15,8 +15,9 @@ pub fn hello_view(_props: HelloViewProps) {
       html(
         [],
         [
+          head([], [link([href("/app.css"), rel("stylesheet")])]),
           body(
-            [class("bg-white")],
+            [class("bg-white dark:bg-gray-900 dark:text-white")],
             [
               div(
                 [],
@@ -32,6 +33,7 @@ pub fn hello_view(_props: HelloViewProps) {
                   counter(CounterProps(initial: Some(0))),
                 ],
               ),
+              script([src("/client.js")], []),
             ],
           ),
         ],

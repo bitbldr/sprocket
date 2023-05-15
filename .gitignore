@@ -2,3 +2,14 @@
 *.ez
 build
 erl_crash.dump
+
+node_modules
+.parcel-cache
+dist
+
+.vscode
+
+.DS_Store
+app.css
+priv/static/client.js
+priv/static/client.js.map

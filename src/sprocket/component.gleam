@@ -1,4 +1,3 @@
-import gleam/list.{at}
 import sprocket/html/attrs.{HtmlAttr}
 
 pub type StateValue =

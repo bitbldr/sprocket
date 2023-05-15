@@ -8,8 +8,8 @@ packages = [
   { name = "gleam_otp", version = "0.5.3", build_tools = ["gleam"], requirements = ["gleam_stdlib", "gleam_erlang"], otp_app = "gleam_otp", source = "hex", outer_checksum = "6E705B69464237353E0380AC8143BDB29A3F0BF6168755D5F2D6E55A34A8B077" },
   { name = "gleam_stdlib", version = "0.28.0", build_tools = ["gleam"], requirements = [], otp_app = "gleam_stdlib", source = "hex", outer_checksum = "1BB6A3E53F7576B9F5C4E5D4AE16487E526BE383B03CBF4068C7DFC77CF38A1C" },
   { name = "gleeunit", version = "0.10.1", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "gleeunit", source = "hex", outer_checksum = "ECEA2DE4BE6528D36AFE74F42A21CDF99966EC36D7F25DEB34D47DD0F7977BAF" },
-  { name = "glisten", version = "0.7.0", build_tools = ["gleam"], requirements = ["gleam_stdlib", "gleam_erlang", "gleam_otp"], otp_app = "glisten", source = "hex", outer_checksum = "52B530FF25370590843998D1B6C4EC6169DB1300D5E4407A5CDA1575374B7AEC" },
-  { name = "mist", version = "0.10.0", build_tools = ["gleam"], requirements = ["glisten", "gleam_stdlib", "gleam_erlang", "gleam_http", "gleam_otp"], otp_app = "mist", source = "hex", outer_checksum = "5AFBABABF738BAB8720F047471051E4E9D102CA4694C120DB899FA12AD5D180B" },
+  { name = "glisten", version = "0.7.0", build_tools = ["gleam"], requirements = ["gleam_otp", "gleam_erlang", "gleam_stdlib"], otp_app = "glisten", source = "hex", outer_checksum = "52B530FF25370590843998D1B6C4EC6169DB1300D5E4407A5CDA1575374B7AEC" },
+  { name = "mist", version = "0.10.0", build_tools = ["gleam"], requirements = ["gleam_otp", "gleam_erlang", "gleam_stdlib", "glisten", "gleam_http"], otp_app = "mist", source = "hex", outer_checksum = "5AFBABABF738BAB8720F047471051E4E9D102CA4694C120DB899FA12AD5D180B" },
   { name = "thoas", version = "0.4.1", build_tools = ["rebar3"], requirements = [], otp_app = "thoas", source = "hex", outer_checksum = "4918D50026C073C4AB1388437132C77A6F6F7C8AC43C60C13758CC0ADCE2134E" },
 ]
 
@@ -17,6 +17,6 @@ packages = [
 gleam_erlang = "~> 0.18"
 gleam_http = "~> 3.1"
 gleam_json = "~> 0.5"
-gleam_stdlib = "~> 0.27"
+gleam_stdlib = "~> 0.28"
 gleeunit = "~> 0.10"
 mist = "~> 0.10"
