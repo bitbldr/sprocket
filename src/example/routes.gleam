@@ -1,6 +1,6 @@
 import gleam/bit_builder.{BitBuilder}
 import gleam/bit_string
-import gleam/http
+import gleam/http.{Get}
 import gleam/http/request.{Request}
 import gleam/http/response.{Response}
 import gleam/http/service.{Service}
@@ -12,14 +12,10 @@ import sprocket/context_agent.{ContextMessage}
 
 pub fn router(ca: Subject(ContextMessage)) {
   fn(request: Request(String)) -> Response(String) {
-    case request.path_segments(request) {
-      [] ->
-        case request.method {
-          http.Get -> index(request, ca)
-          _ -> method_not_allowed()
-        }
+    case request.method, request.path_segments(request) {
+      Get, [] -> index(request, ca)
 
-      _ -> not_found()
+      _, _ -> not_found()
     }
   }
 }

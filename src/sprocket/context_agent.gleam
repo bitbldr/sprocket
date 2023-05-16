@@ -4,14 +4,19 @@ import gleam/list
 import gleam/result
 import sprocket/component.{Hook}
 import sprocket/render.{RenderContext}
+import glisten/handler.{HandlerMessage}
+
+pub type Client {
+  Client(sub: Subject(HandlerMessage))
+}
 
 // TODO: hooks should be stored in a map for better access performance o(1), lists are o(n)
 pub type ContextState {
-  ContextState(hooks: List(Hook), h_index: Int)
+  ContextState(hooks: List(Hook), h_index: Int, clients: List(Client))
 }
 
 pub fn start() {
-  let initial_context = ContextState(hooks: [], h_index: 0)
+  let initial_context = ContextState(hooks: [], h_index: 0, clients: [])
 
   let assert Ok(actor) = actor.start(initial_context, handle_message)
 
@@ -20,6 +25,14 @@ pub fn start() {
 
 pub fn stop(actor) {
   process.send(actor, Shutdown)
+}
+
+pub fn push_client(actor, client) {
+  process.send(actor, PushClient(client))
+}
+
+pub fn pop_client(actor, sub) {
+  process.send(actor, PopClient(sub))
 }
 
 pub fn render_context(actor) {
@@ -53,6 +66,8 @@ pub type ContextMessage {
   FetchContext(reply_with: Subject(Result(ContextState, Nil)))
   ResetHookIndex
   PopHookIndex(reply_with: Subject(Result(Int, Nil)))
+  PushClient(sender: Client)
+  PopClient(sub: Subject(HandlerMessage))
 }
 
 fn handle_message(
@@ -95,6 +110,28 @@ fn handle_message(
     PopHookIndex(client) -> {
       process.send(client, Ok(context.h_index))
       actor.Continue(ContextState(..context, h_index: context.h_index + 1))
+    }
+
+    PushClient(client) -> {
+      let r_clients = list.reverse(context.clients)
+      let updated_clients = list.reverse([client, ..r_clients])
+      let new_state = ContextState(..context, clients: updated_clients)
+
+      actor.Continue(new_state)
+    }
+
+    PopClient(sub) -> {
+      let updated_clients =
+        list.filter(
+          context.clients,
+          fn(c) {
+            let assert Client(s) = c
+            s != sub
+          },
+        )
+      let new_state = ContextState(..context, clients: updated_clients)
+
+      actor.Continue(new_state)
     }
   }
 }
