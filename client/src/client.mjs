@@ -1,5 +1,5 @@
-import * as App from "app";
+import * as Client from "client";
 
 window.addEventListener("DOMContentLoaded", () => {
-  App.main();
+  Client.main();
 });
