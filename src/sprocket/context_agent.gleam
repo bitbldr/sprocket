@@ -6,6 +6,9 @@ import sprocket/component.{Hook}
 import sprocket/render.{RenderContext}
 import glisten/handler.{HandlerMessage}
 
+pub type ContextAgent =
+  Subject(ContextMessage)
+
 pub type Client {
   Client(sub: Subject(HandlerMessage))
 }

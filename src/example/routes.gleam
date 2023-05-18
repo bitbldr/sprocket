@@ -4,13 +4,12 @@ import gleam/http.{Get}
 import gleam/http/request.{Request}
 import gleam/http/response.{Response}
 import gleam/http/service.{Service}
-import gleam/erlang/process.{Subject}
 import example/log_requests
 import example/static
 import example/controllers/index.{index}
-import sprocket/context_agent.{ContextMessage}
+import sprocket/context_agent.{ContextAgent}
 
-pub fn router(ca: Subject(ContextMessage)) {
+pub fn router(ca: ContextAgent) {
   fn(request: Request(String)) -> Response(String) {
     case request.method, request.path_segments(request) {
       Get, [] -> index(request, ca)
@@ -20,7 +19,7 @@ pub fn router(ca: Subject(ContextMessage)) {
   }
 }
 
-pub fn stack(ca: Subject(ContextMessage)) -> Service(BitString, BitBuilder) {
+pub fn stack(ca: ContextAgent) -> Service(BitString, BitBuilder) {
   router(ca)
   |> string_body_middleware
   |> log_requests.middleware
