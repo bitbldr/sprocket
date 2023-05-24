@@ -39,11 +39,11 @@ pub fn string_body_middleware(
   }
 }
 
-fn method_not_allowed() -> Response(String) {
-  response.new(405)
-  |> response.set_body("Method not allowed")
-  |> response.prepend_header("content-type", "text/plain")
-}
+// fn method_not_allowed() -> Response(String) {
+//   response.new(405)
+//   |> response.set_body("Method not allowed")
+//   |> response.prepend_header("content-type", "text/plain")
+// }
 
 fn not_found() -> Response(String) {
   response.new(404)

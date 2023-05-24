@@ -1,17 +1,11 @@
 import gleam/list
 import gleam/string
-import sprocket/component.{
-  Component, ComponentContext, Element, Hook, RawHtml, StateValue,
-}
+import sprocket/component.{Component, ComponentContext, Element, RawHtml}
 import sprocket/html/attrs.{HtmlAttr, Key}
+import gleam/dynamic.{Dynamic}
 
 pub type RenderContext {
-  RenderContext(
-    push_hook: fn(Hook) -> Hook,
-    fetch_hook: fn(Int) -> Result(Hook, Nil),
-    pop_hook_index: fn() -> Int,
-    state_updater: fn(Int) -> fn(StateValue) -> StateValue,
-  )
+  RenderContext(fetch_or_create_reducer: fn(fn() -> Dynamic) -> Dynamic)
 }
 
 pub fn render(el: Element, rcx: RenderContext) -> String {
@@ -52,12 +46,7 @@ fn element(
 }
 
 fn component(fc: fn(ComponentContext) -> List(Element), rcx: RenderContext) {
-  fc(ComponentContext(
-    push_hook: rcx.push_hook,
-    fetch_hook: rcx.fetch_hook,
-    pop_hook_index: rcx.pop_hook_index,
-    state_updater: rcx.state_updater,
-  ))
+  fc(ComponentContext(fetch_or_create_reducer: rcx.fetch_or_create_reducer))
   |> list.map(fn(child) { render(child, rcx) })
   |> string.concat
 }

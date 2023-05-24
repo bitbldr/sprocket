@@ -1,8 +1,7 @@
 import gleam/otp/actor
 import gleam/erlang/process.{Subject}
 import gleam/list
-import gleam/result
-import sprocket/component.{Hook}
+import gleam/dynamic.{Dynamic}
 import sprocket/render.{RenderContext}
 import glisten/handler.{HandlerMessage}
 
@@ -13,13 +12,13 @@ pub type Client {
   Client(sub: Subject(HandlerMessage))
 }
 
-// TODO: hooks should be stored in a map for better access performance o(1), lists are o(n)
+// TODO: hooks and reducers should be stored in a map for better access performance o(1), lists are o(n)
 pub type ContextState {
-  ContextState(hooks: List(Hook), h_index: Int, clients: List(Client))
+  ContextState(r_index: Int, clients: List(Client), reducers: List(Dynamic))
 }
 
 pub fn start() {
-  let initial_context = ContextState(hooks: [], h_index: 0, clients: [])
+  let initial_context = ContextState(r_index: 0, clients: [], reducers: [])
 
   let assert Ok(actor) = actor.start(initial_context, handle_message)
 
@@ -39,36 +38,23 @@ pub fn pop_client(actor, sub) {
 }
 
 pub fn render_context(actor) {
-  let push_hook = fn(h: Hook) {
-    process.send(actor, PushHook(h))
-    h
+  process.send(actor, ResetReducerIndex)
+
+  let fetch_or_create_reducer = fn(reducer) {
+    process.call(actor, FetchOrCreateReducer(_, reducer), 10)
   }
 
-  let fetch_hook = fn(i) { process.call(actor, FetchHook(_, i), 10) }
-
-  process.send(actor, ResetHookIndex)
-  let pop_hook_index = fn() {
-    process.call(actor, PopHookIndex, 10)
-    |> result.unwrap(0)
-  }
-
-  let state_updater = fn(_index) { fn(s) { s } }
-
-  RenderContext(
-    pop_hook_index: pop_hook_index,
-    push_hook: push_hook,
-    fetch_hook: fetch_hook,
-    state_updater: state_updater,
-  )
+  RenderContext(fetch_or_create_reducer: fetch_or_create_reducer)
 }
 
 pub type ContextMessage {
   Shutdown
-  PushHook(hook: Hook)
-  FetchHook(reply_with: Subject(Result(Hook, Nil)), index: Int)
   FetchContext(reply_with: Subject(Result(ContextState, Nil)))
-  ResetHookIndex
-  PopHookIndex(reply_with: Subject(Result(Int, Nil)))
+  FetchOrCreateReducer(
+    reply_with: Subject(Dynamic),
+    reducer_init: fn() -> Dynamic,
+  )
+  ResetReducerIndex
   PushClient(sender: Client)
   PopClient(sub: Subject(HandlerMessage))
 }
@@ -80,39 +66,36 @@ fn handle_message(
   case message {
     Shutdown -> actor.Stop(process.Normal)
 
-    PushHook(hook) -> {
-      let r_hooks = list.reverse(context.hooks)
-      let updated_hooks = list.reverse([hook, ..r_hooks])
-      let new_state = ContextState(..context, hooks: updated_hooks)
-
-      actor.Continue(new_state)
-    }
-
-    FetchHook(client, index) -> {
-      let hook = list.at(context.hooks, index)
-
-      case hook {
-        Ok(h) -> {
-          process.send(client, Ok(h))
-          actor.Continue(context)
-        }
-        Error(Nil) -> {
-          process.send(client, Error(Nil))
-          actor.Continue(context)
-        }
-      }
-    }
-
     FetchContext(client) -> {
       process.send(client, Ok(context))
       actor.Continue(context)
     }
 
-    ResetHookIndex -> actor.Continue(ContextState(..context, h_index: 0))
+    ResetReducerIndex -> actor.Continue(ContextState(..context, r_index: 0))
 
-    PopHookIndex(client) -> {
-      process.send(client, Ok(context.h_index))
-      actor.Continue(ContextState(..context, h_index: context.h_index + 1))
+    FetchOrCreateReducer(client, reducer_init) -> {
+      case list.at(context.reducers, context.r_index) {
+        Ok(r) -> {
+          // reducer found, return it
+          process.send(client, r)
+          actor.Continue(ContextState(..context, r_index: context.r_index + 1))
+        }
+        Error(Nil) -> {
+          // reducer doesnt exist, create it
+          let reducer = reducer_init()
+          let r_reducers = list.reverse(context.reducers)
+          let updated_reducers = list.reverse([reducer, ..r_reducers])
+          let new_state =
+            ContextState(
+              ..context,
+              reducers: updated_reducers,
+              r_index: context.r_index + 1,
+            )
+
+          process.send(client, reducer)
+          actor.Continue(new_state)
+        }
+      }
     }
 
     PushClient(client) -> {
