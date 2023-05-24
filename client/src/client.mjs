@@ -1,16 +1,27 @@
-import * as App from "app";
+// import * as App from "app";
+import morphdom from "morphdom";
 
 window.addEventListener("DOMContentLoaded", () => {
-  App.main();
+  // App.main();
 
-  const ws = new WebSocket("ws://localhost:3000/live");
+  const socket = new WebSocket("ws://localhost:3000/live");
 
-  ws.onopen = () => {
+  socket.addEventListener("open", function (event) {
     console.log("ws opened on browser");
-    ws.send("hello world");
-  };
+    socket.send(["join"]);
+  });
+  socket.addEventListener("message", function (event) {
+    console.log("Message from server ", event.data);
 
-  ws.onmessage = (message) => {
-    console.log(`message received`, message.data);
-  };
+    let parsed = JSON.parse(event.data);
+
+    if (Array.isArray(parsed)) {
+      switch (parsed[0]) {
+        case "update":
+          console.log("updating body with: ", parsed[1]);
+          let body = document.querySelector("body");
+          morphdom(body, parsed[1]);
+      }
+    }
+  });
 });

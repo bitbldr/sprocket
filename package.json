@@ -3,9 +3,9 @@
     "@tailwindcss/typography": "^0.5.9",
     "chokidar-cli": "^3.0.0",
     "concurrently": "^8.0.1",
-    "tailwindcss": "^3.3.1",
     "parcel": "^2.8.3",
-    "process": "^0.11.10"
+    "process": "^0.11.10",
+    "tailwindcss": "^3.3.1"
   },
   "scripts": {
     "client:clean": "rm -rf build dist .parcel-cache",
@@ -18,5 +18,8 @@
   "alias": {
     "app": "./client/build/dev/javascript/client/main.mjs",
     "ffi": "./client/src/ffi/"
+  },
+  "dependencies": {
+    "morphdom": "^2.7.0"
   }
 }
