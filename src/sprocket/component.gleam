@@ -1,10 +1,10 @@
 import gleam/otp/actor
 import gleam/erlang/process.{Subject}
 import gleam/dynamic.{Dynamic}
-import sprocket/html/attrs.{HtmlAttr}
+import sprocket/html/attribute.{Attribute}
 
 pub type Element {
-  Element(tag: String, attrs: List(HtmlAttr), children: List(Element))
+  Element(tag: String, attrs: List(Attribute), children: List(Element))
   Component(c: fn(ComponentContext) -> List(Element))
   RawHtml(html: String)
 }
@@ -52,13 +52,13 @@ pub fn reducer(
   State(state, dispatch)
 }
 
-type ReducerOrGetter(model, msg) {
+type StateOrDispatchReducer(model, msg) {
   StateReducer(reply_with: Subject(model))
   DispatchReducer(r: Reducer(model, msg), m: msg)
 }
 
 fn handle_message(
-  message: ReducerOrGetter(model, msg),
+  message: StateOrDispatchReducer(model, msg),
   context: model,
 ) -> actor.Next(model) {
   case message {

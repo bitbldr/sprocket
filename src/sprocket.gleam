@@ -6,6 +6,7 @@ import gleam/result
 import gleam/erlang/os
 import gleam/erlang/process
 import gleam/json.{array}
+import gleam/dynamic.{field}
 import mist
 import mist/websocket
 import mist/internal/websocket.{TextMessage} as internal_websocket
@@ -31,7 +32,7 @@ pub fn main() {
       port,
       mist.handler_func(fn(req) {
         case req.method, request.path_segments(req) {
-          Get, ["live"] -> websocket_echo(ca)
+          Get, ["live"] -> websocket_service(ca)
           _, _ ->
             req
             |> http_service(web)
@@ -67,7 +68,7 @@ fn mist_response(response: Response(BitBuilder)) -> mist.Response {
   |> mist.bit_builder_response(response.body)
 }
 
-fn websocket_echo(ca: ContextAgent) {
+fn websocket_service(ca: ContextAgent) {
   websocket.with_handler(fn(msg, sub) {
     // let _ = websocket.send(sender, TextMessage("hello client"))
 
@@ -86,7 +87,24 @@ fn websocket_echo(ca: ContextAgent) {
       TextMessage(text) -> {
         io.debug("Received text message:")
         io.debug(text)
-        Nil
+
+        case decode_event(text) {
+          Ok(event) -> {
+            case context_agent.get_handler(ca, event.id) {
+              Ok(context_agent.EventHandler(_, handler)) -> {
+                // call the event handler
+                handler()
+              }
+              _ -> Nil
+            }
+          }
+          Error(e) -> {
+            io.debug("Error decoding event:")
+            io.debug(e)
+
+            Nil
+          }
+        }
       }
       internal_websocket.BinaryMessage(_) -> {
         io.debug("Received binary message")
@@ -126,4 +144,19 @@ fn load_port() -> Int {
 fn update_to_json(html: String) -> String {
   array(["update", html], of: json.string)
   |> json.to_string
+}
+
+type Event {
+  Event(event: String, id: String)
+}
+
+fn decode_event(body: String) {
+  json.decode(
+    body,
+    dynamic.decode2(
+      Event,
+      field("event", dynamic.string),
+      field("id", dynamic.string),
+    ),
+  )
 }

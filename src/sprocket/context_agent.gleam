@@ -4,6 +4,7 @@ import gleam/list
 import gleam/dynamic.{Dynamic}
 import sprocket/render.{RenderContext}
 import glisten/handler.{HandlerMessage}
+import sprocket/uuid
 
 pub type ContextAgent =
   Subject(ContextMessage)
@@ -12,13 +13,23 @@ pub type Client {
   Client(sub: Subject(HandlerMessage))
 }
 
+pub type EventHandler {
+  EventHandler(id: String, handler: fn() -> Nil)
+}
+
 // TODO: hooks and reducers should be stored in a map for better access performance o(1), lists are o(n)
 pub type ContextState {
-  ContextState(r_index: Int, clients: List(Client), reducers: List(Dynamic))
+  ContextState(
+    r_index: Int,
+    clients: List(Client),
+    reducers: List(Dynamic),
+    handlers: List(EventHandler),
+  )
 }
 
 pub fn start() {
-  let initial_context = ContextState(r_index: 0, clients: [], reducers: [])
+  let initial_context =
+    ContextState(r_index: 0, clients: [], reducers: [], handlers: [])
 
   let assert Ok(actor) = actor.start(initial_context, handle_message)
 
@@ -37,14 +48,27 @@ pub fn pop_client(actor, sub) {
   process.send(actor, PopClient(sub))
 }
 
+pub fn get_handler(actor, id) {
+  process.call(actor, GetEventHandler(_, id), 10)
+}
+
 pub fn render_context(actor) {
+  // reset for new render cycle
   process.send(actor, ResetReducerIndex)
+  process.send(actor, ResetEventHandlers)
 
   let fetch_or_create_reducer = fn(reducer) {
     process.call(actor, FetchOrCreateReducer(_, reducer), 10)
   }
 
-  RenderContext(fetch_or_create_reducer: fetch_or_create_reducer)
+  let push_event_handler = fn(handler) {
+    process.call(actor, PushEventHandler(_, handler), 10)
+  }
+
+  RenderContext(
+    fetch_or_create_reducer: fetch_or_create_reducer,
+    push_event_handler: push_event_handler,
+  )
 }
 
 pub type ContextMessage {
@@ -57,6 +81,9 @@ pub type ContextMessage {
   ResetReducerIndex
   PushClient(sender: Client)
   PopClient(sub: Subject(HandlerMessage))
+  PushEventHandler(reply_with: Subject(String), handler: fn() -> Nil)
+  GetEventHandler(reply_with: Subject(Result(EventHandler, Nil)), id: String)
+  ResetEventHandlers
 }
 
 fn handle_message(
@@ -116,6 +143,40 @@ fn handle_message(
           },
         )
       let new_state = ContextState(..context, clients: updated_clients)
+
+      actor.Continue(new_state)
+    }
+
+    PushEventHandler(client, handler) -> {
+      let assert Ok(id) = uuid.v4()
+      let new_state =
+        ContextState(
+          ..context,
+          handlers: [EventHandler(id, handler), ..context.handlers],
+        )
+
+      process.send(client, id)
+
+      actor.Continue(new_state)
+    }
+
+    GetEventHandler(client, id) -> {
+      let handler =
+        list.find(
+          context.handlers,
+          fn(h) {
+            let EventHandler(i, _) = h
+            i == id
+          },
+        )
+
+      process.send(client, handler)
+
+      actor.Continue(context)
+    }
+
+    ResetEventHandlers -> {
+      let new_state = ContextState(..context, handlers: [])
 
       actor.Continue(new_state)
     }

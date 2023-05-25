@@ -3,7 +3,7 @@ import sprocket/component.{Component}
 import example/components/clock.{ClockProps, clock}
 import example/components/counter.{CounterProps, counter}
 import sprocket/html.{body, div, h1, head, html, link, script, text}
-import sprocket/html/attrs.{class, href, rel, src}
+import sprocket/html/attribute.{class, href, rel, src}
 
 pub type HelloViewProps {
   HelloViewProps

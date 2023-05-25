@@ -2,7 +2,7 @@ import gleam/int
 import gleam/option.{Option}
 import sprocket/component.{Component, ComponentContext, State, reducer}
 import sprocket/html.{button, div, span, text}
-import sprocket/html/attrs.{class}
+import sprocket/html/attribute.{class, event}
 
 type Model =
   Int
@@ -30,15 +30,16 @@ pub fn counter(props: CounterProps) {
     let State(count, dispatch) = reducer(ctx, option.unwrap(initial, 0), update)
 
     // TODO: use dispatch from event handler
-    dispatch(UpdateCounter(count + 1))
+    let on_increment = fn() { dispatch(UpdateCounter(count + 1)) }
+    let on_decrement = fn() { dispatch(UpdateCounter(count - 1)) }
 
     [
       div(
         [],
         [
-          button([], [text("-")]),
+          button([event("click", on_decrement)], [text("-")]),
           span([class("px-2")], [text(int.to_string(count))]),
-          button([], [text("+")]),
+          button([event("click", on_increment)], [text("+")]),
         ],
       ),
     ]
