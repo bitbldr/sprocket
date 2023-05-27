@@ -3,6 +3,7 @@ import gleam/io
 import gleam/int
 import gleam/string
 import gleam/result
+import gleam/option.{Some}
 import gleam/erlang/os
 import gleam/erlang/process
 import gleam/json.{array}
@@ -10,12 +11,13 @@ import gleam/dynamic.{field}
 import mist
 import mist/websocket
 import mist/internal/websocket.{TextMessage} as internal_websocket
-import sprocket/context_agent.{Client, ContextAgent}
+import sprocket/app_context.{AppContext}
 import gleam/http/request.{Request}
 import gleam/http/response.{Response}
 import gleam/http.{Get}
 import gleam/bit_builder.{BitBuilder}
 import sprocket/render.{render}
+import sprocket/socket.{Socket}
 import example/hello_view.{HelloViewProps, hello_view}
 import example/routes
 import gleam/http/service.{Service}
@@ -24,18 +26,16 @@ pub fn main() {
   log.configure_backend()
 
   let port = load_port()
-  let ca = context_agent.start()
-  let web = routes.stack(ca)
+  let ctx = app_context.start()
+  let router = routes.stack(ctx)
 
   let assert Ok(_) =
     mist.serve(
       port,
       mist.handler_func(fn(req) {
         case req.method, request.path_segments(req) {
-          Get, ["live"] -> websocket_service(ca)
-          _, _ ->
-            req
-            |> http_service(web)
+          Get, ["live"] -> websocket_service(ctx)
+          _, _ -> http_service(req, router)
         }
       }),
     )
@@ -48,13 +48,13 @@ pub fn main() {
 
 fn http_service(
   req: Request(mist.Body),
-  stack: Service(BitString, BitBuilder),
+  router: Service(BitString, BitBuilder),
 ) -> mist.Response {
   req
   |> mist.read_body
   |> result.map(fn(http_req: Request(BitString)) {
     http_req
-    |> stack()
+    |> router()
     |> mist_response()
   })
   |> result.unwrap(
@@ -68,36 +68,45 @@ fn mist_response(response: Response(BitBuilder)) -> mist.Response {
   |> mist.bit_builder_response(response.body)
 }
 
-fn websocket_service(ca: ContextAgent) {
-  websocket.with_handler(fn(msg, sub) {
+fn websocket_service(ctx: AppContext) {
+  websocket.with_handler(fn(msg, ws) {
     // let _ = websocket.send(sender, TextMessage("hello client"))
 
     case msg {
       TextMessage("join") -> {
         io.println("New client joined")
 
-        let view = hello_view(HelloViewProps)
-        let context = context_agent.render_context(ca)
-        let body = render(view, context)
+        case app_context.get_socket(ctx, ws) {
+          Ok(socket) -> {
+            option.map(
+              socket.get_socket(socket).live_render_fn,
+              fn(live_render_fn) { live_render_fn(socket) },
+            )
 
-        let _ = websocket.send(sub, TextMessage(update_to_json(body)))
-
-        Nil
+            Nil
+          }
+          _ -> Nil
+        }
       }
       TextMessage(text) -> {
-        io.debug("Received text message:")
-        io.debug(text)
-
         case decode_event(text) {
           Ok(event) -> {
-            case context_agent.get_handler(ca, event.id) {
-              Ok(context_agent.EventHandler(_, handler)) -> {
-                // call the event handler
-                handler()
+            io.debug(event)
+
+            case app_context.get_socket(ctx, ws) {
+              Ok(socket) -> {
+                case socket.get_handler(socket, event.id) {
+                  Ok(socket.EventHandler(_, handler)) -> {
+                    // call the event handler
+                    handler()
+                  }
+                  _ -> Nil
+                }
               }
               _ -> Nil
             }
           }
+
           Error(e) -> {
             io.debug("Error decoding event:")
             io.debug(e)
@@ -116,19 +125,28 @@ fn websocket_service(ca: ContextAgent) {
   })
   // Here you can gain access to the `Subject` to send message to
   // with:
-  |> websocket.on_init(fn(sub) {
-    context_agent.push_client(ca, Client(sub))
+  |> websocket.on_init(fn(ws) {
+    let live_render_fn = fn(socket: Socket) {
+      let view = hello_view(HelloViewProps)
+      let context = socket.render_context(socket)
+      let body = render(view, context)
+
+      let _ = websocket.send(ws, TextMessage(update_to_json(body)))
+    }
+
+    let socket = socket.start(Some(ws), Some(live_render_fn))
+    app_context.push_socket(ctx, socket)
 
     io.println("Client connected!")
-    io.debug(sub)
+    io.debug(ws)
 
     Nil
   })
-  |> websocket.on_close(fn(sub) {
-    context_agent.pop_client(ca, sub)
+  |> websocket.on_close(fn(ws) {
+    app_context.pop_socket(ctx, ws)
 
     io.println("Disconnected!")
-    io.debug(sub)
+    io.debug(ws)
 
     Nil
   })

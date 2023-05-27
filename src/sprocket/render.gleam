@@ -8,6 +8,7 @@ pub type RenderContext {
   RenderContext(
     fetch_or_create_reducer: fn(fn() -> Dynamic) -> Dynamic,
     push_event_handler: fn(fn() -> Nil) -> String,
+    render_update: fn() -> Nil,
   )
 }
 
@@ -56,7 +57,10 @@ fn element(
 }
 
 fn component(fc: fn(ComponentContext) -> List(Element), ctx: RenderContext) {
-  fc(ComponentContext(fetch_or_create_reducer: ctx.fetch_or_create_reducer))
+  fc(ComponentContext(
+    fetch_or_create_reducer: ctx.fetch_or_create_reducer,
+    render_update: ctx.render_update,
+  ))
   |> list.map(fn(child) { render(child, ctx) })
   |> string.concat
 }

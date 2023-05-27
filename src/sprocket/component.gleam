@@ -14,7 +14,10 @@ pub fn raw(html: String) {
 }
 
 pub type ComponentContext {
-  ComponentContext(fetch_or_create_reducer: fn(fn() -> Dynamic) -> Dynamic)
+  ComponentContext(
+    fetch_or_create_reducer: fn(fn() -> Dynamic) -> Dynamic,
+    render_update: fn() -> Nil,
+  )
 }
 
 pub type State(model, msg) {
@@ -32,7 +35,10 @@ pub fn reducer(
   initial: model,
   reducer: Reducer(model, msg),
 ) -> State(model, msg) {
-  let ComponentContext(fetch_or_create_reducer: fetch_or_create_reducer) = ctx
+  let ComponentContext(
+    fetch_or_create_reducer: fetch_or_create_reducer,
+    render_update: render_update,
+  ) = ctx
 
   let reducer_init = fn() {
     let assert Ok(actor) = actor.start(initial, handle_message)
@@ -47,6 +53,7 @@ pub fn reducer(
   let state = process.call(actor, StateReducer(_), 10)
   let dispatch = fn(msg) -> Nil {
     actor.send(actor, DispatchReducer(r: reducer, m: msg))
+    render_update()
   }
 
   State(state, dispatch)

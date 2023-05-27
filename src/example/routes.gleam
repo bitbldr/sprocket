@@ -7,20 +7,20 @@ import gleam/http/service.{Service}
 import example/log_requests
 import example/static
 import example/controllers/index.{index}
-import sprocket/context_agent.{ContextAgent}
+import sprocket/app_context.{AppContext}
 
-pub fn router(ca: ContextAgent) {
+pub fn router(ctx: AppContext) {
   fn(request: Request(String)) -> Response(String) {
     case request.method, request.path_segments(request) {
-      Get, [] -> index(request, ca)
+      Get, [] -> index(request, ctx)
 
       _, _ -> not_found()
     }
   }
 }
 
-pub fn stack(ca: ContextAgent) -> Service(BitString, BitBuilder) {
-  router(ca)
+pub fn stack(ctx: AppContext) -> Service(BitString, BitBuilder) {
+  router(ctx)
   |> string_body_middleware
   |> log_requests.middleware
   |> static.middleware()
