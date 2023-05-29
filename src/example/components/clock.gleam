@@ -1,7 +1,9 @@
 import gleam/erlang
 import gleam/int
 import gleam/option.{None, Option, Some}
-import sprocket/component.{Component, ComponentContext, State, effect, reducer}
+import sprocket/component.{
+  Component, ComponentContext, EffectCleanup, State, effect, reducer,
+}
 import sprocket/html.{text}
 import example/utils/timer.{interval}
 
@@ -38,11 +40,13 @@ pub fn clock(props: ClockProps) {
     effect(
       ctx,
       fn() {
-        interval(
-          1000,
-          fn() { dispatch(UpdateTime(erlang.system_time(erlang.Second))) },
-        )
-        Nil
+        let cancel =
+          interval(
+            1000,
+            fn() { dispatch(UpdateTime(erlang.system_time(erlang.Second))) },
+          )
+
+        EffectCleanup(fn() { cancel() })
       },
       [],
     )

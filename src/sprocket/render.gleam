@@ -12,6 +12,7 @@ pub type RenderContext {
     push_event_handler: fn(fn() -> Nil) -> String,
     render_update: fn() -> Nil,
     get_or_create_effect: fn(Effect) -> Effect,
+    update_effect: fn(Effect) -> Nil,
   )
 }
 
@@ -64,6 +65,7 @@ fn component(fc: fn(ComponentContext) -> List(Element), ctx: RenderContext) {
     fetch_or_create_reducer: ctx.fetch_or_create_reducer,
     render_update: ctx.render_update,
     get_or_create_effect: ctx.get_or_create_effect,
+    update_effect: ctx.update_effect,
   ))
   |> list.map(fn(child) { render(child, ctx) })
   |> string.concat

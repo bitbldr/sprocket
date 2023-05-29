@@ -4,7 +4,7 @@ import gleam/http/response.{Response}
 import gleam/http/service.{Service}
 import gleam/int
 import gleam/string
-import example/log
+import example/utils/logger
 
 fn format_log_line(
   request: Request(a),
@@ -34,7 +34,7 @@ pub fn middleware(service: Service(a, b)) -> Service(a, b) {
     let before = now()
     let response = service(request)
     let elapsed = convert_time_unit(now() - before, Native, Microsecond)
-    log.info(format_log_line(request, response, elapsed))
+    logger.info(format_log_line(request, response, elapsed))
     response
   }
 }

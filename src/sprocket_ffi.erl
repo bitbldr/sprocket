@@ -1,4 +1,4 @@
--module(example_ffi).
+-module(sprocket_ffi).
 
 -export([configure_logger_backend/0, priv_directory/0, current_timestamp/0]).
 

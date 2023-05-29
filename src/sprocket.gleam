@@ -1,4 +1,4 @@
-import example/log
+import example/utils/logger
 import gleam/io
 import gleam/int
 import gleam/string
@@ -23,7 +23,7 @@ import example/routes
 import gleam/http/service.{Service}
 
 pub fn main() {
-  log.configure_backend()
+  logger.configure_backend()
 
   let port = load_port()
   let ctx = app_context.start()
@@ -41,7 +41,7 @@ pub fn main() {
     )
 
   string.concat(["Listening on localhost:", int.to_string(port), " ✨"])
-  |> log.info
+  |> logger.info
 
   process.sleep_forever()
 }

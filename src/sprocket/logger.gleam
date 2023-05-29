@@ -15,7 +15,7 @@ pub type Level {
 /// want, rather than the more verbose Erlang default format.
 ///
 pub external fn configure_backend() -> Nil =
-  "example_ffi" "configure_logger_backend"
+  "sprocket_ffi" "configure_logger_backend"
 
 external fn erlang_log(Level, String) -> Dynamic =
   "logger" "log"
@@ -27,4 +27,12 @@ pub fn log(level: Level, message: String) -> Nil {
 
 pub fn info(message: String) -> Nil {
   log(Info, message)
+}
+
+pub fn warn(message: String) -> Nil {
+  log(Warning, message)
+}
+
+pub fn error(message: String) -> Nil {
+  log(Error, message)
 }

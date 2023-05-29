@@ -6,7 +6,7 @@ import gleam/dynamic.{Dynamic}
 import sprocket/render.{RenderContext}
 import glisten/handler.{HandlerMessage}
 import sprocket/uuid
-import sprocket/component.{Effect, NewEffect}
+import sprocket/component.{Effect, EffectCreated, EffectSpec}
 
 pub type Socket =
   Subject(Message)
@@ -42,6 +42,7 @@ pub type Message {
     reducer_init: fn() -> Dynamic,
   )
   FetchOrCreateEffect(reply_with: Subject(Effect), effect: Effect)
+  UpdateEffect(effect: Effect)
   PushEventHandler(reply_with: Subject(String), handler: fn() -> Nil)
   GetEventHandler(reply_with: Subject(Result(EventHandler, Nil)), id: String)
 }
@@ -125,9 +126,12 @@ fn handle_message(message: Message, state: State) -> actor.Next(State) {
         Error(Nil) -> {
           // effect doesnt exist, create it
           let r_effects = list.reverse(state.effects)
-          let updated_effects = list.reverse([effect, ..r_effects])
+          let assert EffectSpec(effect_fn, deps) = effect
+          let assert Ok(id) = uuid.v4()
+          let updated_effects =
+            list.reverse([Effect(id, effect_fn, deps, None), ..r_effects])
 
-          process.send(reply_with, NewEffect(effect.deps))
+          process.send(reply_with, EffectCreated(id, effect_fn))
 
           actor.Continue(
             State(
@@ -141,6 +145,25 @@ fn handle_message(message: Message, state: State) -> actor.Next(State) {
           )
         }
       }
+    }
+
+    UpdateEffect(effect) -> {
+      actor.Continue(
+        State(
+          ..state,
+          effects: list.map(
+            state.effects,
+            fn(e) {
+              case e, effect {
+                // if the effect id matches, update it to the new effect
+                Effect(prev_effect_id, ..), Effect(new_effect_id, ..) if prev_effect_id == new_effect_id ->
+                  effect
+                _, _ -> e
+              }
+            },
+          ),
+        ),
+      )
     }
 
     PushEventHandler(reply_with, handler) -> {
@@ -192,11 +215,11 @@ pub fn stop(socket) {
 }
 
 pub fn get_socket(socket) {
-  process.call(socket, GetState(_), 10)
+  process.call(socket, GetState(_), 100)
 }
 
 pub fn get_handler(socket, id) {
-  process.call(socket, GetEventHandler(_, id), 10)
+  process.call(socket, GetEventHandler(_, id), 100)
 }
 
 pub fn render_context(socket: Socket) {
@@ -204,26 +227,30 @@ pub fn render_context(socket: Socket) {
   process.send(socket, ResetContext)
 
   let fetch_or_create_reducer = fn(reducer) {
-    process.call(socket, FetchOrCreateReducer(_, reducer), 10)
+    process.call(socket, FetchOrCreateReducer(_, reducer), 100)
   }
 
   let push_event_handler = fn(handler) {
-    process.call(socket, PushEventHandler(_, handler), 10)
+    process.call(socket, PushEventHandler(_, handler), 100)
   }
 
   let get_or_create_effect = fn(effect) {
-    process.call(socket, FetchOrCreateEffect(_, effect), 10)
+    process.call(socket, FetchOrCreateEffect(_, effect), 100)
   }
+
+  let update_effect = fn(effect) { process.send(socket, UpdateEffect(effect)) }
 
   RenderContext(
     fetch_or_create_reducer: fetch_or_create_reducer,
     push_event_handler: push_event_handler,
     render_update: fn() -> Nil {
-      case get_socket(socket).live_render_fn {
-        Some(f) -> f(socket)
-        None -> Nil
+      case get_socket(socket) {
+        State(live_render_fn: Some(live_render_fn), ..) ->
+          live_render_fn(socket)
+        _ -> Nil
       }
     },
     get_or_create_effect: get_or_create_effect,
+    update_effect: update_effect,
   )
 }

@@ -1,8 +1,9 @@
 import gleam/otp/actor
 import gleam/erlang/process.{Subject}
 import gleam/dynamic.{Dynamic}
-import gleam/option.{None, Option, Some}
+import gleam/option.{Option, Some}
 import sprocket/html/attribute.{Attribute}
+import sprocket/logger
 
 pub type Element {
   Element(tag: String, attrs: List(Attribute), children: List(Element))
@@ -14,9 +15,28 @@ pub fn raw(html: String) {
   RawHtml(html)
 }
 
+pub type EffectCleanup {
+  EffectCleanup(fn() -> Nil)
+  NoCleanup
+}
+
+pub type EffectDependencies =
+  List(Dynamic)
+
+pub type EffectTrigger {
+  Always
+  WhenDependenciesChange(deps: EffectDependencies)
+}
+
 pub type Effect {
-  Effect(deps: List(Dynamic))
-  NewEffect(deps: List(Dynamic))
+  EffectSpec(effect_fn: fn() -> EffectCleanup, deps: EffectDependencies)
+  Effect(
+    id: String,
+    effect_fn: fn() -> EffectCleanup,
+    deps: EffectDependencies,
+    cleanup: Option(EffectCleanup),
+  )
+  EffectCreated(id: String, effect_fn: fn() -> EffectCleanup)
 }
 
 pub type ComponentContext {
@@ -24,6 +44,7 @@ pub type ComponentContext {
     fetch_or_create_reducer: fn(fn() -> Dynamic) -> Dynamic,
     render_update: fn() -> Nil,
     get_or_create_effect: fn(Effect) -> Effect,
+    update_effect: fn(Effect) -> Nil,
   )
 }
 
@@ -92,32 +113,42 @@ pub fn reducer(
 // create useEffect function that takes a function and a list of dependencies
 pub fn effect(
   ctx: ComponentContext,
-  effect_fn: fn() -> Nil,
-  dependencies: List(Dynamic),
-) {
+  effect_fn: fn() -> EffectCleanup,
+  dependencies: EffectDependencies,
+) -> Nil {
   let ComponentContext(
     render_update: render_update,
     get_or_create_effect: get_or_create_effect,
+    update_effect: update_effect,
     ..,
   ) = ctx
 
-  case get_or_create_effect(Effect(deps: dependencies)) {
-    NewEffect(_) -> {
+  case get_or_create_effect(EffectSpec(effect_fn, dependencies)) {
+    EffectCreated(id, effect_fn) -> {
       // TODO: we might need to push this effect_fn onto a stack and run
       // after the current render cycle has completed
-      effect_fn()
+      let cleanup = effect_fn()
+      update_effect(Effect(id, effect_fn, dependencies, Some(cleanup)))
       render_update()
     }
-    Effect(deps) -> {
-      let deps_changed = deps != dependencies
-
-      case deps_changed {
+    Effect(id, _prev_effect_fn, prev_deps, prev_cleanup) -> {
+      case prev_deps != dependencies {
         True -> {
-          effect_fn()
+          case prev_cleanup {
+            Some(EffectCleanup(cleanup)) -> cleanup()
+            _ -> Nil
+          }
+          let cleanup = effect_fn()
+          update_effect(Effect(id, effect_fn, dependencies, Some(cleanup)))
           render_update()
         }
         _ -> Nil
       }
+    }
+    e -> {
+      logger.error("effect not created or found")
+
+      Nil
     }
   }
 }

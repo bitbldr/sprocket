@@ -53,4 +53,4 @@ pub fn middleware(service: Service(in, BitBuilder)) -> Service(in, BitBuilder) {
 }
 
 pub external fn priv_directory() -> String =
-  "example_ffi" "priv_directory"
+  "sprocket_ffi" "priv_directory"
