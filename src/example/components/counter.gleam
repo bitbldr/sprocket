@@ -7,11 +7,11 @@ import sprocket/html/attribute.{class, event}
 type Model =
   Int
 
-pub type Msg {
+type Msg {
   UpdateCounter(Int)
 }
 
-pub fn update(_model: Model, msg: Msg) -> Model {
+fn update(_model: Model, msg: Msg) -> Model {
   case msg {
     UpdateCounter(count) -> {
       count
@@ -29,7 +29,6 @@ pub fn counter(props: CounterProps) {
 
     let State(count, dispatch) = reducer(ctx, option.unwrap(initial, 0), update)
 
-    // TODO: use dispatch from event handler
     let on_increment = fn() { dispatch(UpdateCounter(count + 1)) }
     let on_decrement = fn() { dispatch(UpdateCounter(count - 1)) }
 

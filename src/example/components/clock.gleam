@@ -1,20 +1,53 @@
 import gleam/erlang
 import gleam/int
 import gleam/option.{None, Option, Some}
-import sprocket/component.{Component, ComponentContext}
+import sprocket/component.{Component, ComponentContext, State, effect, reducer}
 import sprocket/html.{text}
+import example/utils/timer.{interval}
+
+type Model {
+  Model(time: Int, timezone: String)
+}
+
+type Msg {
+  UpdateTime(Int)
+}
+
+fn update(model: Model, msg: Msg) -> Model {
+  case msg {
+    UpdateTime(time) -> {
+      Model(..model, time: time)
+    }
+  }
+}
+
+fn initial() -> Model {
+  Model(time: erlang.system_time(erlang.Second), timezone: "UTC")
+}
 
 pub type ClockProps {
   ClockProps(label: Option(String))
 }
 
 pub fn clock(props: ClockProps) {
-  Component(fn(_ctx: ComponentContext) {
+  Component(fn(ctx: ComponentContext) {
     let ClockProps(label) = props
 
-    let current_time =
-      erlang.system_time(erlang.Second)
-      |> int.to_string
+    let State(Model(time: time, ..), dispatch) = reducer(ctx, initial(), update)
+
+    effect(
+      ctx,
+      fn() {
+        interval(
+          1000,
+          fn() { dispatch(UpdateTime(erlang.system_time(erlang.Second))) },
+        )
+        Nil
+      },
+      [],
+    )
+
+    let current_time = int.to_string(time)
 
     case label {
       Some(label) -> [text(label), text(current_time)]

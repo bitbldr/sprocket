@@ -1,6 +1,8 @@
 import gleam/list
 import gleam/string
-import sprocket/component.{Component, ComponentContext, Element, RawHtml}
+import gleam/option.{Option}
+import sprocket/component.{Component,
+  ComponentContext, Effect, Element, RawHtml}
 import sprocket/html/attribute.{Attribute, Event, Key}
 import gleam/dynamic.{Dynamic}
 
@@ -9,6 +11,7 @@ pub type RenderContext {
     fetch_or_create_reducer: fn(fn() -> Dynamic) -> Dynamic,
     push_event_handler: fn(fn() -> Nil) -> String,
     render_update: fn() -> Nil,
+    get_or_create_effect: fn(Effect) -> Effect,
   )
 }
 
@@ -60,6 +63,7 @@ fn component(fc: fn(ComponentContext) -> List(Element), ctx: RenderContext) {
   fc(ComponentContext(
     fetch_or_create_reducer: ctx.fetch_or_create_reducer,
     render_update: ctx.render_update,
+    get_or_create_effect: ctx.get_or_create_effect,
   ))
   |> list.map(fn(child) { render(child, ctx) })
   |> string.concat

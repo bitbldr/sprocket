@@ -6,17 +6,23 @@ import gleam/dynamic.{Dynamic}
 import sprocket/render.{RenderContext}
 import glisten/handler.{HandlerMessage}
 import sprocket/uuid
+import sprocket/component.{Effect, NewEffect}
 
 pub type Socket =
   Subject(Message)
+
+pub type IndexTracker {
+  IndexTracker(reducer: Int, effect: Int)
+}
 
 pub type WebSocket =
   Subject(HandlerMessage)
 
 pub type State {
   State(
-    r_index: Int,
+    index_tracker: IndexTracker,
     reducers: List(Dynamic),
+    effects: List(Effect),
     handlers: List(EventHandler),
     ws: Option(WebSocket),
     live_render_fn: Option(fn(Socket) -> Nil),
@@ -35,6 +41,7 @@ pub type Message {
     reply_with: Subject(Dynamic),
     reducer_init: fn() -> Dynamic,
   )
+  FetchOrCreateEffect(reply_with: Subject(Effect), effect: Effect)
   PushEventHandler(reply_with: Subject(String), handler: fn() -> Nil)
   GetEventHandler(reply_with: Subject(Result(EventHandler, Nil)), id: String)
 }
@@ -49,14 +56,30 @@ fn handle_message(message: Message, state: State) -> actor.Next(State) {
       actor.Continue(state)
     }
 
-    ResetContext -> actor.Continue(State(..state, r_index: 0, handlers: []))
+    ResetContext ->
+      actor.Continue(
+        State(
+          ..state,
+          index_tracker: IndexTracker(reducer: 0, effect: 0),
+          handlers: [],
+        ),
+      )
 
     FetchOrCreateReducer(reply_with, reducer_init) -> {
-      case list.at(state.reducers, state.r_index) {
+      let index = state.index_tracker.reducer
+      case list.at(state.reducers, index) {
         Ok(r) -> {
           // reducer found, return it
           process.send(reply_with, r)
-          actor.Continue(State(..state, r_index: state.r_index + 1))
+          actor.Continue(
+            State(
+              ..state,
+              index_tracker: IndexTracker(
+                ..state.index_tracker,
+                reducer: index + 1,
+              ),
+            ),
+          )
         }
         Error(Nil) -> {
           // reducer doesnt exist, create it
@@ -66,11 +89,54 @@ fn handle_message(message: Message, state: State) -> actor.Next(State) {
 
           process.send(reply_with, reducer)
 
+          let index = state.index_tracker.reducer
+
           actor.Continue(
             State(
               ..state,
               reducers: updated_reducers,
-              r_index: state.r_index + 1,
+              index_tracker: IndexTracker(
+                ..state.index_tracker,
+                reducer: index + 1,
+              ),
+            ),
+          )
+        }
+      }
+    }
+
+    FetchOrCreateEffect(reply_with, effect) -> {
+      let index = state.index_tracker.effect
+
+      case list.at(state.effects, index) {
+        Ok(r) -> {
+          // effect found, return it
+          process.send(reply_with, r)
+          actor.Continue(
+            State(
+              ..state,
+              index_tracker: IndexTracker(
+                ..state.index_tracker,
+                effect: index + 1,
+              ),
+            ),
+          )
+        }
+        Error(Nil) -> {
+          // effect doesnt exist, create it
+          let r_effects = list.reverse(state.effects)
+          let updated_effects = list.reverse([effect, ..r_effects])
+
+          process.send(reply_with, NewEffect(effect.deps))
+
+          actor.Continue(
+            State(
+              ..state,
+              effects: updated_effects,
+              index_tracker: IndexTracker(
+                ..state.index_tracker,
+                effect: index + 1,
+              ),
             ),
           )
         }
@@ -108,8 +174,9 @@ pub fn start(ws: Option(WebSocket), live_render_fn) {
   let assert Ok(socket) =
     actor.start(
       State(
-        r_index: 0,
+        index_tracker: IndexTracker(reducer: 0, effect: 0),
         reducers: [],
+        effects: [],
         handlers: [],
         ws: ws,
         live_render_fn: live_render_fn,
@@ -144,6 +211,10 @@ pub fn render_context(socket: Socket) {
     process.call(socket, PushEventHandler(_, handler), 10)
   }
 
+  let get_or_create_effect = fn(effect) {
+    process.call(socket, FetchOrCreateEffect(_, effect), 10)
+  }
+
   RenderContext(
     fetch_or_create_reducer: fetch_or_create_reducer,
     push_event_handler: push_event_handler,
@@ -153,5 +224,6 @@ pub fn render_context(socket: Socket) {
         None -> Nil
       }
     },
+    get_or_create_effect: get_or_create_effect,
   )
 }
