@@ -2,7 +2,7 @@ import gleam/erlang
 import gleam/int
 import gleam/option.{None, Option, Some}
 import sprocket/component.{
-  Component, ComponentContext, EffectCleanup, State, effect, reducer,
+  Component, ComponentContext, EffectCleanup, OnMount, State, effect, reducer,
 }
 import sprocket/html.{text}
 import example/utils/timer.{interval}
@@ -48,7 +48,7 @@ pub fn clock(props: ClockProps) {
 
         EffectCleanup(fn() { cancel() })
       },
-      [],
+      OnMount,
     )
 
     let current_time = int.to_string(time)

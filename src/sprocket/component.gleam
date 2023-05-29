@@ -1,7 +1,7 @@
 import gleam/otp/actor
 import gleam/erlang/process.{Subject}
 import gleam/dynamic.{Dynamic}
-import gleam/option.{Option, Some}
+import gleam/option.{None, Option, Some}
 import sprocket/html/attribute.{Attribute}
 import sprocket/logger
 
@@ -25,15 +25,16 @@ pub type EffectDependencies =
 
 pub type EffectTrigger {
   Always
-  WhenDependenciesChange(deps: EffectDependencies)
+  OnMount
+  WithDependencies(deps: EffectDependencies)
 }
 
 pub type Effect {
-  EffectSpec(effect_fn: fn() -> EffectCleanup, deps: EffectDependencies)
+  EffectSpec(effect_fn: fn() -> EffectCleanup, trigger: EffectTrigger)
   Effect(
     id: String,
     effect_fn: fn() -> EffectCleanup,
-    deps: EffectDependencies,
+    trigger: EffectTrigger,
     cleanup: Option(EffectCleanup),
   )
   EffectCreated(id: String, effect_fn: fn() -> EffectCleanup)
@@ -110,11 +111,28 @@ pub fn reducer(
   State(state, dispatch)
 }
 
+fn run_effect(
+  id,
+  effect_fn,
+  trigger,
+  prev_cleanup,
+  update_effect,
+  render_update,
+) {
+  case prev_cleanup {
+    Some(EffectCleanup(cleanup)) -> cleanup()
+    _ -> Nil
+  }
+  let cleanup = effect_fn()
+  update_effect(Effect(id, effect_fn, trigger, Some(cleanup)))
+  render_update()
+}
+
 // create useEffect function that takes a function and a list of dependencies
 pub fn effect(
   ctx: ComponentContext,
   effect_fn: fn() -> EffectCleanup,
-  dependencies: EffectDependencies,
+  trigger: EffectTrigger,
 ) -> Nil {
   let ComponentContext(
     render_update: render_update,
@@ -123,26 +141,37 @@ pub fn effect(
     ..,
   ) = ctx
 
-  case get_or_create_effect(EffectSpec(effect_fn, dependencies)) {
+  case get_or_create_effect(EffectSpec(effect_fn, trigger)) {
     EffectCreated(id, effect_fn) -> {
       // TODO: we might need to push this effect_fn onto a stack and run
       // after the current render cycle has completed
-      let cleanup = effect_fn()
-      update_effect(Effect(id, effect_fn, dependencies, Some(cleanup)))
-      render_update()
-    }
-    Effect(id, _prev_effect_fn, prev_deps, prev_cleanup) -> {
-      case prev_deps != dependencies {
-        True -> {
-          case prev_cleanup {
-            Some(EffectCleanup(cleanup)) -> cleanup()
-            _ -> Nil
-          }
-          let cleanup = effect_fn()
-          update_effect(Effect(id, effect_fn, dependencies, Some(cleanup)))
-          render_update()
-        }
+      case trigger {
+        Always | OnMount | WithDependencies(_) ->
+          run_effect(id, effect_fn, trigger, None, update_effect, render_update)
         _ -> Nil
+      }
+    }
+    Effect(id, _prev_effect_fn, prev_trigger, prev_cleanup) -> {
+      case trigger, prev_trigger {
+        Always, _ ->
+          run_effect(
+            id,
+            effect_fn,
+            trigger,
+            prev_cleanup,
+            update_effect,
+            render_update,
+          )
+        WithDependencies(deps), WithDependencies(prev_deps) if deps != prev_deps ->
+          run_effect(
+            id,
+            effect_fn,
+            trigger,
+            prev_cleanup,
+            update_effect,
+            render_update,
+          )
+        _, _ -> Nil
       }
     }
     e -> {
