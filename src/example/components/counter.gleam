@@ -2,7 +2,7 @@ import gleam/int
 import gleam/option.{Option}
 import sprocket/component.{Component, ComponentContext, State, reducer}
 import sprocket/html.{button, div, span, text}
-import sprocket/html/attribute.{class, event}
+import sprocket/html/attribute.{class, on_click}
 
 type Model =
   Int
@@ -34,11 +34,26 @@ pub fn counter(props: CounterProps) {
 
     [
       div(
-        [],
+        [class("flex flex-row m-4")],
         [
-          button([event("click", on_decrement)], [text("-")]),
-          span([class("px-2")], [text(int.to_string(count))]),
-          button([event("click", on_increment)], [text("+")]),
+          button(
+            [
+              class("p-1 px-2 border rounded-l bg-gray-100"),
+              on_click(on_decrement),
+            ],
+            [text("-")],
+          ),
+          span(
+            [class("p-1 px-2 w-10 border-t border-b align-center text-center")],
+            [text(int.to_string(count))],
+          ),
+          button(
+            [
+              class("p-1 px-2 border rounded-r bg-gray-100"),
+              on_click(on_increment),
+            ],
+            [text("+")],
+          ),
         ],
       ),
     ]

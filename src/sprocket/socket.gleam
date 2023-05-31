@@ -1,22 +1,57 @@
 import gleam/otp/actor
 import gleam/erlang/process.{Subject}
 import gleam/list
+import gleam/io
 import gleam/option.{None, Option, Some}
 import gleam/dynamic.{Dynamic}
-import sprocket/render.{RenderContext}
 import glisten/handler.{HandlerMessage}
 import sprocket/uuid
-import sprocket/component.{Effect, EffectCreated, EffectSpec}
+import sprocket/component.{
+  EffectCleanup, EffectDependencies, EffectSpec, EffectTrigger, Element,
+  OnUpdate, WithDependencies,
+}
+import mist/websocket
+import mist/internal/websocket.{TextMessage} as internal_websocket
+import gleam/json.{array}
 
-pub type Socket =
+pub type Socket {
+  Socket(
+    fetch_or_create_reducer: fn(fn() -> Dynamic) -> Dynamic,
+    push_event_handler: fn(fn() -> Nil) -> String,
+    request_live_update: fn() -> Nil,
+    push_effect: fn(EffectSpec) -> Nil,
+    set_render_in_progress: fn(Bool) -> Nil,
+    push_render_waiting: fn() -> Nil,
+    pop_render_waiting: fn() -> Bool,
+  )
+}
+
+pub type SocketActor =
   Subject(Message)
 
+// TODO: use a single index for both reducers and effects (hooks)
 pub type IndexTracker {
   IndexTracker(reducer: Int, effect: Int)
 }
 
 pub type WebSocket =
   Subject(HandlerMessage)
+
+pub type PrevEffect {
+  PrevEffect(cleanup: EffectCleanup, deps: Option(EffectDependencies))
+}
+
+pub type Effect {
+  Effect(
+    effect_fn: fn() -> EffectCleanup,
+    trigger: EffectTrigger,
+    cleanup: Option(EffectCleanup),
+    prev: Option(PrevEffect),
+  )
+}
+
+pub type Renderer =
+  fn(Element, Socket) -> String
 
 pub type State {
   State(
@@ -25,7 +60,10 @@ pub type State {
     effects: List(Effect),
     handlers: List(EventHandler),
     ws: Option(WebSocket),
-    live_render_fn: Option(fn(Socket) -> Nil),
+    render_in_progress: Bool,
+    render_waiting: Bool,
+    view: Option(Element),
+    renderer: Option(Renderer),
   )
 }
 
@@ -36,13 +74,14 @@ pub type EventHandler {
 pub type Message {
   Shutdown
   GetState(reply_with: Subject(State))
+  UpdateState(updater: fn(State) -> State)
   ResetContext
   FetchOrCreateReducer(
     reply_with: Subject(Dynamic),
     reducer_init: fn() -> Dynamic,
   )
-  FetchOrCreateEffect(reply_with: Subject(Effect), effect: Effect)
-  UpdateEffect(effect: Effect)
+  PushEffect(effect: EffectSpec)
+  ProcessEffects
   PushEventHandler(reply_with: Subject(String), handler: fn() -> Nil)
   GetEventHandler(reply_with: Subject(Result(EventHandler, Nil)), id: String)
 }
@@ -53,8 +92,13 @@ fn handle_message(message: Message, state: State) -> actor.Next(State) {
 
     GetState(reply_with) -> {
       process.send(reply_with, state)
-
       actor.Continue(state)
+    }
+
+    UpdateState(updater) -> {
+      state
+      |> updater()
+      |> actor.Continue()
     }
 
     ResetContext ->
@@ -106,64 +150,116 @@ fn handle_message(message: Message, state: State) -> actor.Next(State) {
       }
     }
 
-    FetchOrCreateEffect(reply_with, effect) -> {
+    PushEffect(EffectSpec(effect_fn: effect_fn, trigger: trigger)) -> {
       let index = state.index_tracker.effect
 
-      case list.at(state.effects, index) {
-        Ok(r) -> {
-          // effect found, return it
-          process.send(reply_with, r)
-          actor.Continue(
-            State(
-              ..state,
-              index_tracker: IndexTracker(
-                ..state.index_tracker,
-                effect: index + 1,
-              ),
-            ),
+      // find previous effect at this index and set the prev field to it.
+      // cleanup will always be None here as we are pushing a new effect and will
+      // be set after the effect is run.
+      let updated_effects = case list.at(state.effects, index) {
+        Ok(prev_effect) -> {
+          // TODO: learn how to actually use panic
+          // trigger == prev_effect.trigger || panic(
+          //   "Effect trigger mismatch! Effect triggers must be consistent across renders.",
+          // )
+
+          let prev = case prev_effect {
+            Effect(trigger: WithDependencies(deps), cleanup: Some(cleanup), ..) ->
+              Some(PrevEffect(cleanup, Some(deps)))
+            Effect(cleanup: Some(cleanup), ..) ->
+              Some(PrevEffect(cleanup, None))
+            _ -> None
+          }
+
+          let effect =
+            Effect(
+              effect_fn: effect_fn,
+              trigger: trigger,
+              cleanup: None,
+              prev: prev,
+            )
+
+          list.index_map(
+            state.effects,
+            fn(i, e) {
+              case i == index {
+                True -> effect
+                _ -> e
+              }
+            },
           )
         }
-        Error(Nil) -> {
-          // effect doesnt exist, create it
-          let r_effects = list.reverse(state.effects)
-          let assert EffectSpec(effect_fn, deps) = effect
-          let assert Ok(id) = uuid.v4()
-          let updated_effects =
-            list.reverse([Effect(id, effect_fn, deps, None), ..r_effects])
 
-          process.send(reply_with, EffectCreated(id, effect_fn))
+        _ -> {
+          // theres no existing effect at this index, create a new one
+          // this should only occur on the first render
+          let effect =
+            Effect(
+              effect_fn: effect_fn,
+              trigger: trigger,
+              cleanup: None,
+              prev: None,
+            )
 
-          actor.Continue(
-            State(
-              ..state,
-              effects: updated_effects,
-              index_tracker: IndexTracker(
-                ..state.index_tracker,
-                effect: index + 1,
-              ),
-            ),
-          )
+          list.reverse([effect, ..list.reverse(state.effects)])
         }
       }
-    }
 
-    UpdateEffect(effect) -> {
+      io.debug("updated_effects")
+      io.debug(updated_effects)
+
       actor.Continue(
         State(
           ..state,
-          effects: list.map(
-            state.effects,
-            fn(e) {
-              case e, effect {
-                // if the effect id matches, update it to the new effect
-                Effect(prev_effect_id, ..), Effect(new_effect_id, ..) if prev_effect_id == new_effect_id ->
-                  effect
-                _, _ -> e
-              }
-            },
-          ),
+          effects: updated_effects,
+          index_tracker: IndexTracker(..state.index_tracker, effect: index + 1),
         ),
       )
+    }
+
+    ProcessEffects -> {
+      let effects =
+        list.map(
+          state.effects,
+          fn(effect) {
+            let Effect(trigger: trigger, prev: prev, ..) = effect
+
+            case trigger {
+              // trigger effect on every update
+              OnUpdate -> run_effect(effect)
+              // only trigger the update on the first render and when the dependencies change
+              WithDependencies(deps) -> {
+                case prev {
+                  Some(PrevEffect(deps: Some(prev_deps), ..)) -> {
+                    // zip deps together and compare each one with the previous to see if they are equal
+                    case list.strict_zip(prev_deps, deps) {
+                      Error(list.LengthMismatch) -> run_effect(effect)
+                      Ok(zipped_deps) -> {
+                        case
+                          list.all(
+                            zipped_deps,
+                            fn(z) {
+                              let #(a, b) = z
+                              a == b
+                            },
+                          )
+                        {
+                          True -> effect
+                          _ -> run_effect(effect)
+                        }
+                      }
+                    }
+                  }
+
+                  _ -> run_effect(effect)
+                }
+              }
+              _ -> effect
+            }
+          },
+        )
+
+      actor.Continue(State(..state, effects: effects))
     }
 
     PushEventHandler(reply_with, handler) -> {
@@ -193,8 +289,12 @@ fn handle_message(message: Message, state: State) -> actor.Next(State) {
   }
 }
 
-pub fn start(ws: Option(WebSocket), live_render_fn) {
-  let assert Ok(socket) =
+pub fn start(
+  ws: Option(WebSocket),
+  liveview: Option(Element),
+  live_renderer: Option(Renderer),
+) {
+  let assert Ok(actor) =
     actor.start(
       State(
         index_tracker: IndexTracker(reducer: 0, effect: 0),
@@ -202,55 +302,168 @@ pub fn start(ws: Option(WebSocket), live_render_fn) {
         effects: [],
         handlers: [],
         ws: ws,
-        live_render_fn: live_render_fn,
+        render_in_progress: False,
+        render_waiting: False,
+        view: liveview,
+        renderer: live_renderer,
       ),
       handle_message,
     )
 
-  socket
+  actor
 }
 
-pub fn stop(socket) {
-  process.send(socket, Shutdown)
+pub fn stop(actor) {
+  process.send(actor, Shutdown)
 }
 
-pub fn get_socket(socket) {
-  process.call(socket, GetState(_), 100)
+fn get_state(actor) {
+  process.call(actor, GetState(_), 100)
 }
 
-pub fn get_handler(socket, id) {
-  process.call(socket, GetEventHandler(_, id), 100)
+fn update_state(actor, updater: fn(State) -> State) {
+  process.send(actor, UpdateState(updater))
 }
 
-pub fn render_context(socket: Socket) {
+pub fn matches_websocket(actor, websocket) {
+  case get_state(actor) {
+    State(ws: Some(ws), ..) -> ws == websocket
+    _ -> False
+  }
+}
+
+pub fn push_render_waiting(actor) {
+  update_state(actor, fn(state) { State(..state, render_waiting: True) })
+}
+
+pub fn pop_render_waiting(actor) {
+  case get_state(actor) {
+    State(render_waiting: True, ..) -> {
+      update_state(actor, fn(state) { State(..state, render_waiting: False) })
+      True
+    }
+    _ -> False
+  }
+}
+
+pub fn set_render_in_progress(actor, render_in_progress) {
+  update_state(
+    actor,
+    fn(state) { State(..state, render_in_progress: render_in_progress) },
+  )
+}
+
+pub fn request_live_update(actor) {
+  case get_state(actor) {
+    State(
+      render_in_progress: False,
+      view: Some(view),
+      renderer: Some(renderer),
+      ..,
+    ) -> {
+      // no update in progress, kick off an update immediately
+      async_render_update(actor, view, renderer)
+      Nil
+    }
+    _ -> {
+      // a render is already in progress, set render_waiting to True
+      update_state(actor, fn(state) { State(..state, render_waiting: True) })
+    }
+  }
+}
+
+fn update_to_json(html: String) -> String {
+  array(["update", html], of: json.string)
+  |> json.to_string
+}
+
+fn process_effects(actor) {
+  process.send(actor, ProcessEffects)
+}
+
+fn async_render_update(
+  actor,
+  view,
+  renderer render: fn(Element, Socket) -> String,
+) {
+  process.start(
+    fn() {
+      set_render_in_progress(actor, True)
+      let body = render(view, get_socket(actor))
+
+      process_effects(actor)
+
+      case get_state(actor).ws {
+        Some(ws) -> {
+          let _ = websocket.send(ws, TextMessage(update_to_json(body)))
+        }
+        _ -> Nil
+      }
+
+      case get_state(actor).render_waiting {
+        True -> {
+          async_render_update(actor, view, render)
+          Nil
+        }
+        _ -> Nil
+      }
+
+      set_render_in_progress(actor, False)
+
+      Nil
+    },
+    False,
+  )
+}
+
+pub fn get_handler(actor, id) {
+  process.call(actor, GetEventHandler(_, id), 100)
+}
+
+fn run_effect(effect) {
+  let Effect(effect_fn, prev: prev, ..) = effect
+
+  // run the previous effect's cleanup function if it exists
+  prev
+  |> option.map(fn(prev_effect) {
+    let PrevEffect(cleanup: cleanup, deps: deps) = prev_effect
+
+    case cleanup {
+      EffectCleanup(cleanup_fn) -> cleanup_fn()
+      _ -> Nil
+    }
+  })
+
+  // run the effect, capture the cleanup function
+  let cleanup = effect_fn()
+
+  // update the effect with the cleanup function
+  Effect(..effect, cleanup: Some(cleanup))
+}
+
+pub fn get_socket(actor: SocketActor) {
   // reset for new render cycle
-  process.send(socket, ResetContext)
+  process.send(actor, ResetContext)
 
   let fetch_or_create_reducer = fn(reducer) {
-    process.call(socket, FetchOrCreateReducer(_, reducer), 100)
+    process.call(actor, FetchOrCreateReducer(_, reducer), 100)
   }
 
   let push_event_handler = fn(handler) {
-    process.call(socket, PushEventHandler(_, handler), 100)
+    process.call(actor, PushEventHandler(_, handler), 100)
   }
 
-  let get_or_create_effect = fn(effect) {
-    process.call(socket, FetchOrCreateEffect(_, effect), 100)
-  }
+  let push_effect = fn(effect) { process.send(actor, PushEffect(effect)) }
 
-  let update_effect = fn(effect) { process.send(socket, UpdateEffect(effect)) }
-
-  RenderContext(
+  Socket(
     fetch_or_create_reducer: fetch_or_create_reducer,
     push_event_handler: push_event_handler,
-    render_update: fn() -> Nil {
-      case get_socket(socket) {
-        State(live_render_fn: Some(live_render_fn), ..) ->
-          live_render_fn(socket)
-        _ -> Nil
-      }
+    request_live_update: fn() { request_live_update(actor) },
+    push_effect: push_effect,
+    set_render_in_progress: fn(render_in_progress) {
+      set_render_in_progress(actor, render_in_progress)
     },
-    get_or_create_effect: get_or_create_effect,
-    update_effect: update_effect,
+    push_render_waiting: fn() { push_render_waiting(actor) },
+    pop_render_waiting: fn() { pop_render_waiting(actor) },
   )
 }

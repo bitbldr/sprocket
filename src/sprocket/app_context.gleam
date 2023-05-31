@@ -1,21 +1,20 @@
 import gleam/otp/actor
 import gleam/erlang/process.{Subject}
 import gleam/list
-import gleam/option
-import sprocket/socket.{Socket, WebSocket}
+import sprocket/socket.{SocketActor, WebSocket}
 
 pub type AppContext =
   Subject(Message)
 
 pub type State {
-  State(cassette: List(Socket))
+  State(cassette: List(SocketActor))
 }
 
 pub type Message {
   Shutdown
-  PushSocket(socket: Socket)
-  GetSocket(reply_with: Subject(Result(Socket, Nil)), ws: WebSocket)
-  PopSocket(reply_with: Subject(Result(Socket, Nil)), ws: WebSocket)
+  PushSocket(socket: SocketActor)
+  GetSocket(reply_with: Subject(Result(SocketActor, Nil)), ws: WebSocket)
+  PopSocket(reply_with: Subject(Result(SocketActor, Nil)), ws: WebSocket)
 }
 
 fn handle_message(message: Message, state: State) -> actor.Next(State) {
@@ -25,19 +24,12 @@ fn handle_message(message: Message, state: State) -> actor.Next(State) {
     PushSocket(socket) -> {
       let r_sockets = list.reverse(state.cassette)
       let updated_sockets = list.reverse([socket, ..r_sockets])
-      actor.Continue(State(..state, cassette: updated_sockets))
+      actor.Continue(State(cassette: updated_sockets))
     }
 
     GetSocket(reply_with, ws) -> {
       let skt =
-        list.find(
-          state.cassette,
-          fn(s) {
-            socket.get_socket(s).ws
-            |> option.map(fn(s) { s == ws })
-            |> option.unwrap(False)
-          },
-        )
+        list.find(state.cassette, fn(s) { socket.matches_websocket(s, ws) })
 
       process.send(reply_with, skt)
 
@@ -46,14 +38,7 @@ fn handle_message(message: Message, state: State) -> actor.Next(State) {
 
     PopSocket(reply_with, ws) -> {
       let socket =
-        list.find(
-          state.cassette,
-          fn(s) {
-            socket.get_socket(s).ws
-            |> option.map(fn(s) { s == ws })
-            |> option.unwrap(False)
-          },
-        )
+        list.find(state.cassette, fn(s) { socket.matches_websocket(s, ws) })
 
       process.send(reply_with, socket)
 
@@ -64,7 +49,7 @@ fn handle_message(message: Message, state: State) -> actor.Next(State) {
           let updated_cassete =
             list.filter(state.cassette, fn(s) { socket != s })
 
-          let new_state = State(..state, cassette: updated_cassete)
+          let new_state = State(cassette: updated_cassete)
 
           actor.Continue(new_state)
         }
@@ -85,8 +70,8 @@ pub fn stop(app_context) {
   process.send(app_context, Shutdown)
 }
 
-pub fn push_socket(app_context: AppContext, socket: Socket) {
-  process.send(app_context, PushSocket(socket))
+pub fn push_socket(app_context: AppContext, sa: SocketActor) {
+  process.send(app_context, PushSocket(sa))
 }
 
 pub fn get_socket(app_context: AppContext, ws: WebSocket) {

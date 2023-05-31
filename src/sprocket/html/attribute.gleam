@@ -15,6 +15,10 @@ pub fn event(name: String, handler: fn() -> Nil) -> Attribute {
   Event(name, handler)
 }
 
+pub fn on_click(handler: fn() -> Nil) -> Attribute {
+  Event("click", handler)
+}
+
 pub fn class(value: String) -> Attribute {
   attribute("class", value)
 }

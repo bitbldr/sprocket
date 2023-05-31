@@ -9,11 +9,10 @@ import sprocket/app_context.{AppContext}
 pub fn index(_request: Request(String), _ctx: AppContext) -> Response(String) {
   let view = hello_view(HelloViewProps)
 
-  let socket = socket.start(None, None)
-  let context = socket.render_context(socket)
-  let body = render(view, context)
+  let agent = socket.start(None, None, None)
+  let body = render(view, socket.get_socket(agent))
 
-  socket.stop(socket)
+  socket.stop(agent)
 
   response.new(200)
   |> response.set_body(body)

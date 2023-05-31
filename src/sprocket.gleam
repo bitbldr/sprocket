@@ -6,7 +6,7 @@ import gleam/result
 import gleam/option.{Some}
 import gleam/erlang/os
 import gleam/erlang/process
-import gleam/json.{array}
+import gleam/json
 import gleam/dynamic.{field}
 import mist
 import mist/websocket
@@ -77,11 +77,8 @@ fn websocket_service(ctx: AppContext) {
         io.println("New client joined")
 
         case app_context.get_socket(ctx, ws) {
-          Ok(socket) -> {
-            option.map(
-              socket.get_socket(socket).live_render_fn,
-              fn(live_render_fn) { live_render_fn(socket) },
-            )
+          Ok(actor) -> {
+            socket.request_live_update(actor)
 
             Nil
           }
@@ -126,16 +123,9 @@ fn websocket_service(ctx: AppContext) {
   // Here you can gain access to the `Subject` to send message to
   // with:
   |> websocket.on_init(fn(ws) {
-    let live_render_fn = fn(socket: Socket) {
-      let view = hello_view(HelloViewProps)
-      let context = socket.render_context(socket)
-      let body = render(view, context)
-
-      let _ = websocket.send(ws, TextMessage(update_to_json(body)))
-    }
-
-    let socket = socket.start(Some(ws), Some(live_render_fn))
-    app_context.push_socket(ctx, socket)
+    let view = hello_view(HelloViewProps)
+    let socket_actor = socket.start(Some(ws), Some(view), Some(render))
+    app_context.push_socket(ctx, socket_actor)
 
     io.println("Client connected!")
     io.debug(ws)
@@ -157,11 +147,6 @@ fn load_port() -> Int {
   os.get_env("PORT")
   |> result.then(int.parse)
   |> result.unwrap(3000)
-}
-
-fn update_to_json(html: String) -> String {
-  array(["update", html], of: json.string)
-  |> json.to_string
 }
 
 type Event {

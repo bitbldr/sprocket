@@ -1,8 +1,10 @@
+import gleam/io
 import gleam/erlang
 import gleam/int
 import gleam/option.{None, Option, Some}
 import sprocket/component.{
-  Component, ComponentContext, EffectCleanup, OnMount, State, effect, reducer,
+  Component, ComponentContext, EffectCleanup, NoCleanup, OnUpdate, State,
+  WithDependencies, effect, reducer,
 }
 import sprocket/html.{text}
 import example/utils/timer.{interval}
@@ -37,21 +39,31 @@ pub fn clock(props: ClockProps) {
 
     let State(Model(time: time, ..), dispatch) = reducer(ctx, initial(), update)
 
-    effect(
-      ctx,
-      fn() {
-        let cancel =
-          interval(
-            1000,
-            fn() { dispatch(UpdateTime(erlang.system_time(erlang.Second))) },
-          )
+    // effect(
+    //   ctx,
+    //   fn() {
+    //     let cancel =
+    //       interval(
+    //         1000,
+    //         fn() { dispatch(UpdateTime(erlang.system_time(erlang.Second))) },
+    //       )
 
-        EffectCleanup(fn() { cancel() })
-      },
-      OnMount,
-    )
+    //     EffectCleanup(fn() { cancel() })
+    //   },
+    //   WithDependencies([]),
+    // )
 
     let current_time = int.to_string(time)
+
+    // TODO: not working, infinite loop
+    // effect(
+    //   ctx,
+    //   fn() {
+    //     io.println(current_time)
+    //     NoCleanup
+    //   },
+    //   OnUpdate,
+    // )
 
     case label {
       Some(label) -> [text(label), text(current_time)]

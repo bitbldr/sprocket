@@ -1,34 +1,44 @@
 import gleam/list
 import gleam/string
-import gleam/option.{Option}
-import sprocket/component.{Component,
-  ComponentContext, Effect, Element, RawHtml}
+import sprocket/component.{
+  Component, ComponentContext, EffectSpec, Element, RawHtml,
+}
 import sprocket/html/attribute.{Attribute, Event, Key}
 import gleam/dynamic.{Dynamic}
+import sprocket/socket.{Socket}
 
-pub type RenderContext {
-  RenderContext(
-    fetch_or_create_reducer: fn(fn() -> Dynamic) -> Dynamic,
-    push_event_handler: fn(fn() -> Nil) -> String,
-    render_update: fn() -> Nil,
-    get_or_create_effect: fn(Effect) -> Effect,
-    update_effect: fn(Effect) -> Nil,
-  )
-}
+pub fn render(el: Element, socket: Socket) -> String {
+  // let Socket(run_effects: run_effects, ..) = socket
 
-pub fn render(el: Element, ctx: RenderContext) -> String {
-  case el {
-    Element(tag, attrs, children) -> element(tag, attrs, children, ctx)
-    Component(c) -> component(c, ctx)
+  // render_count > 1000 && panic("Possible infinite rerender loop")
+
+  let rendered = case el {
+    Element(tag, attrs, children) -> element(tag, attrs, children, socket)
+    Component(c) -> component(c, socket)
     RawHtml(raw_html) -> raw_html
   }
+
+  // run_effects()
+
+  // // rerender until there are no more pending renders
+  // case has_pending_render() {
+  //   True -> {
+  //     // // keep track of how many renders we've done to indicate
+  //     // // if a possible rerender infinite loop exits
+  //     // render(el, Socket(..socket, render_count: render_count + 1))
+  //     render_update()
+  //   }
+  //   _ -> Nil
+  // }
+
+  rendered
 }
 
 fn element(
   tag: String,
   attrs: List(Attribute),
   children: List(Element),
-  ctx: RenderContext,
+  socket: Socket,
 ) {
   let rendered_attrs =
     list.fold(
@@ -44,7 +54,7 @@ fn element(
           Key(k) -> string.concat([acc, " key=\"", k, "\""])
 
           Event(name, handler) -> {
-            let id = ctx.push_event_handler(handler)
+            let id = socket.push_event_handler(handler)
             string.concat([acc, " data-event=\"", name, "=", id, "\""])
           }
         }
@@ -53,20 +63,19 @@ fn element(
 
   let inner_html =
     children
-    |> list.map(fn(child) { render(child, ctx) })
+    |> list.map(fn(child) { render(child, socket) })
     |> string.concat
 
   ["<", tag, rendered_attrs, ">", inner_html, "</", tag, ">"]
   |> string.concat()
 }
 
-fn component(fc: fn(ComponentContext) -> List(Element), ctx: RenderContext) {
+fn component(fc: fn(ComponentContext) -> List(Element), socket: Socket) {
   fc(ComponentContext(
-    fetch_or_create_reducer: ctx.fetch_or_create_reducer,
-    render_update: ctx.render_update,
-    get_or_create_effect: ctx.get_or_create_effect,
-    update_effect: ctx.update_effect,
+    fetch_or_create_reducer: socket.fetch_or_create_reducer,
+    request_live_update: socket.request_live_update,
+    push_effect: socket.push_effect,
   ))
-  |> list.map(fn(child) { render(child, ctx) })
+  |> list.map(fn(child) { render(child, socket) })
   |> string.concat
 }
