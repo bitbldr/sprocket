@@ -6,7 +6,7 @@ import gleam/result
 import gleam/option.{Some}
 import gleam/erlang/os
 import gleam/erlang/process
-import gleam/json
+import gleam/json.{array}
 import gleam/dynamic.{field}
 import mist
 import mist/websocket
@@ -17,7 +17,7 @@ import gleam/http/response.{Response}
 import gleam/http.{Get}
 import gleam/bit_builder.{BitBuilder}
 import sprocket/render.{render}
-import sprocket/socket.{Socket}
+import sprocket/socket.{Updater}
 import example/hello_view.{HelloViewProps, hello_view}
 import example/routes
 import gleam/http/service.{Service}
@@ -123,8 +123,16 @@ fn websocket_service(ctx: AppContext) {
   // Here you can gain access to the `Subject` to send message to
   // with:
   |> websocket.on_init(fn(ws) {
+    let updater =
+      Updater(send: fn(body) {
+        let _ = websocket.send(ws, TextMessage(update_to_json(body)))
+        Ok(Nil)
+      })
+
     let view = hello_view(HelloViewProps)
-    let socket_actor = socket.start(Some(ws), Some(view), Some(render))
+
+    let socket_actor =
+      socket.start(Some(ws), Some(view), Some(render), Some(updater))
     app_context.push_socket(ctx, socket_actor)
 
     io.println("Client connected!")
@@ -133,7 +141,7 @@ fn websocket_service(ctx: AppContext) {
     Nil
   })
   |> websocket.on_close(fn(ws) {
-    app_context.pop_socket(ctx, ws)
+    let assert Ok(_) = app_context.pop_socket(ctx, ws)
 
     io.println("Disconnected!")
     io.debug(ws)
@@ -162,4 +170,9 @@ fn decode_event(body: String) {
       field("id", dynamic.string),
     ),
   )
+}
+
+fn update_to_json(html: String) -> String {
+  array(["update", html], of: json.string)
+  |> json.to_string
 }

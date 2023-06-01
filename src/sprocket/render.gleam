@@ -6,28 +6,13 @@ import gleam/dynamic
 import sprocket/socket.{Socket}
 
 pub fn render(el: Element, socket: Socket) -> String {
-  // let Socket(run_effects: run_effects, ..) = socket
-
-  // render_count > 1000 && panic("Possible infinite rerender loop")
+  // TODO: render_count > SOME_THRESHOLD then panic("Possible infinite rerender loop")
 
   let rendered = case el {
     Element(tag, attrs, children) -> element(tag, attrs, children, socket)
     Component(c) -> component(c, socket)
     RawHtml(raw_html) -> raw_html
   }
-
-  // run_effects()
-
-  // // rerender until there are no more pending renders
-  // case has_pending_render() {
-  //   True -> {
-  //     // // keep track of how many renders we've done to indicate
-  //     // // if a possible rerender infinite loop exits
-  //     // render(el, Socket(..socket, render_count: render_count + 1))
-  //     render_update()
-  //   }
-  //   _ -> Nil
-  // }
 
   rendered
 }

@@ -5,13 +5,11 @@ import gleam/option.{None, Option, Some}
 import gleam/dynamic.{Dynamic}
 import glisten/handler.{HandlerMessage}
 import sprocket/uuid
+import sprocket/logger
 import sprocket/component.{
   Effect, EffectCleanup, EffectDependencies, EffectTrigger, Element, Hook,
   NoCleanup, OnUpdate, WithDependencies,
 }
-import mist/websocket
-import mist/internal/websocket.{TextMessage} as internal_websocket
-import gleam/json.{array}
 
 pub type Socket {
   Socket(
@@ -30,15 +28,19 @@ pub type IndexTracker {
   IndexTracker(reducer: Int, effect: Int)
 }
 
+pub type HookResult {
+  EmptyResult
+  EffectResult(cleanup: EffectCleanup, deps: Option(EffectDependencies))
+}
+
 pub type WebSocket =
   Subject(HandlerMessage)
 
 pub type Renderer =
   fn(Element, Socket) -> String
 
-pub type HookResult {
-  EmptyResult
-  EffectResult(cleanup: EffectCleanup, deps: Option(EffectDependencies))
+pub type Updater {
+  Updater(send: fn(String) -> Result(Nil, Nil))
 }
 
 pub type State {
@@ -53,6 +55,7 @@ pub type State {
     render_waiting: Bool,
     view: Option(Element),
     renderer: Option(Renderer),
+    updater: Option(Updater),
   )
 }
 
@@ -167,23 +170,24 @@ fn handle_message(message: Message, state: State) -> actor.Next(State) {
 
 pub fn start(
   ws: Option(WebSocket),
-  liveview: Option(Element),
-  live_renderer: Option(Renderer),
+  view: Option(Element),
+  renderer: Option(Renderer),
+  updater: Option(Updater),
 ) {
   let assert Ok(actor) =
     actor.start(
       State(
         index_tracker: IndexTracker(reducer: 0, effect: 0),
         reducers: [],
-        // effects: [],
         pending_hooks: [],
         hook_results: None,
         handlers: [],
         ws: ws,
         render_in_progress: False,
         render_waiting: False,
-        view: liveview,
-        renderer: live_renderer,
+        view: view,
+        renderer: renderer,
+        updater: updater,
       ),
       handle_message,
     )
@@ -251,11 +255,6 @@ pub fn request_live_update(actor) {
   }
 }
 
-fn update_to_json(html: String) -> String {
-  array(["update", html], of: json.string)
-  |> json.to_string
-}
-
 fn async_render_update(
   actor,
   view,
@@ -266,12 +265,17 @@ fn async_render_update(
       let body = render(view, get_socket(actor))
       process_pending_hooks(actor)
 
-      case get_state(actor).ws {
-        Some(ws) -> {
-          let _ = websocket.send(ws, TextMessage(update_to_json(body)))
+      // send the rendered update using updater
+      get_state(actor).updater
+      |> option.map(fn(updater) {
+        case updater.send(body) {
+          Ok(_) -> Nil
+          Error(_) -> {
+            logger.error("Failed to send update!")
+            Nil
+          }
         }
-        _ -> Nil
-      }
+      })
 
       case pop_render_waiting(actor) {
         True -> {
