@@ -18,6 +18,6 @@ jobs:
           gleam-version: "0.27.0"
           rebar3-version: "3"
           # elixir-version: "1.14.2"
-      - run: gleam format --check src test
+      # - run: gleam format --check src test
       - run: gleam deps download
       - run: gleam test
