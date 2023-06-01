@@ -63,7 +63,7 @@ pub fn clock(props: ClockProps) {
       WithDependencies([]),
     )
 
-    // example effect that runs everytime time changes
+    // example effect that runs everytime the `time` changes and runs a cleanup function
     effect(
       ctx,
       fn() {
