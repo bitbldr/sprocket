@@ -1,7 +1,9 @@
 import gleam/io
 import gleam/erlang
 import gleam/int
+import gleam/string
 import gleam/option.{None, Option, Some}
+import gleam/dynamic
 import sprocket/component.{
   Component, ComponentContext, EffectCleanup, NoCleanup, OnUpdate, State,
   WithDependencies, effect, reducer,
@@ -39,31 +41,42 @@ pub fn clock(props: ClockProps) {
 
     let State(Model(time: time, ..), dispatch) = reducer(ctx, initial(), update)
 
-    // effect(
-    //   ctx,
-    //   fn() {
-    //     let cancel =
-    //       interval(
-    //         1000,
-    //         fn() { dispatch(UpdateTime(erlang.system_time(erlang.Second))) },
-    //       )
-
-    //     EffectCleanup(fn() { cancel() })
-    //   },
-    //   WithDependencies([]),
-    // )
-
     let current_time = int.to_string(time)
 
-    // TODO: not working, infinite loop
-    // effect(
-    //   ctx,
-    //   fn() {
-    //     io.println(current_time)
-    //     NoCleanup
-    //   },
-    //   OnUpdate,
-    // )
+    // exmaple effect that runs on every update
+    effect(
+      ctx,
+      fn() {
+        io.println(string.append("Current time: ", current_time))
+        NoCleanup
+      },
+      OnUpdate,
+    )
+
+    // example effect with an empty list of dependencies, runs once on mount
+    effect(
+      ctx,
+      fn() {
+        io.println("Clock component mounted!")
+        NoCleanup
+      },
+      WithDependencies([]),
+    )
+
+    // example effect that runs everytime time changes
+    effect(
+      ctx,
+      fn() {
+        let cancel =
+          interval(
+            1000,
+            fn() { dispatch(UpdateTime(erlang.system_time(erlang.Second))) },
+          )
+
+        EffectCleanup(fn() { cancel() })
+      },
+      WithDependencies([dynamic.from(time)]),
+    )
 
     case label {
       Some(label) -> [text(label), text(current_time)]

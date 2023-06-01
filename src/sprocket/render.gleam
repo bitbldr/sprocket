@@ -1,10 +1,8 @@
 import gleam/list
 import gleam/string
-import sprocket/component.{
-  Component, ComponentContext, EffectSpec, Element, RawHtml,
-}
+import sprocket/component.{Component, ComponentContext, Element, RawHtml}
 import sprocket/html/attribute.{Attribute, Event, Key}
-import gleam/dynamic.{Dynamic}
+import gleam/dynamic
 import sprocket/socket.{Socket}
 
 pub fn render(el: Element, socket: Socket) -> String {
@@ -74,7 +72,7 @@ fn component(fc: fn(ComponentContext) -> List(Element), socket: Socket) {
   fc(ComponentContext(
     fetch_or_create_reducer: socket.fetch_or_create_reducer,
     request_live_update: socket.request_live_update,
-    push_effect: socket.push_effect,
+    push_hook: socket.push_hook,
   ))
   |> list.map(fn(child) { render(child, socket) })
   |> string.concat

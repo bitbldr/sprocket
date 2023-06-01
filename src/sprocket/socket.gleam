@@ -1,14 +1,13 @@
 import gleam/otp/actor
 import gleam/erlang/process.{Subject}
 import gleam/list
-import gleam/io
 import gleam/option.{None, Option, Some}
 import gleam/dynamic.{Dynamic}
 import glisten/handler.{HandlerMessage}
 import sprocket/uuid
 import sprocket/component.{
-  EffectCleanup, EffectDependencies, EffectSpec, EffectTrigger, Element,
-  OnUpdate, WithDependencies,
+  Effect, EffectCleanup, EffectDependencies, EffectTrigger, Element, Hook,
+  NoCleanup, OnUpdate, WithDependencies,
 }
 import mist/websocket
 import mist/internal/websocket.{TextMessage} as internal_websocket
@@ -19,7 +18,7 @@ pub type Socket {
     fetch_or_create_reducer: fn(fn() -> Dynamic) -> Dynamic,
     push_event_handler: fn(fn() -> Nil) -> String,
     request_live_update: fn() -> Nil,
-    push_effect: fn(EffectSpec) -> Nil,
+    push_hook: fn(Hook) -> Nil,
     set_render_in_progress: fn(Bool) -> Nil,
     push_render_waiting: fn() -> Nil,
     pop_render_waiting: fn() -> Bool,
@@ -37,27 +36,20 @@ pub type IndexTracker {
 pub type WebSocket =
   Subject(HandlerMessage)
 
-pub type PrevEffect {
-  PrevEffect(cleanup: EffectCleanup, deps: Option(EffectDependencies))
-}
-
-pub type Effect {
-  Effect(
-    effect_fn: fn() -> EffectCleanup,
-    trigger: EffectTrigger,
-    cleanup: Option(EffectCleanup),
-    prev: Option(PrevEffect),
-  )
-}
-
 pub type Renderer =
   fn(Element, Socket) -> String
+
+pub type HookResult {
+  EmptyResult
+  EffectResult(cleanup: EffectCleanup, deps: Option(EffectDependencies))
+}
 
 pub type State {
   State(
     index_tracker: IndexTracker,
     reducers: List(Dynamic),
-    effects: List(Effect),
+    pending_hooks: List(Hook),
+    hook_results: Option(List(HookResult)),
     handlers: List(EventHandler),
     ws: Option(WebSocket),
     render_in_progress: Bool,
@@ -75,13 +67,11 @@ pub type Message {
   Shutdown
   GetState(reply_with: Subject(State))
   UpdateState(updater: fn(State) -> State)
-  ResetContext
+  ResetRenderContext
   FetchOrCreateReducer(
     reply_with: Subject(Dynamic),
     reducer_init: fn() -> Dynamic,
   )
-  PushEffect(effect: EffectSpec)
-  ProcessEffects
   PushEventHandler(reply_with: Subject(String), handler: fn() -> Nil)
   GetEventHandler(reply_with: Subject(Result(EventHandler, Nil)), id: String)
 }
@@ -101,12 +91,13 @@ fn handle_message(message: Message, state: State) -> actor.Next(State) {
       |> actor.Continue()
     }
 
-    ResetContext ->
+    ResetRenderContext ->
       actor.Continue(
         State(
           ..state,
           index_tracker: IndexTracker(reducer: 0, effect: 0),
           handlers: [],
+          pending_hooks: [],
         ),
       )
 
@@ -150,118 +141,6 @@ fn handle_message(message: Message, state: State) -> actor.Next(State) {
       }
     }
 
-    PushEffect(EffectSpec(effect_fn: effect_fn, trigger: trigger)) -> {
-      let index = state.index_tracker.effect
-
-      // find previous effect at this index and set the prev field to it.
-      // cleanup will always be None here as we are pushing a new effect and will
-      // be set after the effect is run.
-      let updated_effects = case list.at(state.effects, index) {
-        Ok(prev_effect) -> {
-          // TODO: learn how to actually use panic
-          // trigger == prev_effect.trigger || panic(
-          //   "Effect trigger mismatch! Effect triggers must be consistent across renders.",
-          // )
-
-          let prev = case prev_effect {
-            Effect(trigger: WithDependencies(deps), cleanup: Some(cleanup), ..) ->
-              Some(PrevEffect(cleanup, Some(deps)))
-            Effect(cleanup: Some(cleanup), ..) ->
-              Some(PrevEffect(cleanup, None))
-            _ -> None
-          }
-
-          let effect =
-            Effect(
-              effect_fn: effect_fn,
-              trigger: trigger,
-              cleanup: None,
-              prev: prev,
-            )
-
-          list.index_map(
-            state.effects,
-            fn(i, e) {
-              case i == index {
-                True -> effect
-                _ -> e
-              }
-            },
-          )
-        }
-
-        _ -> {
-          // theres no existing effect at this index, create a new one
-          // this should only occur on the first render
-          let effect =
-            Effect(
-              effect_fn: effect_fn,
-              trigger: trigger,
-              cleanup: None,
-              prev: None,
-            )
-
-          list.reverse([effect, ..list.reverse(state.effects)])
-        }
-      }
-
-      io.debug("updated_effects")
-      io.debug(updated_effects)
-
-      actor.Continue(
-        State(
-          ..state,
-          effects: updated_effects,
-          index_tracker: IndexTracker(..state.index_tracker, effect: index + 1),
-        ),
-      )
-    }
-
-    ProcessEffects -> {
-      let effects =
-        list.map(
-          state.effects,
-          fn(effect) {
-            let Effect(trigger: trigger, prev: prev, ..) = effect
-
-            case trigger {
-              // trigger effect on every update
-              OnUpdate -> run_effect(effect)
-              // only trigger the update on the first render and when the dependencies change
-              WithDependencies(deps) -> {
-                case prev {
-                  Some(PrevEffect(deps: Some(prev_deps), ..)) -> {
-                    // zip deps together and compare each one with the previous to see if they are equal
-                    case list.strict_zip(prev_deps, deps) {
-                      Error(list.LengthMismatch) -> run_effect(effect)
-                      Ok(zipped_deps) -> {
-                        case
-                          list.all(
-                            zipped_deps,
-                            fn(z) {
-                              let #(a, b) = z
-                              a == b
-                            },
-                          )
-                        {
-                          True -> effect
-                          _ -> run_effect(effect)
-                        }
-                      }
-                    }
-                  }
-
-                  _ -> run_effect(effect)
-                }
-              }
-              _ -> effect
-            }
-          },
-        )
-
-      actor.Continue(State(..state, effects: effects))
-    }
-
     PushEventHandler(reply_with, handler) -> {
       let assert Ok(id) = uuid.v4()
 
@@ -299,7 +178,9 @@ pub fn start(
       State(
         index_tracker: IndexTracker(reducer: 0, effect: 0),
         reducers: [],
-        effects: [],
+        // effects: [],
+        pending_hooks: [],
+        hook_results: None,
         handlers: [],
         ws: ws,
         render_in_progress: False,
@@ -332,11 +213,11 @@ pub fn matches_websocket(actor, websocket) {
   }
 }
 
-pub fn push_render_waiting(actor) {
+fn push_render_waiting(actor) {
   update_state(actor, fn(state) { State(..state, render_waiting: True) })
 }
 
-pub fn pop_render_waiting(actor) {
+fn pop_render_waiting(actor) {
   case get_state(actor) {
     State(render_waiting: True, ..) -> {
       update_state(actor, fn(state) { State(..state, render_waiting: False) })
@@ -346,7 +227,7 @@ pub fn pop_render_waiting(actor) {
   }
 }
 
-pub fn set_render_in_progress(actor, render_in_progress) {
+fn set_render_in_progress(actor, render_in_progress) {
   update_state(
     actor,
     fn(state) { State(..state, render_in_progress: render_in_progress) },
@@ -362,12 +243,13 @@ pub fn request_live_update(actor) {
       ..,
     ) -> {
       // no update in progress, kick off an update immediately
+      set_render_in_progress(actor, True)
       async_render_update(actor, view, renderer)
       Nil
     }
     _ -> {
       // a render is already in progress, set render_waiting to True
-      update_state(actor, fn(state) { State(..state, render_waiting: True) })
+      push_render_waiting(actor)
     }
   }
 }
@@ -377,10 +259,6 @@ fn update_to_json(html: String) -> String {
   |> json.to_string
 }
 
-fn process_effects(actor) {
-  process.send(actor, ProcessEffects)
-}
-
 fn async_render_update(
   actor,
   view,
@@ -388,10 +266,8 @@ fn async_render_update(
 ) {
   process.start(
     fn() {
-      set_render_in_progress(actor, True)
       let body = render(view, get_socket(actor))
-
-      process_effects(actor)
+      process_pending_hooks(actor)
 
       case get_state(actor).ws {
         Some(ws) -> {
@@ -400,15 +276,15 @@ fn async_render_update(
         _ -> Nil
       }
 
-      case get_state(actor).render_waiting {
+      case pop_render_waiting(actor) {
         True -> {
           async_render_update(actor, view, render)
           Nil
         }
-        _ -> Nil
+        _ -> {
+          set_render_in_progress(actor, False)
+        }
       }
-
-      set_render_in_progress(actor, False)
 
       Nil
     },
@@ -420,30 +296,123 @@ pub fn get_handler(actor, id) {
   process.call(actor, GetEventHandler(_, id), 100)
 }
 
-fn run_effect(effect) {
-  let Effect(effect_fn, prev: prev, ..) = effect
+fn push_hook(actor, hook: Hook) {
+  update_state(
+    actor,
+    fn(state) {
+      State(
+        ..state,
+        pending_hooks: list.reverse([hook, ..list.reverse(state.pending_hooks)]),
+      )
+    },
+  )
+}
 
-  // run the previous effect's cleanup function if it exists
-  prev
-  |> option.map(fn(prev_effect) {
-    let PrevEffect(cleanup: cleanup, deps: deps) = prev_effect
+fn process_pending_hooks(actor) {
+  // process.send(actor, ProcessEffects)
 
-    case cleanup {
-      EffectCleanup(cleanup_fn) -> cleanup_fn()
-      _ -> Nil
+  let pending_hooks = get_state(actor).pending_hooks
+
+  // prev_hook_results will be None on the first render cycle
+  let prev_hook_results = get_state(actor).hook_results
+
+  let hook_results =
+    pending_hooks
+    |> list.index_map(fn(i, hook: Hook) {
+      let prev_hook_result: Option(HookResult) =
+        prev_hook_results
+        |> option.then(fn(r) {
+          case list.at(r, i) {
+            Ok(hook_result) -> Some(hook_result)
+            _ -> None
+          }
+        })
+
+      case hook {
+        Effect(effect_fn, trigger) -> {
+          // run the effect, returning the effect result
+          run_effect(effect_fn, trigger, prev_hook_result)
+        }
+        _ -> EmptyResult
+      }
+    })
+
+  update_state(
+    actor,
+    fn(state) {
+      State(..state, pending_hooks: [], hook_results: Some(hook_results))
+    },
+  )
+}
+
+fn run_effect(
+  effect_fn: fn() -> EffectCleanup,
+  trigger: EffectTrigger,
+  prev_hook_result: Option(HookResult),
+) -> HookResult {
+  case trigger {
+    // trigger effect on every update
+    OnUpdate -> {
+      case prev_hook_result {
+        Some(EffectResult(cleanup: cleanup, ..)) ->
+          maybe_cleanup_and_rerun_effect(cleanup, effect_fn, None)
+        _ -> EffectResult(effect_fn(), None)
+      }
     }
-  })
 
-  // run the effect, capture the cleanup function
-  let cleanup = effect_fn()
+    // only trigger the update on the first render and when the dependencies change
+    WithDependencies(deps) -> {
+      case prev_hook_result {
+        Some(EffectResult(cleanup: cleanup, deps: Some(prev_deps))) -> {
+          // zip deps together and compare each one with the previous to see if they are equal
+          case list.strict_zip(prev_deps, deps) {
+            // TODO: this should never occur and should issue a warning/error
+            // dependency lists are different sizes, they must have changed
+            Error(list.LengthMismatch) ->
+              maybe_cleanup_and_rerun_effect(cleanup, effect_fn, Some(deps))
 
-  // update the effect with the cleanup function
-  Effect(..effect, cleanup: Some(cleanup))
+            Ok(zipped_deps) -> {
+              case
+                list.all(
+                  zipped_deps,
+                  fn(z) {
+                    let #(a, b) = z
+                    a == b
+                  },
+                )
+              {
+                True -> EffectResult(cleanup: cleanup, deps: Some(prev_deps))
+                _ ->
+                  maybe_cleanup_and_rerun_effect(cleanup, effect_fn, Some(deps))
+              }
+            }
+          }
+        }
+
+        _ -> maybe_cleanup_and_rerun_effect(NoCleanup, effect_fn, Some(deps))
+      }
+    }
+    _ -> EmptyResult
+  }
+}
+
+fn maybe_cleanup_and_rerun_effect(
+  cleanup: EffectCleanup,
+  effect_fn: fn() -> EffectCleanup,
+  deps: Option(EffectDependencies),
+) {
+  case cleanup {
+    EffectCleanup(cleanup_fn) -> {
+      cleanup_fn()
+      EffectResult(effect_fn(), deps)
+    }
+    _ -> EffectResult(effect_fn(), deps)
+  }
 }
 
 pub fn get_socket(actor: SocketActor) {
   // reset for new render cycle
-  process.send(actor, ResetContext)
+  process.send(actor, ResetRenderContext)
 
   let fetch_or_create_reducer = fn(reducer) {
     process.call(actor, FetchOrCreateReducer(_, reducer), 100)
@@ -453,13 +422,11 @@ pub fn get_socket(actor: SocketActor) {
     process.call(actor, PushEventHandler(_, handler), 100)
   }
 
-  let push_effect = fn(effect) { process.send(actor, PushEffect(effect)) }
-
   Socket(
     fetch_or_create_reducer: fetch_or_create_reducer,
     push_event_handler: push_event_handler,
     request_live_update: fn() { request_live_update(actor) },
-    push_effect: push_effect,
+    push_hook: push_hook(actor, _),
     set_render_in_progress: fn(render_in_progress) {
       set_render_in_progress(actor, render_in_progress)
     },

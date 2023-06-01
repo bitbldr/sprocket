@@ -26,15 +26,15 @@ pub type EffectTrigger {
   WithDependencies(deps: EffectDependencies)
 }
 
-pub type EffectSpec {
-  EffectSpec(effect_fn: fn() -> EffectCleanup, trigger: EffectTrigger)
+pub type Hook {
+  Effect(effect_fn: fn() -> EffectCleanup, trigger: EffectTrigger)
 }
 
 pub type ComponentContext {
   ComponentContext(
     fetch_or_create_reducer: fn(fn() -> Dynamic) -> Dynamic,
     request_live_update: fn() -> Nil,
-    push_effect: fn(EffectSpec) -> Nil,
+    push_hook: fn(Hook) -> Nil,
   )
 }
 
@@ -105,7 +105,7 @@ pub fn effect(
   effect_fn: fn() -> EffectCleanup,
   trigger: EffectTrigger,
 ) -> Nil {
-  let ComponentContext(push_effect: push_effect, ..) = ctx
+  let ComponentContext(push_hook: push_hook, ..) = ctx
 
-  push_effect(EffectSpec(effect_fn, trigger))
+  push_hook(Effect(effect_fn, trigger))
 }
