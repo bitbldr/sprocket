@@ -19,9 +19,6 @@ pub type Socket {
     push_event_handler: fn(fn() -> Nil) -> String,
     request_live_update: fn() -> Nil,
     push_hook: fn(Hook) -> Nil,
-    set_render_in_progress: fn(Bool) -> Nil,
-    push_render_waiting: fn() -> Nil,
-    pop_render_waiting: fn() -> Bool,
   )
 }
 
@@ -427,10 +424,5 @@ pub fn get_socket(actor: SocketActor) {
     push_event_handler: push_event_handler,
     request_live_update: fn() { request_live_update(actor) },
     push_hook: push_hook(actor, _),
-    set_render_in_progress: fn(render_in_progress) {
-      set_render_in_progress(actor, render_in_progress)
-    },
-    push_render_waiting: fn() { push_render_waiting(actor) },
-    pop_render_waiting: fn() { pop_render_waiting(actor) },
   )
 }
