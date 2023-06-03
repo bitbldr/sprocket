@@ -1,64 +1,90 @@
 import gleam/list
 import gleam/string
-import sprocket/component.{Component, ComponentContext, Element, RawHtml}
 import sprocket/html/attribute.{Attribute, Event, Key}
 import gleam/dynamic
-import sprocket/socket.{Socket}
+import gleam/option.{None}
+import sprocket/socket.{
+  Component, Element, FunctionalComponent, RawHtml, RenderedResult, Socket,
+}
 
-pub fn render(el: Element, socket: Socket) -> String {
-  // TODO: render_count > SOME_THRESHOLD then panic("Possible infinite rerender loop")
-
-  let rendered = case el {
-    Element(tag, attrs, children) -> element(tag, attrs, children, socket)
-    Component(c) -> component(c, socket)
-    RawHtml(raw_html) -> raw_html
-  }
+pub fn render(el: Element) -> String {
+  let RenderedResult(rendered: rendered, ..) =
+    live_render(socket.new(None, None, None, None), el)
 
   rendered
 }
 
+pub fn live_render(socket: Socket, el: Element) -> RenderedResult(String) {
+  // TODO: render_count > SOME_THRESHOLD then panic("Possible infinite rerender loop")
+
+  case el {
+    Element(tag, attrs, children) -> element(socket, tag, attrs, children)
+    Component(c) -> component(socket, c)
+    RawHtml(raw_html) -> RenderedResult(socket, raw_html)
+  }
+}
+
 fn element(
+  socket: Socket,
   tag: String,
   attrs: List(Attribute),
   children: List(Element),
-  socket: Socket,
-) {
-  let rendered_attrs =
+) -> RenderedResult(String) {
+  let RenderedResult(socket, rendered_attrs) =
     list.fold(
       attrs,
-      "",
-      fn(acc, a) {
-        case a {
+      RenderedResult(socket, ""),
+      fn(acc, current) {
+        let RenderedResult(socket, acc) = acc
+
+        case current {
           Attribute(name, value) -> {
             let assert Ok(value) = dynamic.string(value)
-            string.concat([acc, " ", name, "=\"", value, "\""])
+            let rendered = string.concat([acc, " ", name, "=\"", value, "\""])
+            RenderedResult(socket, rendered)
           }
 
-          Key(k) -> string.concat([acc, " key=\"", k, "\""])
+          Key(k) -> {
+            let rendered = string.concat([acc, " key=\"", k, "\""])
+            RenderedResult(socket, rendered)
+          }
 
           Event(name, handler) -> {
-            let id = socket.push_event_handler(handler)
-            string.concat([acc, " data-event=\"", name, "=", id, "\""])
+            let #(socket, id) = socket.push_event_handler(socket, handler)
+            let rendered =
+              string.concat([acc, " data-event=\"", name, "=", id, "\""])
+
+            RenderedResult(socket, rendered)
           }
         }
       },
     )
 
-  let inner_html =
+  let RenderedResult(socket, inner_html) =
     children
-    |> list.map(fn(child) { render(child, socket) })
-    |> string.concat
+    |> list.fold(
+      RenderedResult(socket, ""),
+      fn(acc, child) {
+        let RenderedResult(socket, rendered) = live_render(acc.socket, child)
+        RenderedResult(socket, string.concat([acc.rendered, rendered]))
+      },
+    )
 
-  ["<", tag, rendered_attrs, ">", inner_html, "</", tag, ">"]
-  |> string.concat()
+  let rendered =
+    string.concat(["<", tag, rendered_attrs, ">", inner_html, "</", tag, ">"])
+
+  RenderedResult(socket, rendered)
 }
 
-fn component(fc: fn(ComponentContext) -> List(Element), socket: Socket) {
-  fc(ComponentContext(
-    fetch_or_create_reducer: socket.fetch_or_create_reducer,
-    request_live_update: socket.request_live_update,
-    push_hook: socket.push_hook,
-  ))
-  |> list.map(fn(child) { render(child, socket) })
-  |> string.concat
+fn component(socket: Socket, fc: fn(Socket) -> FunctionalComponent) {
+  let FunctionalComponent(socket, children) = fc(socket)
+
+  children
+  |> list.fold(
+    RenderedResult(socket, ""),
+    fn(acc, child) {
+      let RenderedResult(socket, rendered) = live_render(acc.socket, child)
+      RenderedResult(socket, string.concat([acc.rendered, rendered]))
+    },
+  )
 }

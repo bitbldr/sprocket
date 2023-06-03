@@ -16,8 +16,9 @@ import gleam/http/request.{Request}
 import gleam/http/response.{Response}
 import gleam/http.{Get}
 import gleam/bit_builder.{BitBuilder}
-import sprocket/render.{render}
+import sprocket/render.{live_render}
 import sprocket/socket.{Updater}
+import sprocket/socket_actor
 import example/hello_view.{HelloViewProps, hello_view}
 import example/routes
 import gleam/http/service.{Service}
@@ -78,7 +79,7 @@ fn websocket_service(ctx: AppContext) {
 
         case app_context.get_socket(ctx, ws) {
           Ok(actor) -> {
-            socket.request_live_update(actor)
+            socket_actor.render_update(actor)
 
             Nil
           }
@@ -92,7 +93,7 @@ fn websocket_service(ctx: AppContext) {
 
             case app_context.get_socket(ctx, ws) {
               Ok(socket) -> {
-                case socket.get_handler(socket, event.id) {
+                case socket_actor.get_handler(socket, event.id) {
                   Ok(socket.EventHandler(_, handler)) -> {
                     // call the event handler
                     handler()
@@ -124,16 +125,18 @@ fn websocket_service(ctx: AppContext) {
   // with:
   |> websocket.on_init(fn(ws) {
     let updater =
-      Updater(send: fn(body) {
-        let _ = websocket.send(ws, TextMessage(update_to_json(body)))
+      Updater(send: fn(html) {
+        let _ = websocket.send(ws, TextMessage(update_to_json(html)))
         Ok(Nil)
       })
 
     let view = hello_view(HelloViewProps)
 
     let socket_actor =
-      socket.start(Some(ws), Some(view), Some(render), Some(updater))
+      socket_actor.start(Some(ws), Some(view), Some(live_render), Some(updater))
     app_context.push_socket(ctx, socket_actor)
+
+    socket_actor.render_update(socket_actor)
 
     io.println("Client connected!")
     io.debug(ws)

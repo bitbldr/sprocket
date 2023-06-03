@@ -1,41 +1,13 @@
+import gleam/io
+import gleam/dynamic
 import gleam/otp/actor
 import gleam/erlang/process.{Subject}
-import gleam/dynamic.{Dynamic}
-import sprocket/html/attribute.{Attribute}
-
-pub type Element {
-  Element(tag: String, attrs: List(Attribute), children: List(Element))
-  Component(c: fn(ComponentContext) -> List(Element))
-  RawHtml(html: String)
+import sprocket/socket.{
+  Effect, EffectCleanup, EffectTrigger, FunctionalComponent, Socket,
 }
 
-pub fn raw(html: String) {
-  RawHtml(html)
-}
-
-pub type EffectCleanup {
-  EffectCleanup(fn() -> Nil)
-  NoCleanup
-}
-
-pub type EffectDependencies =
-  List(Dynamic)
-
-pub type EffectTrigger {
-  OnUpdate
-  WithDependencies(deps: EffectDependencies)
-}
-
-pub type Hook {
-  Effect(effect_fn: fn() -> EffectCleanup, trigger: EffectTrigger)
-}
-
-pub type ComponentContext {
-  ComponentContext(
-    fetch_or_create_reducer: fn(fn() -> Dynamic) -> Dynamic,
-    request_live_update: fn() -> Nil,
-    push_hook: fn(Hook) -> Nil,
-  )
+pub fn render(socket, elements) -> FunctionalComponent {
+  FunctionalComponent(socket, elements)
 }
 
 pub type Updater(msg) =
@@ -54,31 +26,33 @@ type StateOrDispatchReducer(model, msg) {
 }
 
 pub fn reducer(
-  ctx: ComponentContext,
+  socket: Socket,
   initial: model,
   reducer: Reducer(model, msg),
-) -> State(model, msg) {
-  let ComponentContext(
-    fetch_or_create_reducer: fetch_or_create_reducer,
-    request_live_update: request_live_update,
-    ..,
-  ) = ctx
+  cb: fn(Socket, State(model, msg)) -> FunctionalComponent,
+) -> FunctionalComponent {
+  let Socket(render_update: render_update, ..) = socket
 
+  // creates an actor process for a reducer that handles two types of messages:
+  //  1. StateReducer msg, which simply returns the state of the reducer
+  //  2. DispatchReducer msg, which will update the reducer state when a dispatch is triggered
   let reducer_init = fn() {
     let assert Ok(actor) =
       actor.start(
         initial,
-        fn(message: StateOrDispatchReducer(model, msg), context: model) -> actor.Next(
+        fn(message: StateOrDispatchReducer(model, msg), state: model) -> actor.Next(
           model,
         ) {
           case message {
             StateReducer(reply_with) -> {
-              process.send(reply_with, context)
-              actor.Continue(context)
+              process.send(reply_with, state)
+              actor.Continue(state)
             }
+
             DispatchReducer(r, m) -> {
-              r(context, m)
-              |> actor.Continue
+              let updated = r(state, m)
+              io.debug(#("updated", updated))
+              actor.Continue(updated)
             }
           }
         },
@@ -87,25 +61,37 @@ pub fn reducer(
     dynamic.from(actor)
   }
 
-  let actor =
-    fetch_or_create_reducer(reducer_init)
-    |> dynamic.unsafe_coerce
+  let #(socket, dyn_reducer_actor) =
+    socket.fetch_or_create_reducer(socket, reducer_init)
 
-  let state = process.call(actor, StateReducer(_), 10)
+  // we dont know what types of reducer messages a component will implement so the best
+  // we can do is store the actors as dynamic and coerce them back when updating
+  let reducer_actor = dynamic.unsafe_coerce(dyn_reducer_actor)
+
+  // get the current state of the reducer
+  let state = process.call(reducer_actor, StateReducer(_), 10)
+
+  // create a dispatch function for updating the reducer's state and triggering a render update
   let dispatch = fn(msg) -> Nil {
-    actor.send(actor, DispatchReducer(r: reducer, m: msg))
-    request_live_update()
+    io.debug("dispatch")
+
+    // TODO: we might need to wait for the reducer to finish updating before triggering a render update
+    actor.send(reducer_actor, DispatchReducer(r: reducer, m: msg))
+    render_update()
+
+    Nil
   }
 
-  State(state, dispatch)
+  cb(socket, State(state, dispatch))
 }
 
 pub fn effect(
-  ctx: ComponentContext,
+  socket: Socket,
   effect_fn: fn() -> EffectCleanup,
   trigger: EffectTrigger,
-) -> Nil {
-  let ComponentContext(push_hook: push_hook, ..) = ctx
+  cb: fn(Socket) -> FunctionalComponent,
+) -> FunctionalComponent {
+  let socket = socket.push_hook(socket, Effect(effect_fn, trigger))
 
-  push_hook(Effect(effect_fn, trigger))
+  cb(socket)
 }

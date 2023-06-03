@@ -1,13 +1,12 @@
 import gleam/io
 import gleam/erlang
 import gleam/int
-import gleam/string
 import gleam/option.{None, Option, Some}
 import gleam/dynamic
-import sprocket/component.{
-  Component, ComponentContext, EffectCleanup, NoCleanup, OnUpdate, State,
-  WithDependencies, effect, reducer,
+import sprocket/socket.{
+  Component, EffectCleanup, NoCleanup, Socket, WithDependencies,
 }
+import sprocket/component.{State, effect, reducer, render}
 import sprocket/html.{text}
 import example/utils/timer.{interval}
 
@@ -36,26 +35,20 @@ pub type ClockProps {
 }
 
 pub fn clock(props: ClockProps) {
-  Component(fn(ctx: ComponentContext) {
+  Component(fn(socket: Socket) {
     let ClockProps(label) = props
 
-    let State(Model(time: time, ..), dispatch) = reducer(ctx, initial(), update)
+    use socket, State(Model(time: time, ..), dispatch) <- reducer(
+      socket,
+      initial(),
+      update,
+    )
 
     let current_time = int.to_string(time)
 
-    // exmaple effect that runs on every update
-    effect(
-      ctx,
-      fn() {
-        io.println(string.append("Current time: ", current_time))
-        NoCleanup
-      },
-      OnUpdate,
-    )
-
     // example effect with an empty list of dependencies, runs once on mount
-    effect(
-      ctx,
+    use socket <- effect(
+      socket,
       fn() {
         io.println("Clock component mounted!")
         NoCleanup
@@ -63,9 +56,9 @@ pub fn clock(props: ClockProps) {
       WithDependencies([]),
     )
 
-    // example effect that runs everytime the `time` changes and runs a cleanup function
-    effect(
-      ctx,
+    // example effect that runs whenever the `time` variable changes and has a cleanup function
+    use socket <- effect(
+      socket,
       fn() {
         let cancel =
           interval(
@@ -78,9 +71,12 @@ pub fn clock(props: ClockProps) {
       WithDependencies([dynamic.from(time)]),
     )
 
-    case label {
-      Some(label) -> [text(label), text(current_time)]
-      None -> [text(current_time)]
-    }
+    render(
+      socket,
+      case label {
+        Some(label) -> [text(label), text(current_time)]
+        None -> [text(current_time)]
+      },
+    )
   })
 }

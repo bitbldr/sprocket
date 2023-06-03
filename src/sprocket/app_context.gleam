@@ -1,7 +1,8 @@
 import gleam/otp/actor
 import gleam/erlang/process.{Subject}
 import gleam/list
-import sprocket/socket.{SocketActor, WebSocket}
+import sprocket/socket_actor.{SocketActor}
+import sprocket/socket.{WebSocket}
 
 pub type AppContext =
   Subject(Message)
@@ -29,7 +30,7 @@ fn handle_message(message: Message, state: State) -> actor.Next(State) {
 
     GetSocket(reply_with, ws) -> {
       let skt =
-        list.find(state.cassette, fn(s) { socket.matches_websocket(s, ws) })
+        list.find(state.cassette, fn(s) { socket_actor.has_websocket(s, ws) })
 
       process.send(reply_with, skt)
 
@@ -38,13 +39,13 @@ fn handle_message(message: Message, state: State) -> actor.Next(State) {
 
     PopSocket(reply_with, ws) -> {
       let socket =
-        list.find(state.cassette, fn(s) { socket.matches_websocket(s, ws) })
+        list.find(state.cassette, fn(s) { socket_actor.has_websocket(s, ws) })
 
       process.send(reply_with, socket)
 
       case socket {
         Ok(socket) -> {
-          socket.stop(socket)
+          socket_actor.stop(socket)
 
           let updated_cassete =
             list.filter(state.cassette, fn(s) { socket != s })

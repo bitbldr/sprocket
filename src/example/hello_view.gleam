@@ -1,5 +1,6 @@
 import gleam/option.{Some}
-import sprocket/component.{Component}
+import sprocket/socket.{Component}
+import sprocket/component.{render}
 import example/components/clock.{ClockProps, clock}
 import example/components/counter.{CounterProps, counter}
 import sprocket/html.{body, div, h1, head, html, link, script, text}
@@ -10,34 +11,37 @@ pub type HelloViewProps {
 }
 
 pub fn hello_view(_props: HelloViewProps) {
-  Component(fn(_) {
-    [
-      html(
-        [],
-        [
-          head([], [link([href("/app.css"), rel("stylesheet")])]),
-          body(
-            [class("bg-white dark:bg-gray-900 dark:text-white")],
-            [
-              div(
-                [],
-                [
-                  h1([], [text("Hello World!")]),
-                  clock(ClockProps(label: Some("The current time is: "))),
-                ],
-              ),
-              div(
-                [],
-                [
-                  text("A test component"),
-                  counter(CounterProps(initial: Some(0))),
-                ],
-              ),
-              script([src("/client.js")], []),
-            ],
-          ),
-        ],
-      ),
-    ]
+  Component(fn(socket) {
+    render(
+      socket,
+      [
+        html(
+          [],
+          [
+            head([], [link([href("/app.css"), rel("stylesheet")])]),
+            body(
+              [class("bg-white dark:bg-gray-900 dark:text-white")],
+              [
+                div(
+                  [],
+                  [
+                    h1([], [text("Hello World!")]),
+                    clock(ClockProps(label: Some("The current time is: "))),
+                  ],
+                ),
+                div(
+                  [],
+                  [
+                    text("A test component"),
+                    counter(CounterProps(initial: Some(0))),
+                  ],
+                ),
+                script([src("/client.js")], []),
+              ],
+            ),
+          ],
+        ),
+      ],
+    )
   })
 }

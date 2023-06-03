@@ -16,7 +16,7 @@ pub fn event(name: String, handler: fn() -> Nil) -> Attribute {
 }
 
 pub fn on_click(handler: fn() -> Nil) -> Attribute {
-  Event("click", handler)
+  event("click", handler)
 }
 
 pub fn class(value: String) -> Attribute {
