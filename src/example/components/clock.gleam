@@ -3,7 +3,7 @@ import gleam/erlang
 import gleam/int
 import gleam/option.{None, Option, Some}
 import gleam/dynamic
-import sprocket/socket.{Component, Socket, WithDependencies}
+import sprocket/socket.{Socket, WithDependencies}
 import sprocket/component.{State, effect, reducer, render}
 import sprocket/html.{text}
 import example/utils/timer.{interval}

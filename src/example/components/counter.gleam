@@ -3,7 +3,7 @@ import gleam/int
 import gleam/dynamic
 import gleam/string
 import gleam/option.{None, Option}
-import sprocket/socket.{Component, Socket, WithDependencies}
+import sprocket/socket.{Socket, WithDependencies}
 import sprocket/component.{State, effect, reducer, render}
 import sprocket/html.{button, div, span, text}
 import sprocket/html/attribute.{class, on_click}
