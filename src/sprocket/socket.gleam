@@ -11,10 +11,8 @@ pub type IndexTracker {
   IndexTracker(reducer: Int, effect: Int)
 }
 
-pub type EffectCleanup {
-  EffectCleanup(fn() -> Nil)
-  NoCleanup
-}
+pub type EffectCleanup =
+  Option(fn() -> Nil)
 
 pub type EffectDependencies =
   List(Dynamic)

@@ -3,9 +3,7 @@ import gleam/erlang
 import gleam/int
 import gleam/option.{None, Option, Some}
 import gleam/dynamic
-import sprocket/socket.{
-  Component, EffectCleanup, NoCleanup, Socket, WithDependencies,
-}
+import sprocket/socket.{Component, Socket, WithDependencies}
 import sprocket/component.{State, effect, reducer, render}
 import sprocket/html.{text}
 import example/utils/timer.{interval}
@@ -51,7 +49,7 @@ pub fn clock(props: ClockProps) {
       socket,
       fn() {
         io.println("Clock component mounted!")
-        NoCleanup
+        None
       },
       WithDependencies([]),
     )
@@ -66,7 +64,7 @@ pub fn clock(props: ClockProps) {
             fn() { dispatch(UpdateTime(erlang.system_time(erlang.Second))) },
           )
 
-        EffectCleanup(fn() { cancel() })
+        Some(fn() { cancel() })
       },
       WithDependencies([dynamic.from(time)]),
     )

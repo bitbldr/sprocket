@@ -2,8 +2,8 @@ import gleam/io
 import gleam/int
 import gleam/dynamic
 import gleam/string
-import gleam/option.{Option}
-import sprocket/socket.{Component, NoCleanup, Socket, WithDependencies}
+import gleam/option.{None, Option}
+import sprocket/socket.{Component, Socket, WithDependencies}
 import sprocket/component.{State, effect, reducer, render}
 import sprocket/html.{button, div, span, text}
 import sprocket/html/attribute.{class, on_click}
@@ -42,7 +42,7 @@ pub fn counter(props: CounterProps) {
       socket,
       fn() {
         io.println(string.append("Count: ", int.to_string(count)))
-        NoCleanup
+        None
       },
       WithDependencies([dynamic.from(count)]),
     )

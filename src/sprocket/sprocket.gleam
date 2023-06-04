@@ -6,8 +6,8 @@ import sprocket/uuid
 import sprocket/logger
 import sprocket/socket.{
   Effect, EffectCleanup, EffectDependencies, EffectResult, EffectTrigger,
-  Element, EmptyResult, EventHandler, Hook, HookResult, NoCleanup, OnUpdate,
-  RenderedResult, Renderer, Socket, Updater, WebSocket, WithDependencies,
+  Element, EmptyResult, EventHandler, Hook, HookResult, OnUpdate, RenderedResult,
+  Renderer, Socket, Updater, WebSocket, WithDependencies,
 }
 
 pub type Sprocket =
@@ -210,7 +210,7 @@ fn run_effect(
           }
         }
 
-        _ -> maybe_cleanup_and_rerun_effect(NoCleanup, effect_fn, Some(deps))
+        _ -> maybe_cleanup_and_rerun_effect(None, effect_fn, Some(deps))
       }
     }
     _ -> EmptyResult
@@ -223,7 +223,7 @@ fn maybe_cleanup_and_rerun_effect(
   deps: Option(EffectDependencies),
 ) {
   case cleanup {
-    EffectCleanup(cleanup_fn) -> {
+    Some(cleanup_fn) -> {
       cleanup_fn()
       EffectResult(effect_fn(), deps)
     }
