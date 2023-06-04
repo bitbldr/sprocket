@@ -2,7 +2,7 @@ import gleam/http/request.{Request}
 import gleam/http/response.{Response}
 import sprocket/render.{render}
 import example/hello_view.{HelloViewProps, hello_view}
-import sprocket/app_context.{AppContext}
+import example/app_context.{AppContext}
 
 pub fn index(_request: Request(String), _ctx: AppContext) -> Response(String) {
   let view = hello_view(HelloViewProps)

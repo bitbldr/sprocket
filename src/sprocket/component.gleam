@@ -50,9 +50,8 @@ pub fn reducer(
             }
 
             DispatchReducer(r, m) -> {
-              let updated = r(state, m)
-              io.debug(#("updated", updated))
-              actor.Continue(updated)
+              r(state, m)
+              |> actor.Continue()
             }
           }
         },
@@ -73,8 +72,6 @@ pub fn reducer(
 
   // create a dispatch function for updating the reducer's state and triggering a render update
   let dispatch = fn(msg) -> Nil {
-    io.debug("dispatch")
-
     // TODO: we might need to wait for the reducer to finish updating before triggering a render update
     actor.send(reducer_actor, DispatchReducer(r: reducer, m: msg))
     render_update()

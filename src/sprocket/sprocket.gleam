@@ -10,7 +10,7 @@ import sprocket/socket.{
   RenderedResult, Renderer, Socket, Updater, WebSocket, WithDependencies,
 }
 
-pub type SocketActor =
+pub type Sprocket =
   Subject(Message)
 
 pub type Message {

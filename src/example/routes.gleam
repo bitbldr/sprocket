@@ -7,7 +7,7 @@ import gleam/http/service.{Service}
 import example/log_requests
 import example/static
 import example/controllers/index.{index}
-import sprocket/app_context.{AppContext}
+import example/app_context.{AppContext}
 
 pub fn router(ctx: AppContext) {
   fn(request: Request(String)) -> Response(String) {
