@@ -2,7 +2,6 @@ import gleam/otp/actor
 import gleam/erlang/process.{Subject}
 import gleam/list
 import gleam/option.{None, Option, Some}
-import sprocket/uuid
 import sprocket/logger
 import sprocket/socket.{
   Effect, EffectCleanup, EffectDependencies, EffectResult, EffectTrigger,
@@ -13,21 +12,29 @@ import sprocket/socket.{
 pub type Sprocket =
   Subject(Message)
 
+type State(p) {
+  State(
+    socket: Socket,
+    view: Option(Element),
+    renderer: Option(Renderer),
+    updater: Option(Updater),
+  )
+}
+
 pub type Message {
   Shutdown
   HasWebSocket(reply_with: Subject(Bool), websocket: WebSocket)
   SetRenderUpdate(fn() -> Nil)
   RenderUpdate
-  PushEventHandler(reply_with: Subject(String), handler: fn() -> Nil)
   GetEventHandler(reply_with: Subject(Result(EventHandler, Nil)), id: String)
 }
 
-fn handle_message(message: Message, socket: Socket) -> actor.Next(Socket) {
+fn handle_message(message: Message, state: State(p)) -> actor.Next(State(p)) {
   case message {
     Shutdown -> actor.Stop(process.Normal)
 
     HasWebSocket(reply_with, websocket) -> {
-      case socket {
+      case state.socket {
         Socket(ws: Some(ws), ..) -> {
           actor.send(reply_with, ws == websocket)
         }
@@ -36,22 +43,32 @@ fn handle_message(message: Message, socket: Socket) -> actor.Next(Socket) {
         }
       }
 
-      actor.Continue(socket)
+      actor.Continue(state)
     }
 
     SetRenderUpdate(render_update_fn) -> {
-      actor.Continue(Socket(..socket, render_update: render_update_fn))
+      actor.Continue(
+        State(
+          ..state,
+          socket: Socket(..state.socket, render_update: render_update_fn),
+        ),
+      )
     }
 
     RenderUpdate -> {
-      let Socket(view: view, renderer: renderer, updater: updater, ..) = socket
-
-      let socket = case renderer, view, updater {
-        Some(render), Some(view), Some(updater) -> {
+      let state = case state {
+        State(
+          socket: socket,
+          renderer: Some(renderer),
+          view: Some(view),
+          updater: Some(updater),
+        ) -> {
           let RenderedResult(socket, rendered) =
             socket
             |> socket.reset_for_render
-            |> render(view)
+            |> renderer(view)
+
+          let state = State(..state, socket: socket)
 
           // send the rendered update using updater
           case updater.send(rendered) {
@@ -65,34 +82,21 @@ fn handle_message(message: Message, socket: Socket) -> actor.Next(Socket) {
           // hooks might contain effects that will trigger a rerender. That is okay because any
           // RenderUpdate messages sent during this operation will be placed into this actor's mailbox
           // and will be processed in order after this current render is complete
-          process_pending_hooks(socket)
+          process_pending_hooks(state)
         }
-        _, _, _ -> {
+        _ -> {
           logger.error("No renderer found!")
-          socket
+          state
         }
       }
 
-      actor.Continue(socket)
-    }
-
-    PushEventHandler(reply_with, handler) -> {
-      let assert Ok(id) = uuid.v4()
-
-      process.send(reply_with, id)
-
-      actor.Continue(
-        Socket(
-          ..socket,
-          handlers: [EventHandler(id, handler), ..socket.handlers],
-        ),
-      )
+      actor.Continue(state)
     }
 
     GetEventHandler(reply_with, id) -> {
       let handler =
         list.find(
-          socket.handlers,
+          state.socket.handlers,
           fn(h) {
             let EventHandler(i, _) = h
             i == id
@@ -101,7 +105,7 @@ fn handle_message(message: Message, socket: Socket) -> actor.Next(Socket) {
 
       process.send(reply_with, handler)
 
-      actor.Continue(socket)
+      actor.Continue(state)
     }
   }
 }
@@ -113,7 +117,15 @@ pub fn start(
   updater: Option(Updater),
 ) {
   let assert Ok(actor) =
-    actor.start(socket.new(ws, view, renderer, updater), handle_message)
+    actor.start(
+      State(
+        socket: socket.new(ws),
+        view: view,
+        renderer: renderer,
+        updater: updater,
+      ),
+      handle_message,
+    )
 
   actor.send(actor, SetRenderUpdate(fn() { actor.send(actor, RenderUpdate) }))
 
@@ -136,11 +148,11 @@ pub fn render_update(actor) -> Nil {
   actor.send(actor, RenderUpdate)
 }
 
-fn process_pending_hooks(socket: Socket) -> Socket {
-  let pending_hooks = socket.pending_hooks
+fn process_pending_hooks(state: State(p)) -> State(p) {
+  let pending_hooks = state.socket.pending_hooks
 
   // prev_hook_results will be None on the first render cycle
-  let prev_hook_results = socket.hook_results
+  let prev_hook_results = state.socket.hook_results
 
   let hook_results =
     pending_hooks
@@ -163,7 +175,14 @@ fn process_pending_hooks(socket: Socket) -> Socket {
       }
     })
 
-  Socket(..socket, pending_hooks: [], hook_results: Some(hook_results))
+  State(
+    ..state,
+    socket: Socket(
+      ..state.socket,
+      pending_hooks: [],
+      hook_results: Some(hook_results),
+    ),
+  )
 }
 
 fn run_effect(

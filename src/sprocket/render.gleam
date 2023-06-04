@@ -1,15 +1,12 @@
 import gleam/list
 import gleam/string
+import gleam/dynamic.{Dynamic}
 import sprocket/html/attribute.{Attribute, Event, Key}
-import gleam/dynamic
 import gleam/option.{None}
-import sprocket/socket.{
-  Component, Element, FunctionalComponent, Raw, RenderedResult, Socket,
-}
+import sprocket/socket.{Component, Element, Raw, RenderedResult, Socket}
 
 pub fn render(el: Element) -> String {
-  let RenderedResult(rendered: rendered, ..) =
-    live_render(socket.new(None, None, None, None), el)
+  let RenderedResult(rendered: rendered, ..) = live_render(socket.new(None), el)
 
   rendered
 }
@@ -19,7 +16,7 @@ pub fn live_render(socket: Socket, el: Element) -> RenderedResult(String) {
 
   case el {
     Element(tag, attrs, children) -> element(socket, tag, attrs, children)
-    Component(c) -> component(socket, c)
+    Component(fc, props) -> component(socket, fc, props)
     Raw(text) -> RenderedResult(socket, text)
   }
 }
@@ -76,8 +73,12 @@ fn element(
   RenderedResult(socket, rendered)
 }
 
-fn component(socket: Socket, fc: fn(Socket) -> FunctionalComponent) {
-  let FunctionalComponent(socket, children) = fc(socket)
+fn component(
+  socket: Socket,
+  fc: fn(Socket, Dynamic) -> #(Socket, List(Element)),
+  props: Dynamic,
+) {
+  let #(socket, children) = fc(socket, props)
 
   children
   |> list.fold(

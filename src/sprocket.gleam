@@ -19,6 +19,7 @@ import gleam/bit_builder.{BitBuilder}
 import sprocket/render.{live_render}
 import sprocket/socket.{Updater}
 import sprocket/sprocket
+import sprocket/component.{component}
 import example/hello_view.{HelloViewProps, hello_view}
 import example/routes
 import example/app_context.{AppContext}
@@ -131,7 +132,7 @@ fn websocket_service(ca: Cassette) {
         Ok(Nil)
       })
 
-    let view = hello_view(HelloViewProps)
+    let view = component(hello_view, HelloViewProps)
 
     let sprocket =
       sprocket.start(Some(ws), Some(view), Some(live_render), Some(updater))

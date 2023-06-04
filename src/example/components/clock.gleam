@@ -32,49 +32,47 @@ pub type ClockProps {
   ClockProps(label: Option(String))
 }
 
-pub fn clock(props: ClockProps) {
-  Component(fn(socket: Socket) {
-    let ClockProps(label) = props
+pub fn clock(socket: Socket, props) {
+  let ClockProps(label) = props
 
-    use socket, State(Model(time: time, ..), dispatch) <- reducer(
-      socket,
-      initial(),
-      update,
-    )
+  use socket, State(Model(time: time, ..), dispatch) <- reducer(
+    socket,
+    initial(),
+    update,
+  )
 
-    let current_time = int.to_string(time)
+  let current_time = int.to_string(time)
 
-    // example effect with an empty list of dependencies, runs once on mount
-    use socket <- effect(
-      socket,
-      fn() {
-        io.println("Clock component mounted!")
-        None
-      },
-      WithDependencies([]),
-    )
+  // example effect with an empty list of dependencies, runs once on mount
+  use socket <- effect(
+    socket,
+    fn() {
+      io.println("Clock component mounted!")
+      None
+    },
+    WithDependencies([]),
+  )
 
-    // example effect that runs whenever the `time` variable changes and has a cleanup function
-    use socket <- effect(
-      socket,
-      fn() {
-        let cancel =
-          interval(
-            1000,
-            fn() { dispatch(UpdateTime(erlang.system_time(erlang.Second))) },
-          )
+  // example effect that runs whenever the `time` variable changes and has a cleanup function
+  use socket <- effect(
+    socket,
+    fn() {
+      let cancel =
+        interval(
+          1000,
+          fn() { dispatch(UpdateTime(erlang.system_time(erlang.Second))) },
+        )
 
-        Some(fn() { cancel() })
-      },
-      WithDependencies([dynamic.from(time)]),
-    )
+      Some(fn() { cancel() })
+    },
+    WithDependencies([dynamic.from(time)]),
+  )
 
-    render(
-      socket,
-      case label {
-        Some(label) -> [text(label), text(current_time)]
-        None -> [text(current_time)]
-      },
-    )
-  })
+  render(
+    socket,
+    case label {
+      Some(label) -> [text(label), text(current_time)]
+      None -> [text(current_time)]
+    },
+  )
 }

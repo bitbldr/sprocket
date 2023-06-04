@@ -38,13 +38,12 @@ pub type EventHandler {
 pub type WebSocket =
   Subject(HandlerMessage)
 
-pub type FunctionalComponent {
-  FunctionalComponent(socket: Socket, elements: List(Element))
-}
+pub type FunctionalComponent(p) =
+  fn(Socket, p) -> #(Socket, List(Element))
 
 pub type Element {
   Element(tag: String, attrs: List(Attribute), children: List(Element))
-  Component(c: fn(Socket) -> FunctionalComponent)
+  Component(component: FunctionalComponent(Dynamic), props: Dynamic)
   Raw(text: String)
 }
 
@@ -67,19 +66,11 @@ pub type Socket {
     hook_results: Option(List(HookResult)),
     handlers: List(EventHandler),
     ws: Option(WebSocket),
-    view: Option(Element),
-    renderer: Option(Renderer),
-    updater: Option(Updater),
     render_update: fn() -> Nil,
   )
 }
 
-pub fn new(
-  ws: Option(WebSocket),
-  view: Option(Element),
-  renderer: Option(Renderer),
-  updater: Option(Updater),
-) -> Socket {
+pub fn new(ws: Option(WebSocket)) -> Socket {
   Socket(
     index_tracker: IndexTracker(reducer: 0, effect: 0),
     reducers: [],
@@ -87,9 +78,6 @@ pub fn new(
     hook_results: None,
     handlers: [],
     ws: ws,
-    view: view,
-    renderer: renderer,
-    updater: updater,
     render_update: fn() { Nil },
   )
 }

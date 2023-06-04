@@ -2,11 +2,33 @@ import gleam/dynamic
 import gleam/otp/actor
 import gleam/erlang/process.{Subject}
 import sprocket/socket.{
-  Effect, EffectCleanup, EffectTrigger, FunctionalComponent, Socket,
+  Component, Effect, EffectCleanup, EffectTrigger, Element, FunctionalComponent,
+  Socket,
 }
 
-pub fn render(socket, elements) -> FunctionalComponent {
-  FunctionalComponent(socket, elements)
+pub fn component(fc: FunctionalComponent(p), props: p) -> Element {
+  // // This function wrapper will not work since we need to compare the original function
+  // // when computing the diff and this will create a different function on every render
+  // let component = fn(socket: Socket, props: Dynamic) -> #(Socket, List(Element)) {
+  //   let props = dynamic.unsafe_coerce(props)
+  //   fc.component(socket, props)
+  // }
+
+  // Instead, we will just use dynamic.unsafe_coerce to coerce the function to the correct type
+  let component =
+    fc
+    |> dynamic.from()
+    |> dynamic.unsafe_coerce()
+
+  let props =
+    props
+    |> dynamic.from()
+
+  Component(component, props)
+}
+
+pub fn render(socket, elements) -> #(Socket, List(Element)) {
+  #(socket, elements)
 }
 
 pub type Updater(msg) =
@@ -28,8 +50,8 @@ pub fn reducer(
   socket: Socket,
   initial: model,
   reducer: Reducer(model, msg),
-  cb: fn(Socket, State(model, msg)) -> FunctionalComponent,
-) -> FunctionalComponent {
+  cb: fn(Socket, State(model, msg)) -> #(Socket, List(Element)),
+) -> #(Socket, List(Element)) {
   let Socket(render_update: render_update, ..) = socket
 
   // creates an actor process for a reducer that handles two types of messages:
@@ -85,8 +107,8 @@ pub fn effect(
   socket: Socket,
   effect_fn: fn() -> EffectCleanup,
   trigger: EffectTrigger,
-  cb: fn(Socket) -> FunctionalComponent,
-) -> FunctionalComponent {
+  cb: fn(Socket) -> #(Socket, List(Element)),
+) -> #(Socket, List(Element)) {
   let socket = socket.push_hook(socket, Effect(effect_fn, trigger))
 
   cb(socket)
