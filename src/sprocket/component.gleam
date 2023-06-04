@@ -1,4 +1,3 @@
-import gleam/io
 import gleam/dynamic
 import gleam/otp/actor
 import gleam/erlang/process.{Subject}
