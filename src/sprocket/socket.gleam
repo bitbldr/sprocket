@@ -45,7 +45,7 @@ pub type FunctionalComponent {
 pub type Element {
   Element(tag: String, attrs: List(Attribute), children: List(Element))
   Component(c: fn(Socket) -> FunctionalComponent)
-  RawHtml(html: String)
+  Raw(text: String)
 }
 
 pub type RenderedResult(a) {

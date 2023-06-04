@@ -1,4 +1,4 @@
-import sprocket/socket.{Element, RawHtml}
+import sprocket/socket.{Element, Raw}
 import sprocket/html/attribute.{Attribute}
 
 pub type Children =
@@ -9,7 +9,7 @@ pub fn el(tag: String, attrs: List(Attribute), children: Children) {
 }
 
 pub fn raw(html: String) {
-  RawHtml(html)
+  Raw(html)
 }
 
 pub fn text(text: String) -> Element {

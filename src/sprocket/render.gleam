@@ -4,7 +4,7 @@ import sprocket/html/attribute.{Attribute, Event, Key}
 import gleam/dynamic
 import gleam/option.{None}
 import sprocket/socket.{
-  Component, Element, FunctionalComponent, RawHtml, RenderedResult, Socket,
+  Component, Element, FunctionalComponent, Raw, RenderedResult, Socket,
 }
 
 pub fn render(el: Element) -> String {
@@ -20,7 +20,7 @@ pub fn live_render(socket: Socket, el: Element) -> RenderedResult(String) {
   case el {
     Element(tag, attrs, children) -> element(socket, tag, attrs, children)
     Component(c) -> component(socket, c)
-    RawHtml(raw_html) -> RenderedResult(socket, raw_html)
+    Raw(text) -> RenderedResult(socket, text)
   }
 }
 
