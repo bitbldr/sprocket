@@ -6,18 +6,19 @@ import sprocket/logger
 import sprocket/socket.{
   Effect, EffectCleanup, EffectDependencies, EffectResult, EffectTrigger,
   Element, EmptyResult, EventHandler, Hook, HookResult, OnUpdate, RenderedResult,
-  Renderer, Socket, Updater, WebSocket, WithDependencies,
+  Socket, Updater, WebSocket, WithDependencies,
 }
+import sprocket/render.{Renderer, live_render}
 
 pub type Sprocket =
   Subject(Message)
 
-type State(p) {
+type State(r) {
   State(
     socket: Socket,
     view: Option(Element),
-    renderer: Option(Renderer),
-    updater: Option(Updater),
+    renderer: Option(Renderer(r)),
+    updater: Option(Updater(r)),
   )
 }
 
@@ -29,7 +30,7 @@ pub type Message {
   GetEventHandler(reply_with: Subject(Result(EventHandler, Nil)), id: String)
 }
 
-fn handle_message(message: Message, state: State(p)) -> actor.Next(State(p)) {
+fn handle_message(message: Message, state: State(r)) -> actor.Next(State(r)) {
   case message {
     Shutdown -> actor.Stop(process.Normal)
 
@@ -66,7 +67,7 @@ fn handle_message(message: Message, state: State(p)) -> actor.Next(State(p)) {
           let RenderedResult(socket, rendered) =
             socket
             |> socket.reset_for_render
-            |> renderer(view)
+            |> live_render(view, renderer)
 
           let state = State(..state, socket: socket)
 
@@ -113,8 +114,8 @@ fn handle_message(message: Message, state: State(p)) -> actor.Next(State(p)) {
 pub fn start(
   ws: Option(WebSocket),
   view: Option(Element),
-  renderer: Option(Renderer),
-  updater: Option(Updater),
+  renderer: Option(Renderer(r)),
+  updater: Option(Updater(r)),
 ) {
   let assert Ok(actor) =
     actor.start(
@@ -148,7 +149,7 @@ pub fn render_update(actor) -> Nil {
   actor.send(actor, RenderUpdate)
 }
 
-fn process_pending_hooks(state: State(p)) -> State(p) {
+fn process_pending_hooks(state: State(r)) -> State(r) {
   let pending_hooks = state.socket.pending_hooks
 
   // prev_hook_results will be None on the first render cycle

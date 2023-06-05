@@ -51,11 +51,8 @@ pub type RenderedResult(a) {
   RenderedResult(socket: Socket, rendered: a)
 }
 
-pub type Renderer =
-  fn(Socket, Element) -> RenderedResult(String)
-
-pub type Updater {
-  Updater(send: fn(String) -> Result(Nil, Nil))
+pub type Updater(r) {
+  Updater(send: fn(r) -> Result(Nil, Nil))
 }
 
 pub type Socket {

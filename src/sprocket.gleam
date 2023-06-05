@@ -16,9 +16,9 @@ import gleam/http/request.{Request}
 import gleam/http/response.{Response}
 import gleam/http.{Get}
 import gleam/bit_builder.{BitBuilder}
-import sprocket/render.{live_render}
 import sprocket/socket.{Updater}
 import sprocket/sprocket
+import sprocket/html/renderer as html_renderer
 import sprocket/component.{component}
 import example/hello_view.{HelloViewProps, hello_view}
 import example/routes
@@ -135,7 +135,12 @@ fn websocket_service(ca: Cassette) {
     let view = component(hello_view, HelloViewProps)
 
     let sprocket =
-      sprocket.start(Some(ws), Some(view), Some(live_render), Some(updater))
+      sprocket.start(
+        Some(ws),
+        Some(view),
+        Some(html_renderer.renderer()),
+        Some(updater),
+      )
     cassette.push_sprocket(ca, sprocket)
 
     sprocket.render_update(sprocket)
