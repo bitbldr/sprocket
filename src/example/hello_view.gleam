@@ -4,7 +4,7 @@ import sprocket/component.{component, render}
 import example/components/clock.{ClockProps, clock}
 import example/components/counter.{CounterProps, counter}
 import sprocket/html.{body, div, h1, head, html, link, script, text}
-import sprocket/html/attribute.{class, href, rel, src}
+import sprocket/html/attribute.{class, href, lang, rel, src}
 
 pub type HelloViewProps {
   HelloViewProps
@@ -15,9 +15,9 @@ pub fn hello_view(socket: Socket, _props: HelloViewProps) {
     socket,
     [
       html(
-        [],
+        [lang("en")],
         [
-          head([], [link([href("/app.css"), rel("stylesheet")])]),
+          head([], [link([rel("stylesheet"), href("/app.css")])]),
           body(
             [class("bg-white dark:bg-gray-900 dark:text-white")],
             [

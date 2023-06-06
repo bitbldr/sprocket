@@ -18,7 +18,8 @@ import gleam/http.{Get}
 import gleam/bit_builder.{BitBuilder}
 import sprocket/socket.{Updater}
 import sprocket/sprocket
-import sprocket/html/renderer as html_renderer
+import sprocket/render.{RenderedElement}
+import sprocket/render/json as json_renderer
 import sprocket/component.{component}
 import example/hello_view.{HelloViewProps, hello_view}
 import example/routes
@@ -127,20 +128,14 @@ fn websocket_service(ca: Cassette) {
   // with:
   |> websocket.on_init(fn(ws) {
     let updater =
-      Updater(send: fn(html) {
-        let _ = websocket.send(ws, TextMessage(update_to_json(html)))
+      Updater(send: fn(update) {
+        let _ = websocket.send(ws, TextMessage(update_to_json(update)))
         Ok(Nil)
       })
 
     let view = component(hello_view, HelloViewProps)
 
-    let sprocket =
-      sprocket.start(
-        Some(ws),
-        Some(view),
-        Some(html_renderer.renderer()),
-        Some(updater),
-      )
+    let sprocket = sprocket.start(Some(ws), Some(view), Some(updater))
     cassette.push_sprocket(ca, sprocket)
 
     sprocket.render_update(sprocket)
@@ -182,7 +177,10 @@ fn decode_event(body: String) {
   )
 }
 
-fn update_to_json(html: String) -> String {
-  array(["update", html], of: json.string)
-  |> json.to_string
+fn update_to_json(update: RenderedElement) -> String {
+  json.preprocessed_array([
+    json.string("update"),
+    json_renderer.renderer().render(update),
+  ])
+  |> json.to_string()
 }

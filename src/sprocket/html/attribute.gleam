@@ -19,6 +19,10 @@ pub fn on_click(handler: fn() -> Nil) -> Attribute {
   event("click", handler)
 }
 
+pub fn lang(value: String) -> Attribute {
+  attribute("lang", value)
+}
+
 pub fn class(value: String) -> Attribute {
   attribute("class", value)
 }

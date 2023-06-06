@@ -5,20 +5,19 @@ import gleam/option.{None, Option, Some}
 import sprocket/logger
 import sprocket/socket.{
   Effect, EffectCleanup, EffectDependencies, EffectResult, EffectTrigger,
-  Element, EmptyResult, EventHandler, Hook, HookResult, OnUpdate, RenderedResult,
-  Socket, Updater, WebSocket, WithDependencies,
+  Element, EmptyResult, EventHandler, Hook, HookResult, OnUpdate, Socket,
+  Updater, WebSocket, WithDependencies,
 }
-import sprocket/render.{Renderer, live_render}
+import sprocket/render.{RenderResult, RenderedElement, live_render}
 
 pub type Sprocket =
   Subject(Message)
 
-type State(r) {
+type State {
   State(
     socket: Socket,
     view: Option(Element),
-    renderer: Option(Renderer(r)),
-    updater: Option(Updater(r)),
+    updater: Option(Updater(RenderedElement)),
   )
 }
 
@@ -30,7 +29,7 @@ pub type Message {
   GetEventHandler(reply_with: Subject(Result(EventHandler, Nil)), id: String)
 }
 
-fn handle_message(message: Message, state: State(r)) -> actor.Next(State(r)) {
+fn handle_message(message: Message, state: State) -> actor.Next(State) {
   case message {
     Shutdown -> actor.Stop(process.Normal)
 
@@ -58,16 +57,11 @@ fn handle_message(message: Message, state: State(r)) -> actor.Next(State(r)) {
 
     RenderUpdate -> {
       let state = case state {
-        State(
-          socket: socket,
-          renderer: Some(renderer),
-          view: Some(view),
-          updater: Some(updater),
-        ) -> {
-          let RenderedResult(socket, rendered) =
+        State(socket: socket, view: Some(view), updater: Some(updater)) -> {
+          let RenderResult(socket, rendered) =
             socket
             |> socket.reset_for_render
-            |> live_render(view, renderer)
+            |> live_render(view)
 
           let state = State(..state, socket: socket)
 
@@ -114,17 +108,11 @@ fn handle_message(message: Message, state: State(r)) -> actor.Next(State(r)) {
 pub fn start(
   ws: Option(WebSocket),
   view: Option(Element),
-  renderer: Option(Renderer(r)),
-  updater: Option(Updater(r)),
+  updater: Option(Updater(RenderedElement)),
 ) {
   let assert Ok(actor) =
     actor.start(
-      State(
-        socket: socket.new(ws),
-        view: view,
-        renderer: renderer,
-        updater: updater,
-      ),
+      State(socket: socket.new(ws), view: view, updater: updater),
       handle_message,
     )
 
@@ -149,7 +137,7 @@ pub fn render_update(actor) -> Nil {
   actor.send(actor, RenderUpdate)
 }
 
-fn process_pending_hooks(state: State(r)) -> State(r) {
+fn process_pending_hooks(state: State) -> State {
   let pending_hooks = state.socket.pending_hooks
 
   // prev_hook_results will be None on the first render cycle
