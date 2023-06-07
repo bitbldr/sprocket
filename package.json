@@ -9,8 +9,8 @@
   },
   "scripts": {
     "client:clean": "rm -rf build dist .parcel-cache",
-    "client:watch": "gleam build && concurrently --kill-others \"chokidar 'client/src/**' -c 'gleam build'\" \"parcel client/src/client.mjs --no-hmr --dist-dir priv/static\"",
-    "client:build": "npm run client:clean && cd client && gleam build && cd .. && parcel build client/src/client.mjs --dist-dir priv/static --no-source-maps",
+    "client:watch": "gleam build && concurrently --kill-others \"chokidar 'client/src/**' -c 'gleam build'\" \"parcel client/src/client.ts --no-hmr --dist-dir priv/static\"",
+    "client:build": "npm run client:clean && cd client && gleam build && cd .. && parcel build client/src/client.ts --dist-dir priv/static --no-source-maps",
     "tailwind:build": "npx tailwindcss -i ./app.css -o priv/static/app.css",
     "tailwind:watch": "npx tailwindcss -i ./app.css -o priv/static/app.css --watch",
     "watch": "gleam build && concurrently --kill-others \"gleam run\" \"npm run client:watch\" \"npm run tailwind:watch\""

@@ -6,7 +6,7 @@ import gleam/result
 import gleam/option.{Some}
 import gleam/erlang/os
 import gleam/erlang/process
-import gleam/json.{array}
+import gleam/json
 import gleam/dynamic.{field}
 import mist
 import mist/websocket
