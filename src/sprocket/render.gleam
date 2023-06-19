@@ -1,5 +1,5 @@
 import gleam/list
-import gleam/option.{None}
+import gleam/option.{None, Option, Some}
 import gleam/dynamic.{Dynamic}
 import sprocket/html/attribute.{Attribute, Event, Key}
 import sprocket/socket.{
@@ -19,13 +19,14 @@ pub type RenderedAttribute {
 pub type RenderedElement {
   RenderedElement(
     tag: String,
+    key: Option(String),
     attrs: List(RenderedAttribute),
     children: List(RenderedElement),
   )
   RenderedComponent(
     fc: AbstractFunctionalComponent,
     props: Dynamic,
-    rendered: List(RenderedElement),
+    children: List(RenderedElement),
   )
   RenderedText(text: String)
 }
@@ -105,9 +106,26 @@ fn element(
       },
     )
 
+  let maybe_key =
+    list.find_map(
+      rendered_attrs,
+      fn(attr) {
+        case attr {
+          RenderedKey(key) -> Ok(key)
+          _ -> Error(Nil)
+        }
+      },
+    )
+    |> option.from_result()
+
   RenderResult(
     socket,
-    RenderedElement(tag, list.reverse(rendered_attrs), list.reverse(children)),
+    RenderedElement(
+      tag,
+      maybe_key,
+      list.reverse(rendered_attrs),
+      list.reverse(children),
+    ),
   )
 }
 
@@ -118,7 +136,7 @@ fn component(
 ) -> RenderResult(RenderedElement) {
   let #(socket, children) = fc(socket, props)
 
-  let RenderResult(socket, rendered) =
+  let RenderResult(socket, children) =
     children
     |> list.fold(
       RenderResult(socket, []),
@@ -130,7 +148,7 @@ fn component(
       },
     )
 
-  RenderResult(socket, RenderedComponent(fc, props, list.reverse(rendered)))
+  RenderResult(socket, RenderedComponent(fc, props, list.reverse(children)))
 }
 
 fn raw(socket: Socket, text: String) -> RenderResult(RenderedElement) {

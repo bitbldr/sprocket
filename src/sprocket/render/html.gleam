@@ -12,9 +12,9 @@ pub fn renderer() -> Renderer(String) {
 
 fn render(el: RenderedElement) -> StringBuilder {
   case el {
-    RenderedElement(tag: tag, attrs: attrs, children: children) ->
+    RenderedElement(tag: tag, key: _key, attrs: attrs, children: children) ->
       element(tag, attrs, children)
-    RenderedComponent(rendered: rendered, ..) -> component(rendered)
+    RenderedComponent(children: children, ..) -> component(children)
     RenderedText(text: t) -> text(t)
   }
 }
@@ -85,8 +85,8 @@ fn element(
   ])
 }
 
-fn component(rendered: List(RenderedElement)) {
-  rendered
+fn component(children: List(RenderedElement)) {
+  children
   |> list.fold(
     string_builder.new(),
     fn(acc, child) { string_builder.append_builder(acc, render(child)) },

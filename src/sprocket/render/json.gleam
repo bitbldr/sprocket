@@ -13,9 +13,9 @@ pub fn renderer() -> Renderer(Json) {
 
 fn render(el: RenderedElement) -> Json {
   case el {
-    RenderedElement(tag: tag, attrs: attrs, children: children) ->
+    RenderedElement(tag: tag, key: _key, attrs: attrs, children: children) ->
       element(tag, attrs, children)
-    RenderedComponent(rendered: rendered, ..) -> component(rendered)
+    RenderedComponent(children: children, ..) -> component(children)
     RenderedText(text: t) -> text(t)
   }
 }
@@ -50,9 +50,9 @@ fn element(
   |> json.object()
 }
 
-fn component(rendered: List(RenderedElement)) -> Json {
+fn component(children: List(RenderedElement)) -> Json {
   let children =
-    rendered
+    children
     |> list.index_map(fn(i, child) { #(int.to_string(i), render(child)) })
 
   [#("type", json.string("component"))]
