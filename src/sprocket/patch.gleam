@@ -2,7 +2,8 @@ import gleam/list
 import gleam/map.{Map}
 import gleam/option.{None, Option, Some}
 import sprocket/render.{
-  RenderedAttribute, RenderedComponent, RenderedElement, RenderedText,
+  RenderedAttribute, RenderedComponent, RenderedElement, RenderedEventHandler,
+  RenderedKey, RenderedText,
 }
 
 pub type Patch {
@@ -11,11 +12,24 @@ pub type Patch {
     children: Option(List(#(Int, Patch))),
   )
   Replace(el: RenderedElement)
+  Add(el: RenderedElement)
+  Remove
   Change(text: String)
-  From(index: Int, patch: Patch)
+  Move(from: Int, patch: Patch)
   NoOp
 }
 
+// Creates a diff patch that can be applied to the old element to obtain the new element.
+//
+// The patch is created by comparing the old and new elements and their children. If the elements
+// are the same, the patch will be a NoOp. If the elements are different, the patch will be a
+// one of the following:
+//  - Replace: the old element should be replaced with the new element
+//  - Update: the old element should be updated with the new element's attributes and children
+//  - Add: the new element should be added to the DOM
+//  - Remove: the old element should be removed from the DOM
+//  - Change: the old element's text should be changed to the new element's text
+//  - Move: the old element should be moved to a new position in the DOM
 pub fn create(old: RenderedElement, new: RenderedElement) -> Patch {
   case old, new {
     // old and new tags are the same
@@ -92,28 +106,88 @@ pub fn create(old: RenderedElement, new: RenderedElement) -> Patch {
   }
 }
 
+// Takes a list of old and new attributes and optionally returns a list of the new attributes
+// if at least one attribute has changed. If no attributes have changed, None is returned.
 fn compare_attributes(
   old_attributes: List(RenderedAttribute),
   new_attributes: List(RenderedAttribute),
 ) -> Option(List(RenderedAttribute)) {
-  case old_attributes, new_attributes {
-    [], [] -> {
-      None
-    }
-    [old_attr, ..rest_old], [new_attr, ..rest_new] -> {
-      case old_attr == new_attr {
-        True -> {
-          compare_attributes(rest_old, rest_new)
+  compare_attributes_helper(build_attrs_map(old_attributes), new_attributes)
+}
+
+// Helper function takes a list of old and new attributes and optionally returns a list of changed
+// attributes. Since this function is called recursively, it takes a map of old attributes keyed by
+// their name to make it easier to lookup the old attribute by name. If the attribute is not found
+// in the map, it is considered new. If the attribute is found in the map, it is compared to the new
+// attribute to see if it has changed.
+//
+// If the function returns Some, it means that at least one attribute has changed and the list of
+// all attributes is returned. At the root of the recursion, the function will return all attributes
+// if at least one attribute has changed, or None if no attributes have changed.
+fn compare_attributes_helper(
+  old_attributes: Map(String, RenderedAttribute),
+  new_attributes: List(RenderedAttribute),
+) -> Option(List(RenderedAttribute)) {
+  case new_attributes {
+    [new_attr, ..rest_new] -> {
+      // lookup the old attribute by key, since its position in the list may have changed
+      case map.get(old_attributes, attr_key(new_attr)) {
+        Ok(old_attr) -> {
+          case old_attr == new_attr {
+            True -> {
+              case compare_attributes_helper(old_attributes, rest_new) {
+                Some(_) -> {
+                  Some(new_attributes)
+                }
+                None -> {
+                  None
+                }
+              }
+            }
+            False -> {
+              Some(new_attributes)
+            }
+          }
         }
-        False -> {
-          None
+        _ -> {
+          Some(new_attributes)
         }
       }
     }
-    _, _ -> {
-      Some(new_attributes)
+    _ -> {
+      case map.size(old_attributes), list.length(new_attributes) {
+        0, 0 -> {
+          None
+        }
+        old_size, new_size if old_size > new_size -> {
+          // some attributes have been removed
+          Some(new_attributes)
+        }
+      }
     }
   }
+}
+
+fn attr_key(attribute) {
+  case attribute {
+    RenderedAttribute(name: name, ..) -> {
+      name
+    }
+    RenderedKey(key: key) -> {
+      key
+    }
+    RenderedEventHandler(id: id, ..) -> {
+      id
+    }
+  }
+}
+
+fn build_attrs_map(attributes) {
+  attributes
+  |> list.fold(
+    map.new(),
+    fn(acc, attr) { map.insert(acc, attr_key(attr), attr) },
+  )
 }
 
 // takes a list of old and new children and optionally returns a list of tuples
@@ -140,36 +214,64 @@ fn compare_children(
       },
     )
 
-  list.zip(old_children, new_children)
+  zip_all(old_children, new_children)
   |> list.index_map(fn(index, zipped) {
     let #(old_child, new_child) = zipped
 
     case old_child, new_child {
-      RenderedElement(..), RenderedElement(key: Some(key), ..) -> {
-        // check if element has a key and if it does, check if it exists in the key map
-        case map.get(key_map, key) {
-          Ok(found) -> {
-            let #(old_index, old_child) = found
+      Some(old_child), Some(new_child) -> {
+        case old_child, new_child {
+          RenderedElement(..), RenderedElement(key: Some(key), ..) -> {
+            // check if element has a key and if it does, check if it exists in the key map
+            case map.get(key_map, key) {
+              Ok(found) -> {
+                let #(old_index, old_child) = found
 
-            let child_patch = create(old_child, new_child)
+                let child_patch = create(old_child, new_child)
 
-            case index == old_index {
-              True -> {
-                // if the index is the same, then the element has not moved
-                #(index, child_patch)
+                case index == old_index {
+                  True -> {
+                    // if the index is the same, then the element has not moved
+                    #(index, child_patch)
+                  }
+                  False -> {
+                    #(index, Move(old_index, child_patch))
+                  }
+                }
               }
-              False -> {
-                #(index, From(old_index, child_patch))
+              Error(Nil) -> {
+                #(index, create(old_child, new_child))
               }
             }
           }
-          Error(Nil) -> {
+          _, _ -> {
             #(index, create(old_child, new_child))
           }
         }
       }
-      _, _ -> {
-        #(index, create(old_child, new_child))
+      None, Some(new_child) -> {
+        case new_child {
+          RenderedElement(key: Some(key), ..) -> {
+            // check if element has a key and if it does, check if it exists in the key map
+            case map.get(key_map, key) {
+              Ok(found) -> {
+                let #(old_index, old_child) = found
+                #(index, Move(old_index, create(old_child, new_child)))
+              }
+              Error(Nil) -> {
+                #(index, Add(new_child))
+              }
+            }
+          }
+          _ -> {
+            // new child
+            #(index, Add(new_child))
+          }
+        }
+      }
+      Some(_), _ -> {
+        // child removed
+        #(index, Remove)
       }
     }
   })
@@ -187,6 +289,25 @@ fn compare_children(
       _ -> {
         Some(diff_list)
       }
+    }
+  }
+}
+
+// Takes a list of old and new children and zips them together as Option. If one list is longer than
+// the other, the remaining elements of the shorter list will be None.
+fn zip_all(a: List(a), b: List(b)) -> List(#(Option(a), Option(b))) {
+  case a, b {
+    [], [] -> {
+      []
+    }
+    [a, ..rest_a], [b, ..rest_b] -> {
+      [#(Some(a), Some(b)), ..zip_all(rest_a, rest_b)]
+    }
+    [a, ..rest_a], [] -> {
+      [#(Some(a), None), ..zip_all(rest_a, [])]
+    }
+    [], [b, ..rest_b] -> {
+      [#(None, Some(b)), ..zip_all([], rest_b)]
     }
   }
 }

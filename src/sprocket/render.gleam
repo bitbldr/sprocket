@@ -12,7 +12,7 @@ pub type Renderer(result) {
 
 pub type RenderedAttribute {
   RenderedAttribute(name: String, value: String)
-  RenderedKey(value: String)
+  RenderedKey(key: String)
   RenderedEventHandler(kind: String, id: String)
 }
 
