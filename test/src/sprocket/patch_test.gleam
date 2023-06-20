@@ -1,10 +1,13 @@
+import gleam/io
+import gleam/json
+import gleam/string
 import gleeunit/should
 import gleam/dynamic
 import gleam/option.{None, Some}
 import sprocket/render.{
   RenderedAttribute, RenderedComponent, RenderedElement, RenderedText,
 }
-import sprocket/patch.{Add, Change, Move, NoOp, Replace, Update}
+import sprocket/patch.{Change, Insert, Move, NoOp, Replace, Update}
 
 // gleeunit test functions end in `_test`
 pub fn text_change_test() {
@@ -127,7 +130,7 @@ pub fn first_fc_without_children_test() {
     children: Some([
       #(
         0,
-        Add(el: RenderedElement(
+        Insert(el: RenderedElement(
           tag: "div",
           key: None,
           attrs: [],
@@ -233,7 +236,7 @@ pub fn add_child_test() {
             #(1, Update(attrs: None, children: Some([#(0, Change("Great"))]))),
             #(
               2,
-              Add(RenderedElement(
+              Insert(RenderedElement(
                 tag: "p",
                 key: None,
                 attrs: [],
@@ -242,7 +245,7 @@ pub fn add_child_test() {
             ),
             #(
               3,
-              Add(RenderedElement(
+              Insert(RenderedElement(
                 tag: "p",
                 key: None,
                 attrs: [],
@@ -346,7 +349,7 @@ pub fn add_move_child_with_keys_test() {
             ),
             #(
               2,
-              Add(RenderedElement(
+              Insert(RenderedElement(
                 tag: "p",
                 key: Some("big"),
                 attrs: [],
@@ -454,7 +457,7 @@ pub fn add_move_update_child_with_keys_test() {
             ),
             #(
               2,
-              Add(RenderedElement(
+              Insert(RenderedElement(
                 tag: "p",
                 key: Some("big"),
                 attrs: [],
@@ -472,7 +475,7 @@ pub fn add_move_update_child_with_keys_test() {
                   ]),
                   children: Some([
                     #(0, Change("Blue")),
-                    #(1, Add(RenderedText("World"))),
+                    #(1, Insert(RenderedText("World"))),
                   ]),
                 ),
               ),
@@ -574,7 +577,7 @@ pub fn add_move_replace_child_with_keys_test() {
             ),
             #(
               2,
-              Add(RenderedElement(
+              Insert(RenderedElement(
                 tag: "p",
                 key: Some("big"),
                 attrs: [],
@@ -858,4 +861,119 @@ pub fn fc_props_change_test() {
       ),
     ],
   )))
+}
+
+pub fn patch_to_json_test() {
+  let fc = fn(socket, _) { #(socket, []) }
+  let props = dynamic.from([])
+
+  let first =
+    RenderedComponent(
+      fc: fc,
+      props: props,
+      children: [
+        RenderedElement(
+          tag: "div",
+          key: None,
+          attrs: [],
+          children: [
+            RenderedElement(
+              tag: "p",
+              key: Some("hello"),
+              attrs: [],
+              children: [RenderedText("Hello")],
+            ),
+            RenderedElement(
+              tag: "p",
+              key: Some("world"),
+              attrs: [],
+              children: [RenderedText("World")],
+            ),
+          ],
+        ),
+      ],
+    )
+
+  let second =
+    RenderedComponent(
+      fc: fc,
+      props: props,
+      children: [
+        RenderedElement(
+          tag: "div",
+          key: None,
+          attrs: [],
+          children: [
+            RenderedElement(
+              tag: "p",
+              key: Some("hello"),
+              attrs: [],
+              children: [RenderedText("Hello")],
+            ),
+            RenderedElement(
+              tag: "p",
+              key: Some("great"),
+              attrs: [],
+              children: [RenderedText("Great")],
+            ),
+            RenderedElement(
+              tag: "p",
+              key: Some("big"),
+              attrs: [],
+              children: [RenderedText("Big")],
+            ),
+            RenderedElement(
+              tag: "p",
+              key: Some("world"),
+              attrs: [],
+              children: [RenderedText("World")],
+            ),
+          ],
+        ),
+      ],
+    )
+
+  patch.create(first, second)
+  |> patch.patch_to_json
+  |> json.to_string
+  |> io.debug
+  |> should.equal(
+    "[
+      1,
+      null,
+      {
+          \"0\": [
+              1,
+              null,
+              {
+                  \"1\": [
+                      2,
+                      {
+                          \"type\": \"p\",
+                          \"attrs\": {},
+                          \"0\": \"Great\"
+                      }
+                  ],
+                  \"2\": [
+                      3,
+                      {
+                          \"type\": \"p\",
+                          \"attrs\": {},
+                          \"0\": \"Big\"
+                      }
+                  ],
+                  \"3\": [
+                      6,
+                      1,
+                      [
+                          0
+                      ]
+                  ]
+              }
+          ]
+      }
+    ]"
+    |> string.replace("\n", "")
+    |> string.replace(" ", ""),
+  )
 }

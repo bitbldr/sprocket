@@ -9,6 +9,7 @@ import sprocket/socket.{
   Updater, WebSocket, WithDependencies,
 }
 import sprocket/render.{RenderResult, RenderedElement, live_render}
+import sprocket/patch.{Patch}
 
 pub type Sprocket =
   Subject(Message)
@@ -17,7 +18,8 @@ type State {
   State(
     socket: Socket,
     view: Option(Element),
-    updater: Option(Updater(RenderedElement)),
+    updater: Option(Updater(Patch)),
+    rendered: Option(RenderedElement),
   )
 }
 
@@ -25,6 +27,7 @@ pub type Message {
   Shutdown
   HasWebSocket(reply_with: Subject(Bool), websocket: WebSocket)
   SetRenderUpdate(fn() -> Nil)
+  RenderImmediate(reply_with: Subject(RenderedElement))
   RenderUpdate
   GetEventHandler(reply_with: Subject(Result(EventHandler, Nil)), id: String)
 }
@@ -55,21 +58,49 @@ fn handle_message(message: Message, state: State) -> actor.Next(State) {
       )
     }
 
-    RenderUpdate -> {
+    RenderImmediate(reply_with) -> {
       let state = case state {
-        State(socket: socket, view: Some(view), updater: Some(updater)) -> {
+        State(socket: socket, view: Some(view), ..) -> {
           let RenderResult(socket, rendered) =
             socket
             |> socket.reset_for_render
             |> live_render(view)
 
-          let state = State(..state, socket: socket)
+          actor.send(reply_with, rendered)
+
+          process_pending_hooks(
+            State(..state, socket: socket, rendered: Some(rendered)),
+          )
+        }
+        _ -> {
+          logger.error("No renderer found!")
+          state
+        }
+      }
+
+      actor.Continue(state)
+    }
+
+    RenderUpdate -> {
+      let state = case state {
+        State(
+          socket: socket,
+          view: Some(view),
+          updater: Some(updater),
+          rendered: Some(prev_rendered),
+        ) -> {
+          let RenderResult(socket, rendered) =
+            socket
+            |> socket.reset_for_render
+            |> live_render(view)
+
+          let update = patch.create(prev_rendered, rendered)
 
           // send the rendered update using updater
-          case updater.send(rendered) {
+          case updater.send(update) {
             Ok(_) -> Nil
             Error(_) -> {
-              logger.error("Failed to send rendered update!")
+              logger.error("Failed to send update patch!")
               Nil
             }
           }
@@ -77,10 +108,24 @@ fn handle_message(message: Message, state: State) -> actor.Next(State) {
           // hooks might contain effects that will trigger a rerender. That is okay because any
           // RenderUpdate messages sent during this operation will be placed into this actor's mailbox
           // and will be processed in order after this current render is complete
-          process_pending_hooks(state)
+          process_pending_hooks(
+            State(..state, socket: socket, rendered: Some(rendered)),
+          )
         }
         _ -> {
-          logger.error("No renderer found!")
+          case state {
+            State(view: None, ..) ->
+              logger.error("No view found! A view must be provided to render.")
+            State(updater: None, ..) ->
+              logger.error(
+                "No updater found! An updater must be provided to send updates to the client.",
+              )
+            State(rendered: None, ..) ->
+              logger.error(
+                "No previous render found! View must be rendered at least once before updates can be sent.",
+              )
+          }
+
           state
         }
       }
@@ -108,11 +153,16 @@ fn handle_message(message: Message, state: State) -> actor.Next(State) {
 pub fn start(
   ws: Option(WebSocket),
   view: Option(Element),
-  updater: Option(Updater(RenderedElement)),
+  updater: Option(Updater(Patch)),
 ) {
   let assert Ok(actor) =
     actor.start(
-      State(socket: socket.new(ws), view: view, updater: updater),
+      State(
+        socket: socket.new(ws),
+        view: view,
+        updater: updater,
+        rendered: None,
+      ),
       handle_message,
     )
 
@@ -130,7 +180,11 @@ pub fn has_websocket(actor, websocket) -> Bool {
 }
 
 pub fn get_handler(actor, id) {
-  process.call(actor, GetEventHandler(_, id), 100)
+  actor.call(actor, GetEventHandler(_, id), 100)
+}
+
+pub fn render(actor) -> RenderedElement {
+  actor.call(actor, RenderImmediate(_), 100)
 }
 
 pub fn render_update(actor) -> Nil {

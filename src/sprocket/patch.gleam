@@ -1,22 +1,25 @@
 import gleam/list
+import gleam/int
 import gleam/map.{Map}
 import gleam/option.{None, Option, Some}
 import sprocket/render.{
   RenderedAttribute, RenderedComponent, RenderedElement, RenderedEventHandler,
   RenderedKey, RenderedText,
 }
+import gleam/json.{Json}
+import sprocket/render/json as json_renderer
 
 pub type Patch {
+  NoOp
   Update(
     attrs: Option(List(RenderedAttribute)),
     children: Option(List(#(Int, Patch))),
   )
   Replace(el: RenderedElement)
-  Add(el: RenderedElement)
+  Insert(el: RenderedElement)
   Remove
   Change(text: String)
   Move(from: Int, patch: Patch)
-  NoOp
 }
 
 // Creates a diff patch that can be applied to the old element to obtain the new element.
@@ -26,7 +29,7 @@ pub type Patch {
 // one of the following:
 //  - Replace: the old element should be replaced with the new element
 //  - Update: the old element should be updated with the new element's attributes and children
-//  - Add: the new element should be added to the DOM
+//  - Insert: the new element should be added to the DOM
 //  - Remove: the old element should be removed from the DOM
 //  - Change: the old element's text should be changed to the new element's text
 //  - Move: the old element should be moved to a new position in the DOM
@@ -259,13 +262,13 @@ fn compare_children(
                 #(index, Move(old_index, create(old_child, new_child)))
               }
               Error(Nil) -> {
-                #(index, Add(new_child))
+                #(index, Insert(new_child))
               }
             }
           }
           _ -> {
             // new child
-            #(index, Add(new_child))
+            #(index, Insert(new_child))
           }
         }
       }
@@ -310,4 +313,99 @@ fn zip_all(a: List(a), b: List(b)) -> List(#(Option(a), Option(b))) {
       [#(None, Some(b)), ..zip_all([], rest_b)]
     }
   }
+}
+
+fn op_code(op: Patch) -> Int {
+  case op {
+    NoOp -> {
+      0
+    }
+    Update(..) -> {
+      1
+    }
+    Replace(..) -> {
+      2
+    }
+    Insert(..) -> {
+      3
+    }
+    Remove -> {
+      4
+    }
+    Change(..) -> {
+      5
+    }
+    Move(..) -> {
+      6
+    }
+  }
+}
+
+pub fn patch_to_json(patch: Patch) -> Json {
+  case patch {
+    NoOp -> {
+      json.preprocessed_array([json.int(op_code(patch))])
+    }
+    Update(attrs, children) -> {
+      json.preprocessed_array([
+        json.int(op_code(patch)),
+        json.nullable(attrs, of: attrs_to_json),
+        json.nullable(children, of: children_to_json),
+      ])
+    }
+    Replace(el) -> {
+      json.preprocessed_array([
+        json.int(op_code(patch)),
+        json_renderer.renderer().render(el),
+      ])
+    }
+    Insert(el) -> {
+      json.preprocessed_array([
+        json.int(op_code(patch)),
+        json_renderer.renderer().render(el),
+      ])
+    }
+    Remove -> {
+      json.preprocessed_array([json.int(op_code(patch))])
+    }
+    Change(text) -> {
+      json.preprocessed_array([json.int(op_code(patch)), json.string(text)])
+    }
+    Move(index, move_patch) -> {
+      json.preprocessed_array([
+        json.int(op_code(patch)),
+        json.int(index),
+        patch_to_json(move_patch),
+      ])
+    }
+  }
+}
+
+fn attrs_to_json(attrs: List(RenderedAttribute)) -> Json {
+  json.array(attrs, of: attr_to_json)
+}
+
+fn attr_to_json(attr: RenderedAttribute) -> Json {
+  case attr {
+    RenderedAttribute(name, value) -> {
+      json.object([#(name, json.string(value))])
+    }
+    RenderedKey(key) -> {
+      json.object([#("key", json.string(key))])
+    }
+    RenderedEventHandler(id, event) -> {
+      json.object([#(id, json.string(event))])
+    }
+  }
+}
+
+fn children_to_json(children: List(#(Int, Patch))) -> Json {
+  children
+  |> list.map(map_key_to_str)
+  |> json.object()
+}
+
+fn map_key_to_str(c: #(Int, Patch)) -> #(String, Json) {
+  let #(index, patch) = c
+  #(int.to_string(index), patch_to_json(patch))
 }

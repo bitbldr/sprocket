@@ -21,6 +21,7 @@ import sprocket/sprocket
 import sprocket/render.{RenderedElement}
 import sprocket/render/json as json_renderer
 import sprocket/component.{component}
+import sprocket/patch.{Patch}
 import example/hello_view.{HelloViewProps, hello_view}
 import example/routes
 import example/app_context.{AppContext}
@@ -138,7 +139,9 @@ fn websocket_service(ca: Cassette) {
     let sprocket = sprocket.start(Some(ws), Some(view), Some(updater))
     cassette.push_sprocket(ca, sprocket)
 
-    sprocket.render_update(sprocket)
+    // intitial live render
+    let rendered = sprocket.render(sprocket)
+    websocket.send(ws, TextMessage(rendered_to_json(rendered)))
 
     io.println("Client connected!")
     io.debug(ws)
@@ -177,10 +180,15 @@ fn decode_event(body: String) {
   )
 }
 
-fn update_to_json(update: RenderedElement) -> String {
+fn rendered_to_json(update: RenderedElement) -> String {
   json.preprocessed_array([
-    json.string("update"),
+    json.string("init"),
     json_renderer.renderer().render(update),
   ])
+  |> json.to_string()
+}
+
+fn update_to_json(update: Patch) -> String {
+  json.preprocessed_array([json.string("update"), patch.patch_to_json(update)])
   |> json.to_string()
 }
