@@ -104,7 +104,7 @@ pub type ExampleViewProps {
   ExampleViewProps
 }
 
-pub fn hello_view(socket: Socket, _props: ExampleViewProps) {
+pub fn example_view(socket: Socket, _props: ExampleViewProps) {
   render(
     socket,
     [
