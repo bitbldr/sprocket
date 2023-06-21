@@ -4,24 +4,22 @@
 [![Hex Docs](https://img.shields.io/badge/hex-docs-ffaff3)](https://hexdocs.pm/sprocket/)
 
 Sprocket is a server-side framework that enables real-time experiences over a WebSocket
-connection. It is heavily inspired by Phoenix LiveView and React. The name "Sprocket" is derived from the
+connection. It is heavily inspired by [Phoenix LiveView](https://github.com/phoenixframework/phoenix_live_view) and [React](https://github.com/facebook/react). The name "Sprocket" is derived from the
 metaphor of a bicycle's cassette and chain. 
 
-Similar to [Phoenix LiveView](https://github.com/phoenixframework/phoenix_live_view), Sprocket renders an initial HTML paint and then establishes a WebSocket connection to facilitate receiving browser events and sending differential updates. These updates are patched into an in-browser DOM state using morphdom. 
+Similar to Phoenix LiveView, Sprocket renders an initial static HTML view as a "first paint" and then establishes a connection to the server over a WebSocket which facilitates receiving browser events and sending diff updates. These updates are patched into browser DOM using morphdom.
 
-Similar to [React](https://github.com/facebook/react), Sprocket supports functional components that accept props and render when props change. It also supports defining reducers for state management and utilizing lambda functions as event handlers. These event handlers can call external APIs or dispatch reducer state updates. 
+Similar to React, Sprocket supports functional components that accept props and render each time those props change. It also supports creating reducers for state management and using basic functions as event handlers. These event handlers can call external APIs or dispatch reducer state updates.
 
-Under the hood, a reducer is a Gleam actor (similar to an Elixir GenServer or Erlang Agent), and changes to the state result in a re-render of the view. 
+Under the hood, each reducer is a lightweight [Gleam Actor](https://hexdocs.pm/gleam_otp/0.1.3/gleam/otp/actor/) process (similar to a GenServer), and changes to the state result in a re-render of the view. 
 
-Sprocket serves as a collection of patterns and common functions that facilitate building functional
-views and reusable, composable components. everything is a functional component, including the base
-view.
-This library is currently in its infancy and should be considered
+This library is a collection of patterns and common functions that facilitate building declarative, functional
+components that are composable and reusable. These components are then combined and used by parent component views.
+
+This library is currently in its infancy and should currently be considered
 a **proof of concept**. There is still a lot of work to be done, including building out all HTML
 functions, adding support for more event types, introducing additional hooks, improving unit test
 coverage, providing extensive documentation of modules and API, and optimizing performance. 
-
-In the future, Sprocket may be extended to support more than just web views, such as native desktop, iOS, and Android applications.
 
 ## Key Features
 
@@ -82,6 +80,7 @@ Sprocket is still in its early stages and has a roadmap for future development. 
 - Improve unit test coverage to ensure code quality and reliability
 - Provide extensive documentation of modules and API for easier adoption
 - Optimize performance to enhance responsiveness and scalability
+- Investigate extending to support more than just web views, such as native desktop, iOS, and Android applications.
 
 ## Contributing
 
