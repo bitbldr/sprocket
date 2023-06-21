@@ -27,7 +27,7 @@ coverage, providing extensive documentation of modules and API, and optimizing p
 - Strongly-typed functional reducers for state management
 - Uses lambda functions as event handlers for API calls and dispatching state updates
 - Built on lightwieght otp processes for composable & scalable state management
-- Encourages declarative views and composable components
+- Encourages declarative and composable views
 
 ## Getting Started
 
