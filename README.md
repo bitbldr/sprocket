@@ -32,7 +32,7 @@ coverage, providing extensive documentation of modules and API, and optimizing p
 ## Example
 
 ### Clock Component
-```
+```gleam
 pub type ClockProps {
   ClockProps(label: Option(String))
 }
@@ -96,7 +96,7 @@ fn initial() -> Model {
 ```
 
 ### Usage from a parent view
-```
+```gleam
 pub type ExampleViewProps {
   ExampleViewProps
 }
