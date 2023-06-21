@@ -13,7 +13,7 @@ Under the hood, each reducer is a lightweight [Gleam Actor](https://hexdocs.pm/g
 This library is a collection of patterns and common functions that facilitate building declarative, functional
 components that are composable and reusable. These components are then combined by parent components to create views.
 
-This library is currently a **proof of concept** and should currently be considered unstable.
+This library is currently in a **proof of concept** state and should be considered highly unstable.
 There is still a lot of work to be done, including building out all HTML
 functions, adding support for more event types, introducing additional hooks, improving unit test
 coverage, providing extensive documentation of modules and API, and optimizing performance. 
