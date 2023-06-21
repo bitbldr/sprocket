@@ -3,7 +3,7 @@
 [![Package Version](https://img.shields.io/hexpm/v/sprocket)](https://hex.pm/packages/sprocket)
 [![Hex Docs](https://img.shields.io/badge/hex-docs-ffaff3)](https://hexdocs.pm/sprocket/)
 
-Sprocket is a server-side web app framework that enables real-time experiences over a WebSocket
+Sprocket is a server-side framework that enables real-time experiences over a WebSocket
 connection. It is heavily inspired by LiveView and React. The name "Sprocket" is derived from the
 metaphor of a bicycle's cassette and chain. 
 
