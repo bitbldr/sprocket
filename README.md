@@ -29,6 +29,103 @@ coverage, providing extensive documentation of modules and API, and optimizing p
 - Built on lightwieght otp processes for composable & scalable state management
 - Encourages declarative and composable views
 
+## Example
+
+### Clock Component
+```
+pub type ClockProps {
+  ClockProps(label: Option(String))
+}
+
+pub fn clock(socket: Socket, props) {
+  let ClockProps(label) = props
+
+  // Define a reducer to handle events and update the state
+  use socket, State(Model(time: time, ..), dispatch) <- reducer(
+    socket,
+    initial(),
+    update,
+  )
+
+  // Example effect that runs whenever the `time` variable changes and has a cleanup function
+  use socket <- effect(
+    socket,
+    fn() {
+      let cancel =
+        interval(
+          1000,
+          fn() { dispatch(UpdateTime(erlang.system_time(erlang.Second))) },
+        )
+
+      Some(fn() { cancel() })
+    },
+    WithDependencies([dynamic.from(time)]),
+  )
+
+  let current_time = int.to_string(time)
+
+  render(
+    socket,
+    case label {
+      Some(label) -> [span([], [text(label)]), span([], [text(current_time)])]
+      None -> [text(current_time)]
+    },
+  )
+}
+
+type Model {
+  Model(time: Int, timezone: String)
+}
+
+type Msg {
+  UpdateTime(Int)
+}
+
+fn update(model: Model, msg: Msg) -> Model {
+  case msg {
+    UpdateTime(time) -> {
+      Model(..model, time: time)
+    }
+  }
+}
+
+fn initial() -> Model {
+  Model(time: erlang.system_time(erlang.Second), timezone: "UTC")
+}
+
+```
+
+### Usage from a parent view
+```
+pub type ExampleViewProps {
+  ExampleViewProps
+}
+
+pub fn hello_view(socket: Socket, _props: ExampleViewProps) {
+  render(
+    socket,
+    [
+      html(
+        [lang("en")],
+        [
+          head([], [link([rel("stylesheet"), href("/app.css")])]),
+          body(
+            [class("bg-white dark:bg-gray-900 dark:text-white p-4")],
+            [
+              component(
+                clock,
+                ClockProps(label: Some("The current time is: ")),
+              ),
+            ],
+          ),
+        ],
+      ),
+    ],
+  )
+}
+
+```
+
 ## Getting Started
 
 To get started with Sprocket, follow the instructions below:
