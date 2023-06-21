@@ -4,15 +4,18 @@ Persistent Reactive Sockets
 [![Package Version](https://img.shields.io/hexpm/v/sprocket)](https://hex.pm/packages/sprocket)
 [![Hex Docs](https://img.shields.io/badge/hex-docs-ffaff3)](https://hexdocs.pm/sprocket/)
 
-A server-side framework for building type-safe, scalable, real-time apps. Heavily inspired by [Phoenix LiveView](https://github.com/phoenixframework/phoenix_live_view), [Elm](https://github.com/elm) and [React](https://github.com/facebook/react). The name "Sprocket" is derived from the
+A server-side framework for building type-safe, scalable, real-time apps. Heavily inspired by [Phoenix LiveView](https://github.com/phoenixframework/phoenix_live_view), [React](https://github.com/facebook/react) and [Elm](https://github.com/elm). The name "Sprocket" is loosly derived from the
 metaphor of a bicycle's sprocket cassette and chain.
 
-Sprocket combines the best of Gleam type-safety, LiveView scalability, React componentization and Elm state management. Like Phoenix LiveView, an initial static HTML view is rendered as a "first paint" which then establishes a connection to the server over a WebSocket to facilitates receiving browser events and send view diff updates. These updates are patched into browser DOM using morphdom. Like React, declarative views are built using functional components that accept props and render each time those props change. Finally, inspired by Elm, strongly-typed reducers and messages are used for state management.
+Sprocket combines the best of Gleam type-safety, LiveView scalability, React componentization and Elm state management. Like Phoenix LiveView, an initial static view is rendered as HTML on the "first paint" which then establishes a connection to the server over a WebSocket to facilitate receiving browser messages and send view update diffs. These updates are patched into browser DOM using morphdom. Like React, declarative views are built using functional components that accept props and render each time those props change. Finally, inspired by Elm, strongly-typed models and messages are used for state management via reducers.
 
-Under the hood, each reducer is a lightweight [Gleam Actor](https://hexdocs.pm/gleam_otp/0.1.3/gleam/otp/actor/) process (similar to a GenServer) and changes to the state result in a re-render of the view.
+Under the hood, each reducer is a lightweight [Gleam Actor](https://hexdocs.pm/gleam_otp/0.1.3/gleam/otp/actor/) OTP process (similar to a GenServer) and changes to the state result in a re-render of the view.
 
 This library is a collection of patterns and common functions that facilitate building declarative, functional
-components that are composable and reusable. These components are then combined by parent components to create views.
+components that are composable. Components are combined by other parent components to create views. Data flows into components
+in the form of props and out of components in the form of events. It's useful to think of the data flow as **Events** always
+bubbling up via event hander functions (passed in as props, e.g. `onSomeEvent("Something happened")`) and **State** always
+flowing down via props.
 
 This library is currently in a **proof of concept** state and should be considered highly unstable.
 There is still a lot of work to be done, including building out all HTML
