@@ -1,3 +1,5 @@
+const isInteger = (str) => !Number.isNaN(parseInt(str, 10));
+
 enum OpCode {
   NoOp = 0,
   Update = 1,
@@ -8,13 +10,13 @@ enum OpCode {
   Move = 6,
 }
 
-type Attributes = { [key: string]: string };
-type Children = { [key: string]: Patch };
+type Attributes = Record<string, string> | null;
+type Children = Record<string, Patch> | null;
 type Element = Record<string, any>;
 
 export type Patch =
   | [OpCode.NoOp]
-  | [OpCode.Update, Attributes | null, Children | null]
+  | [OpCode.Update, Attributes, Children]
   | [OpCode.Replace, Element]
   | [OpCode.Add, Element]
   | [OpCode.Remove]
@@ -25,40 +27,43 @@ export function applyPatch(
   original: Record<string, any>,
   patch: Patch,
   parent?: Record<string, any>,
-  index?: number
+  currentKey?: string
 ): Record<string, any> | string | null {
   switch (patch[0]) {
     case OpCode.NoOp:
       return original;
     case OpCode.Update:
+      const newAttrs = patch[1];
+      const childrenPatchMap = patch[2];
       let updated = original;
 
-      if (patch[1]) {
+      if (newAttrs) {
         updated = {
-          ...original,
-          attrs: patch[1],
+          ...updated,
+          attrs: newAttrs,
         };
       }
 
-      if (patch[2]) {
-        let current = 0;
-        while (patch[2][current]) {
-          let newEl = applyPatch(
-            updated[current],
-            patch[2][current],
-            updated,
-            current
-          );
+      if (childrenPatchMap) {
+        updated = Object.keys(childrenPatchMap)
+          .filter((key) => isInteger(key))
+          .reduce((updated, key) => {
+            let newEl = applyPatch(
+              updated[key],
+              childrenPatchMap[key],
+              updated,
+              key
+            );
 
-          if (newEl) {
-            updated = {
-              ...updated,
-              [current]: newEl,
-            };
-          }
+            if (newEl) {
+              return {
+                ...updated,
+                [key]: newEl,
+              };
+            }
 
-          current++;
-        }
+            return updated;
+          }, updated);
       }
 
       return updated;
@@ -71,10 +76,10 @@ export function applyPatch(
     case OpCode.Change:
       return patch[1];
     case OpCode.Move:
-      const moved = (parent as any)[index as any];
+      const moved = (parent as any)[currentKey as any];
 
       if (moved) {
-        return applyPatch(moved, patch[2], parent, index);
+        return applyPatch(moved, patch[2], parent, currentKey);
       } else {
         throw new Error("Cannot move element without parent");
       }

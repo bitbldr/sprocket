@@ -1,3 +1,4 @@
+import gleam/io
 import gleam/list
 import gleam/int
 import gleam/map.{Map}
@@ -109,8 +110,11 @@ pub fn create(old: RenderedElement, new: RenderedElement) -> Patch {
   }
 }
 
-// Takes a list of old and new attributes and optionally returns a list of the new attributes
-// if at least one attribute has changed. If no attributes have changed, None is returned.
+// Takes a list of old and new attributes and optionally returns a list of the new attributes if at
+// least one attribute has changed. If no attributes have changed, None is returned.
+//
+// TODO: This implementation could be optimized to return a diff of changed attributes. For now, we
+// return all attributes if at least one attribute has changed.
 fn compare_attributes(
   old_attributes: List(RenderedAttribute),
   new_attributes: List(RenderedAttribute),
@@ -138,7 +142,12 @@ fn compare_attributes_helper(
         Ok(old_attr) -> {
           case old_attr == new_attr {
             True -> {
-              case compare_attributes_helper(old_attributes, rest_new) {
+              case
+                compare_attributes_helper(
+                  map.delete(old_attributes, attr_key(old_attr)),
+                  rest_new,
+                )
+              {
                 Some(_) -> {
                   Some(new_attributes)
                 }
@@ -382,21 +391,21 @@ pub fn patch_to_json(patch: Patch) -> Json {
 }
 
 fn attrs_to_json(attrs: List(RenderedAttribute)) -> Json {
-  json.array(attrs, of: attr_to_json)
-}
-
-fn attr_to_json(attr: RenderedAttribute) -> Json {
-  case attr {
-    RenderedAttribute(name, value) -> {
-      json.object([#(name, json.string(value))])
+  attrs
+  |> list.map(fn(attr) {
+    case attr {
+      RenderedAttribute(name, value) -> {
+        #(name, json.string(value))
+      }
+      RenderedKey(key) -> {
+        #("key", json.string(key))
+      }
+      RenderedEventHandler(id, event) -> {
+        #(id, json.string(event))
+      }
     }
-    RenderedKey(key) -> {
-      json.object([#("key", json.string(key))])
-    }
-    RenderedEventHandler(id, event) -> {
-      json.object([#(id, json.string(event))])
-    }
-  }
+  })
+  |> json.object()
 }
 
 fn children_to_json(children: List(#(Int, Patch))) -> Json {

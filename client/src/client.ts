@@ -1,16 +1,7 @@
 import morphdom from "morphdom";
 import { renderDom } from "./render";
 import { applyPatch } from "./patch";
-
-function attachEventHandlers(socket) {
-  document.querySelectorAll("[live-event]").forEach((el) => {
-    let [event, id] = el.attributes["live-event"].value.split("=");
-
-    el.addEventListener(event, (e) => {
-      socket.send(JSON.stringify({ event, id }));
-    });
-  });
-}
+import { attachEventHandlers } from "./events";
 
 window.addEventListener("DOMContentLoaded", () => {
   const socket = new WebSocket("ws://localhost:3000/live");
@@ -25,8 +16,6 @@ window.addEventListener("DOMContentLoaded", () => {
     console.log("Message from server ", event.data);
 
     let parsed = JSON.parse(event.data);
-
-    console.log("parsed", parsed);
 
     if (Array.isArray(parsed)) {
       const body = document.querySelector("body") as Node;
