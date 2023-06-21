@@ -1,4 +1,3 @@
-import gleam/io
 import gleam/json
 import gleam/string
 import gleeunit/should
@@ -936,7 +935,6 @@ pub fn patch_to_json_test() {
   patch.create(first, second)
   |> patch.patch_to_json
   |> json.to_string
-  |> io.debug
   |> should.equal(
     "[
       1,
