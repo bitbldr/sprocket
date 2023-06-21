@@ -4,12 +4,12 @@
 [![Hex Docs](https://img.shields.io/badge/hex-docs-ffaff3)](https://hexdocs.pm/sprocket/)
 
 Sprocket is a server-side framework that enables real-time experiences over a WebSocket
-connection. It is heavily inspired by LiveView and React. The name "Sprocket" is derived from the
+connection. It is heavily inspired by Phoenix LiveView and React. The name "Sprocket" is derived from the
 metaphor of a bicycle's cassette and chain. 
 
-Similar to LiveView, Sprocket renders an initial HTML paint and then establishes a WebSocket connection to facilitate receiving browser events and sending differential updates. These updates are patched into an in-browser DOM state using morphdom. 
+Similar to [Phoenix LiveView](https://github.com/phoenixframework/phoenix_live_view), Sprocket renders an initial HTML paint and then establishes a WebSocket connection to facilitate receiving browser events and sending differential updates. These updates are patched into an in-browser DOM state using morphdom. 
 
-Similar to React, Sprocket supports functional components that accept props and render when props change. It also supports defining reducers for state management and utilizing lambda functions as event handlers. These event handlers can call external APIs or dispatch reducer state updates. 
+Similar to [React](https://github.com/facebook/react), Sprocket supports functional components that accept props and render when props change. It also supports defining reducers for state management and utilizing lambda functions as event handlers. These event handlers can call external APIs or dispatch reducer state updates. 
 
 Under the hood, a reducer is a Gleam actor (similar to an Elixir GenServer or Erlang Agent), and changes to the state result in a re-render of the view. 
 
