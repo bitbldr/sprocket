@@ -4,8 +4,7 @@ Persistent Reactive Sockets
 [![Package Version](https://img.shields.io/hexpm/v/sprocket)](https://hex.pm/packages/sprocket)
 [![Hex Docs](https://img.shields.io/badge/hex-docs-ffaff3)](https://hexdocs.pm/sprocket/)
 
-A server-side framework for building type-safe, scalable, real-time apps. Heavily inspired by [Phoenix LiveView](https://github.com/phoenixframework/phoenix_live_view), [React](https://github.com/facebook/react) and [Elm](https://github.com/elm). The name "Sprocket" is loosly derived from the
-metaphor of a bicycle's sprocket cassette and chain.
+A server-side framework for building type-safe, scalable, real-time apps in [Gleam](https://gleam.run/). Heavily inspired by [Phoenix LiveView](https://github.com/phoenixframework/phoenix_live_view), [React](https://github.com/facebook/react) and [Elm](https://github.com/elm). The name "sprocket" is loosly derived from the metaphor of a bicycle's sprocket cassette and chain.
 
 Sprocket combines the best of Gleam type-safety, LiveView scalability, React componentization and Elm state management. Like Phoenix LiveView, an initial static view is rendered as HTML on the "first paint" which then establishes a connection to the server over a WebSocket to facilitate receiving browser messages and send view update diffs. These updates are patched into browser DOM using morphdom. Like React, declarative views are built using functional components that accept props and render each time those props change. Finally, inspired by Elm, strongly-typed models and messages are used for state management via reducers.
 
