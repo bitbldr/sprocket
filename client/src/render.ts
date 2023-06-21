@@ -1,6 +1,8 @@
+import { isInteger } from "./utils";
+
 // very naive and basic rendering algorithm
 // TODO: rewrite to a more readable approach
-export function renderDom(dom) {
+export function renderDom(dom): string {
   if (typeof dom === "string") {
     return dom;
   }
@@ -13,7 +15,7 @@ export function renderDom(dom) {
   }
 }
 
-function renderComponent(component) {
+function renderComponent(component): string {
   let result = "";
   for (let i = 0; i < Object.keys(component).length - 1; i++) {
     result += renderDom(component[i]);
@@ -22,20 +24,17 @@ function renderComponent(component) {
   return result;
 }
 
-function renderElement(element) {
-  let result = "";
+function renderElement(element): string {
+  const openingTag =
+    Object.keys(element.attrs).reduce((result, key) => {
+      return result + ` ${key}="${element.attrs[key]}"`;
+    }, `<${element.type}`) + ">";
 
-  result += `<${element.type}`;
-  result += Object.keys(element.attrs).map((key) => {
-    return ` ${key}="${element.attrs[key]}"`;
-  });
-  result += ">";
+  const children = Object.keys(element)
+    .filter((key) => isInteger(key))
+    .reduce((rendered, key) => rendered + renderDom(element[key]), "");
 
-  for (let i = 0; i < Object.keys(element).length - 2; i++) {
-    result += renderDom(element[i]);
-  }
+  const closingTag = "</" + element.type + ">";
 
-  result += "</" + element.type + ">";
-
-  return result;
+  return openingTag + children + closingTag;
 }

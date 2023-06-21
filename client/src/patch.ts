@@ -1,4 +1,4 @@
-const isInteger = (str) => !Number.isNaN(parseInt(str, 10));
+import { isInteger } from "./utils";
 
 enum OpCode {
   NoOp = 0,

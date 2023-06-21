@@ -1,5 +1,5 @@
-import gleam/io
 import gleam/list
+import gleam/string
 import gleam/int
 import gleam/map.{Map}
 import gleam/option.{None, Option, Some}
@@ -9,6 +9,7 @@ import sprocket/render.{
 }
 import gleam/json.{Json}
 import sprocket/render/json as json_renderer
+import sprocket/constants.{EventAttrPrefix, KeyAttr, c}
 
 pub type Patch {
   NoOp
@@ -398,10 +399,10 @@ fn attrs_to_json(attrs: List(RenderedAttribute)) -> Json {
         #(name, json.string(value))
       }
       RenderedKey(key) -> {
-        #("key", json.string(key))
+        #(c(KeyAttr), json.string(key))
       }
-      RenderedEventHandler(id, event) -> {
-        #(id, json.string(event))
+      RenderedEventHandler(kind, id) -> {
+        #(string.concat([c(EventAttrPrefix), "-", kind]), json.string(id))
       }
     }
   })

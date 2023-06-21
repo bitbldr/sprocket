@@ -13,12 +13,12 @@
     "typescript": "^5.1.3"
   },
   "scripts": {
-    "client:clean": "rm -rf build dist .parcel-cache",
     "client:build": "parcel build client/src/client.ts --dist-dir priv/static --no-source-maps",
     "client:watch": "parcel client/src/client.ts --no-hmr --dist-dir priv/static",
     "client:test": "jest",
     "tailwind:build": "npx tailwindcss -i ./app.css -o priv/static/app.css",
     "tailwind:watch": "npx tailwindcss -i ./app.css -o priv/static/app.css --watch",
+    "clean": "rm -rf build dist .parcel-cache",
     "watch": "gleam build && concurrently --kill-others \"gleam run\" \"npm run client:watch\" \"npm run tailwind:watch\"",
     "test": "gleam test && npm run client:test"
   },

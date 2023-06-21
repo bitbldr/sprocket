@@ -1,11 +1,11 @@
 pub type Const {
   KeyAttr
-  EventAttr
+  EventAttrPrefix
 }
 
-pub fn spkt_const(c: Const) -> String {
-  case c {
-    KeyAttr -> "live-key"
-    EventAttr -> "live-event"
+pub fn c(constant: Const) -> String {
+  case constant {
+    KeyAttr -> "spkt-key"
+    EventAttrPrefix -> "spkt-event"
   }
 }

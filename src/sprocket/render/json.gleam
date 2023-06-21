@@ -6,6 +6,7 @@ import sprocket/render.{
   RenderedAttribute, RenderedComponent, RenderedElement, RenderedEventHandler,
   RenderedKey, RenderedText, Renderer,
 }
+import sprocket/constants.{EventAttrPrefix, KeyAttr, c}
 
 pub fn renderer() -> Renderer(Json) {
   Renderer(render: fn(el) { render(el) })
@@ -33,10 +34,10 @@ fn element(
           #(name, json.string(value))
         }
         RenderedEventHandler(kind, id) -> {
-          #("live-event", json.string(string.concat([kind, "=", id])))
+          #(string.concat([c(EventAttrPrefix), "-", kind]), json.string(id))
         }
         RenderedKey(k) -> {
-          #("live-key", json.string(k))
+          #(c(KeyAttr), json.string(k))
         }
       }
     })

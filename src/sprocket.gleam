@@ -78,7 +78,7 @@ fn websocket_service(ca: Cassette) {
     // let _ = websocket.send(sender, TextMessage("hello client"))
 
     case msg {
-      TextMessage("join") -> {
+      TextMessage("[\"join\"]") -> {
         io.println("New client joined")
 
         case cassette.get_sprocket(ca, ws) {
@@ -174,7 +174,7 @@ fn decode_event(body: String) {
     body,
     dynamic.decode2(
       Event,
-      field("event", dynamic.string),
+      field("kind", dynamic.string),
       field("id", dynamic.string),
     ),
   )
