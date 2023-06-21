@@ -4,8 +4,8 @@ Persistent Reactive Sockets
 [![Package Version](https://img.shields.io/hexpm/v/sprocket)](https://hex.pm/packages/sprocket)
 [![Hex Docs](https://img.shields.io/badge/hex-docs-ffaff3)](https://hexdocs.pm/sprocket/)
 
-A server-side framework for building type-safe, scalable, real-time apps over a WebSocket connection. Heavily inspired by [Phoenix LiveView](https://github.com/phoenixframework/phoenix_live_view), [Elm](https://github.com/elm) and [React](https://github.com/facebook/react). The name "Sprocket" is derived from the
-metaphor of a bicycle's cassette and chain.
+A server-side framework for building type-safe, scalable, real-time apps. Heavily inspired by [Phoenix LiveView](https://github.com/phoenixframework/phoenix_live_view), [Elm](https://github.com/elm) and [React](https://github.com/facebook/react). The name "Sprocket" is derived from the
+metaphor of a bicycle's sprocket cassette and chain.
 
 Sprocket combines the best of Gleam type-safety, LiveView scalability, React componentization and Elm state management. Like Phoenix LiveView, an initial static HTML view is rendered as a "first paint" which then establishes a connection to the server over a WebSocket to facilitates receiving browser events and send view diff updates. These updates are patched into browser DOM using morphdom. Like React, declarative views are built using functional components that accept props and render each time those props change. Finally, inspired by Elm, strongly-typed reducers and messages are used for state management.
 
@@ -21,13 +21,13 @@ coverage, providing extensive documentation of modules and API, and optimizing p
 
 ## Key Features
 
-- Real-time web app framework over a WebSocket connection
-- Renders initial HTML and patches updates to in-browser DOM state
-- Supports functional components that react to prop changes
-- Defines reducers for state management
-- Uses lambda functions as event handlers for API calls and state updates
-- Built on Gleam actors for efficient state management
-- Encourages functional views and reusable, composable components
+- Real-time server-side app framework
+- Renders initial HTML and patches updates over a WebSocket connection
+- Declarative views using functional components that rerender on prop changes
+- Strongly-typed functional reducers for state management
+- Uses lambda functions as event handlers for API calls and dispatching state updates
+- Built on lightwieght otp processes for composable & scalable state management
+- Encourages declarative views and composable components
 
 ## Getting Started
 
