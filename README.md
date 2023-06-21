@@ -3,17 +3,62 @@
 [![Package Version](https://img.shields.io/hexpm/v/sprocket)](https://hex.pm/packages/sprocket)
 [![Hex Docs](https://img.shields.io/badge/hex-docs-ffaff3)](https://hexdocs.pm/sprocket/)
 
-A Gleam project
+# Sprocket
 
-## Quick start
+Sprocket is a server-side web app framework that enables real-time experiences over a WebSocket
+connection. It is heavily inspired by LiveView and React. The name "Sprocket" is derived from the
+metaphor of a bicycle's cassette and chain. 
 
-```sh
-gleam run   # Run the project
-gleam test  # Run the tests
-gleam shell # Run an Erlang shell
+Similar to LiveView, Sprocket renders an initial HTML paint and then establishes a WebSocket connection to facilitate receiving browser events and sending differential updates. These updates are patched into an in-browser DOM state using morphdom. 
+
+Similar to React, Sprocket supports functional components that accept props and render when props change. It also supports defining reducers for state management and utilizing lambda functions as event handlers. These event handlers can call external APIs or dispatch reducer state updates. 
+
+Under the hood, a reducer is a Gleam actor (similar to an Elixir GenServer or Erlang Agent), and changes to the state result in a re-render of the view. 
+
+Sprocket serves as a collection of patterns and common functions that facilitate building functional
+views and reusable, composable components. everything is a functional component, including the base
+view.
+This library is currently in its infancy and should be considered
+a **proof of concept**. There is still a lot of work to be done, including building out all HTML
+functions, adding support for more event types, introducing additional hooks, improving unit test
+coverage, providing extensive documentation of modules and API, and optimizing performance. 
+
+In the future, Sprocket may be extended to support more than just web views, such as native desktop, iOS, and Android applications.
+
+## Key Features
+
+- Real-time web app framework over a WebSocket connection
+- Renders initial HTML and patches updates to in-browser DOM state
+- Supports functional components that react to prop changes
+- Defines reducers for state management
+- Uses lambda functions as event handlers for API calls and state updates
+- Built on Gleam actors for efficient state management
+- Encourages functional views and reusable, composable components
+
+## Getting Started
+
+To get started with Sprocket, follow the instructions below:
+
+1. Clone the Sprocket repository:
+```
+git clone https://github.com/eliknebel/sprocket.git
 ```
 
-## Installation
+2. Install the required dependencies:
+```
+gleam deps download
+yarn
+```
+
+3. Start the development server:
+```
+yarn run watch
+```
+
+4. Open your web browser and visit `http://localhost:3000` to see the sample app.
+
+
+## TODO: Installation
 
 If available on Hex this package can be added to your Gleam project:
 
@@ -22,3 +67,28 @@ gleam add sprocket
 ```
 
 and its documentation can be found at <https://hexdocs.pm/sprocket>.
+
+
+## TODO: Documentation
+
+Documentation for Sprocket can be found in the [docs](/docs) directory of this repository. It provides detailed information on how to use Sprocket, including module descriptions, API references, and examples.
+
+## Roadmap
+
+Sprocket is still in its early stages and has a roadmap for future development. Here are some of the planned improvements:
+
+- Build out full set of base HTML functions for components (or investigate using an [existing library](https://github.com/nakaixo/nakai))
+- Add support for additional event types to handle various user interactions
+- Expand the available hooks to enable more flexible component behavior
+- Convert client TypeScript to gleam
+- Improve unit test coverage to ensure code quality and reliability
+- Provide extensive documentation of modules and API for easier adoption
+- Optimize performance to enhance responsiveness and scalability
+
+## Contributing
+
+Contributions to Sprocket are welcome and encouraged! If you would like to contribute, please follow the guidelines outlined in the [CONTRIBUTING.md](/CONTRIBUTING.md) file.
+
+## License
+
+Sprocket is released under the [MIT License](/LICENSE).
