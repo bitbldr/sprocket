@@ -1,9 +1,9 @@
 import gleam/list
-import gleam/option.{None, Option, Some}
+import gleam/option.{None, Option}
 import gleam/dynamic.{Dynamic}
 import sprocket/html/attribute.{Attribute, Event, Key}
 import sprocket/socket.{
-  AbstractFunctionalComponent, Component, Element, Raw, Socket,
+  AbstractFunctionalComponent, Component, Element, Raw, SafeHtml, Socket,
 }
 
 pub type Renderer(result) {
@@ -53,6 +53,7 @@ pub fn live_render(socket: Socket, el: Element) -> RenderResult(RenderedElement)
   case el {
     Element(tag, attrs, children) -> element(socket, tag, attrs, children)
     Component(fc, props) -> component(socket, fc, props)
+    SafeHtml(html) -> safe_html(socket, html)
     Raw(text) -> raw(socket, text)
   }
 }
@@ -149,6 +150,10 @@ fn component(
     )
 
   RenderResult(socket, RenderedComponent(fc, props, list.reverse(children)))
+}
+
+fn safe_html(socket: Socket, html: String) -> RenderResult(RenderedElement) {
+  RenderResult(socket, RenderedText(html))
 }
 
 fn raw(socket: Socket, text: String) -> RenderResult(RenderedElement) {

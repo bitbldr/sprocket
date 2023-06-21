@@ -6,7 +6,6 @@ import glisten/handler.{HandlerMessage}
 import sprocket/html/attribute.{Attribute}
 import sprocket/uuid
 
-// TODO: use a single index for both reducers and effects (hooks)
 pub type IndexTracker {
   IndexTracker(reducer: Int, effect: Int)
 }
@@ -47,6 +46,7 @@ pub type FunctionalComponent(p) =
 pub type Element {
   Element(tag: String, attrs: List(Attribute), children: List(Element))
   Component(component: FunctionalComponent(Dynamic), props: Dynamic)
+  SafeHtml(html: String)
   Raw(text: String)
 }
 

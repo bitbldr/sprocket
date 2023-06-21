@@ -5,8 +5,58 @@ import gleam/option.{None, Option, Some}
 import gleam/dynamic
 import sprocket/socket.{Socket, WithDependencies}
 import sprocket/component.{State, effect, reducer, render}
-import sprocket/html.{text}
+import sprocket/html.{span, text}
 import example/utils/timer.{interval}
+
+pub type ClockProps {
+  ClockProps(label: Option(String))
+}
+
+pub fn clock(socket: Socket, props) {
+  let ClockProps(label) = props
+
+  // Define a reducer to handle events and update the state
+  use socket, State(Model(time: time, ..), dispatch) <- reducer(
+    socket,
+    initial(),
+    update,
+  )
+
+  // Example effect with an empty list of dependencies, runs once on mount
+  use socket <- effect(
+    socket,
+    fn() {
+      io.println("Clock component mounted!")
+      None
+    },
+    WithDependencies([]),
+  )
+
+  // Example effect that runs whenever the `time` variable changes and has a cleanup function
+  use socket <- effect(
+    socket,
+    fn() {
+      let cancel =
+        interval(
+          1000,
+          fn() { dispatch(UpdateTime(erlang.system_time(erlang.Second))) },
+        )
+
+      Some(fn() { cancel() })
+    },
+    WithDependencies([dynamic.from(time)]),
+  )
+
+  let current_time = int.to_string(time)
+
+  render(
+    socket,
+    case label {
+      Some(label) -> [span([], [text(label)]), span([], [text(current_time)])]
+      None -> [text(current_time)]
+    },
+  )
+}
 
 type Model {
   Model(time: Int, timezone: String)
@@ -26,53 +76,4 @@ fn update(model: Model, msg: Msg) -> Model {
 
 fn initial() -> Model {
   Model(time: erlang.system_time(erlang.Second), timezone: "UTC")
-}
-
-pub type ClockProps {
-  ClockProps(label: Option(String))
-}
-
-pub fn clock(socket: Socket, props) {
-  let ClockProps(label) = props
-
-  use socket, State(Model(time: time, ..), dispatch) <- reducer(
-    socket,
-    initial(),
-    update,
-  )
-
-  let current_time = int.to_string(time)
-
-  // example effect with an empty list of dependencies, runs once on mount
-  use socket <- effect(
-    socket,
-    fn() {
-      io.println("Clock component mounted!")
-      None
-    },
-    WithDependencies([]),
-  )
-
-  // example effect that runs whenever the `time` variable changes and has a cleanup function
-  use socket <- effect(
-    socket,
-    fn() {
-      let cancel =
-        interval(
-          1000,
-          fn() { dispatch(UpdateTime(erlang.system_time(erlang.Second))) },
-        )
-
-      Some(fn() { cancel() })
-    },
-    WithDependencies([dynamic.from(time)]),
-  )
-
-  render(
-    socket,
-    case label {
-      Some(label) -> [text(label), text(current_time)]
-      None -> [text(current_time)]
-    },
-  )
 }

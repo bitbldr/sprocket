@@ -1,4 +1,7 @@
-import sprocket/socket.{Element, Raw}
+import gleam/list
+import gleam/string
+import gleam/string_builder
+import sprocket/socket.{Element, Raw, SafeHtml}
 import sprocket/html/attribute.{Attribute}
 
 pub type Children =
@@ -8,17 +11,37 @@ pub fn el(tag: String, attrs: List(Attribute), children: Children) {
   Element(tag, attrs, children)
 }
 
-pub fn raw(html: String) {
+pub fn dangerous_raw_html(html: String) {
   Raw(html)
 }
 
-pub fn text(text: String) -> Element {
-  // TODO: should html escape text coming into this function
-  raw(text)
+fn safe_replace_char(key: String) -> String {
+  case key {
+    "&" -> "&amp;"
+    "<" -> "&lt;"
+    ">" -> "&gt;"
+    "\"" -> "&quot;"
+    "'" -> "&#39;"
+    "/" -> "&#x2F;"
+    "`" -> "&#x60;"
+    "=" -> "&#x3D;"
+    _ -> key
+  }
 }
 
-pub type HtmlProps {
-  HtmlProps
+fn escape_html(unsafe: String) {
+  string.to_graphemes(unsafe)
+  |> list.fold(
+    string_builder.new(),
+    fn(sb, grapheme) { string_builder.append(sb, safe_replace_char(grapheme)) },
+  )
+  |> string_builder.to_string
+  |> SafeHtml
+}
+
+pub fn text(text: String) -> Element {
+  // safely escape any html text
+  escape_html(text)
 }
 
 pub fn html(attrs: List(Attribute), children: Children) {
@@ -55,4 +78,8 @@ pub fn button(attrs: List(Attribute), children: Children) {
 
 pub fn h1(attrs: List(Attribute), children: Children) {
   el("h1", attrs, children)
+}
+
+pub fn p(attrs: List(Attribute), children: Children) {
+  el("p", attrs, children)
 }
