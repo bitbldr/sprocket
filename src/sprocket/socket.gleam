@@ -3,31 +3,11 @@ import gleam/option.{None, Option}
 import gleam/dynamic.{Dynamic}
 import gleam/erlang/process.{Subject}
 import glisten/handler.{HandlerMessage}
-import sprocket/html/attribute.{Attribute}
 import sprocket/uuid
+import sprocket/hooks.{Hook, HookResult}
 
 pub type IndexTracker {
   IndexTracker(reducer: Int, effect: Int)
-}
-
-pub type EffectCleanup =
-  Option(fn() -> Nil)
-
-pub type EffectDependencies =
-  List(Dynamic)
-
-pub type EffectTrigger {
-  OnUpdate
-  WithDependencies(deps: EffectDependencies)
-}
-
-pub type Hook {
-  Effect(effect_fn: fn() -> EffectCleanup, trigger: EffectTrigger)
-}
-
-pub type HookResult {
-  EmptyResult
-  EffectResult(cleanup: EffectCleanup, deps: Option(EffectDependencies))
 }
 
 pub type EventHandler {
@@ -36,19 +16,6 @@ pub type EventHandler {
 
 pub type WebSocket =
   Subject(HandlerMessage)
-
-pub type AbstractFunctionalComponent =
-  fn(Socket, Dynamic) -> #(Socket, List(Element))
-
-pub type FunctionalComponent(p) =
-  fn(Socket, p) -> #(Socket, List(Element))
-
-pub type Element {
-  Element(tag: String, attrs: List(Attribute), children: List(Element))
-  Component(component: FunctionalComponent(Dynamic), props: Dynamic)
-  SafeHtml(html: String)
-  Raw(text: String)
-}
 
 pub type Updater(r) {
   Updater(send: fn(r) -> Result(Nil, Nil))

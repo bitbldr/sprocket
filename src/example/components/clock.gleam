@@ -3,8 +3,11 @@ import gleam/erlang
 import gleam/int
 import gleam/option.{None, Option, Some}
 import gleam/dynamic
-import sprocket/socket.{Socket, WithDependencies}
-import sprocket/component.{State, effect, reducer, render}
+import sprocket/socket.{Socket}
+import sprocket/component.{render}
+import sprocket/hooks.{WithDeps}
+import sprocket/hooks/reducer.{State, reducer}
+import sprocket/hooks/effect.{effect}
 import sprocket/html.{span, text}
 import example/utils/timer.{interval}
 
@@ -29,7 +32,7 @@ pub fn clock(socket: Socket, props) {
       io.println("Clock component mounted!")
       None
     },
-    WithDependencies([]),
+    WithDeps([]),
   )
 
   // Example effect that runs whenever the `time` variable changes and has a cleanup function
@@ -44,7 +47,7 @@ pub fn clock(socket: Socket, props) {
 
       Some(fn() { cancel() })
     },
-    WithDependencies([dynamic.from(time)]),
+    WithDeps([dynamic.from(time)]),
   )
 
   let current_time = int.to_string(time)

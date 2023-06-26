@@ -3,8 +3,11 @@ import gleam/int
 import gleam/dynamic
 import gleam/string
 import gleam/option.{None, Option}
-import sprocket/socket.{Socket, WithDependencies}
-import sprocket/component.{State, effect, reducer, render}
+import sprocket/socket.{Socket}
+import sprocket/hooks.{WithDeps}
+import sprocket/component.{render}
+import sprocket/hooks/reducer.{State, reducer}
+import sprocket/hooks/effect.{effect}
 import sprocket/html.{button, div, span, text}
 import sprocket/html/attribute.{class, on_click}
 
@@ -29,7 +32,7 @@ pub fn counter(socket: Socket, props: CounterProps) {
       io.println(string.append("Count: ", int.to_string(count)))
       None
     },
-    WithDependencies([dynamic.from(count)]),
+    WithDeps([dynamic.from(count)]),
   )
 
   // Define event handlers. Alternatively, these could be defined inline

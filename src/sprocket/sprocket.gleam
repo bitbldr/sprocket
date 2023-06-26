@@ -3,10 +3,11 @@ import gleam/erlang/process.{Subject}
 import gleam/list
 import gleam/option.{None, Option, Some}
 import sprocket/logger
-import sprocket/socket.{
-  Effect, EffectCleanup, EffectDependencies, EffectResult, EffectTrigger,
-  Element, EmptyResult, EventHandler, Hook, HookResult, OnUpdate, Socket,
-  Updater, WebSocket, WithDependencies,
+import sprocket/element.{Element}
+import sprocket/socket.{EventHandler, Socket, Updater, WebSocket}
+import sprocket/hooks.{
+  Effect, EmptyResult, Hook, HookCleanup, HookDependencies, HookResult,
+  HookTrigger, OnUpdate, WithDeps,
 }
 import sprocket/render.{RenderResult, RenderedElement, live_render}
 import sprocket/patch.{Patch}
@@ -229,24 +230,24 @@ fn process_pending_hooks(state: State) -> State {
 }
 
 fn run_effect(
-  effect_fn: fn() -> EffectCleanup,
-  trigger: EffectTrigger,
+  effect_fn: fn() -> HookCleanup,
+  trigger: HookTrigger,
   prev_hook_result: Option(HookResult),
 ) -> HookResult {
   case trigger {
     // trigger effect on every update
     OnUpdate -> {
       case prev_hook_result {
-        Some(EffectResult(cleanup: cleanup, ..)) ->
+        Some(HookResult(cleanup: cleanup, ..)) ->
           maybe_cleanup_and_rerun_effect(cleanup, effect_fn, None)
-        _ -> EffectResult(effect_fn(), None)
+        _ -> HookResult(effect_fn(), None)
       }
     }
 
     // only trigger the update on the first render and when the dependencies change
-    WithDependencies(deps) -> {
+    WithDeps(deps) -> {
       case prev_hook_result {
-        Some(EffectResult(cleanup: cleanup, deps: Some(prev_deps))) -> {
+        Some(HookResult(cleanup: cleanup, deps: Some(prev_deps))) -> {
           // zip deps together and compare each one with the previous to see if they are equal
           case list.strict_zip(prev_deps, deps) {
             // TODO: this should never occur and should issue a warning/error
@@ -264,7 +265,7 @@ fn run_effect(
                   },
                 )
               {
-                True -> EffectResult(cleanup: cleanup, deps: Some(prev_deps))
+                True -> HookResult(cleanup: cleanup, deps: Some(prev_deps))
                 _ ->
                   maybe_cleanup_and_rerun_effect(cleanup, effect_fn, Some(deps))
               }
@@ -280,15 +281,15 @@ fn run_effect(
 }
 
 fn maybe_cleanup_and_rerun_effect(
-  cleanup: EffectCleanup,
-  effect_fn: fn() -> EffectCleanup,
-  deps: Option(EffectDependencies),
+  cleanup: HookCleanup,
+  effect_fn: fn() -> HookCleanup,
+  deps: Option(HookDependencies),
 ) {
   case cleanup {
     Some(cleanup_fn) -> {
       cleanup_fn()
-      EffectResult(effect_fn(), deps)
+      HookResult(effect_fn(), deps)
     }
-    _ -> EffectResult(effect_fn(), deps)
+    _ -> HookResult(effect_fn(), deps)
   }
 }

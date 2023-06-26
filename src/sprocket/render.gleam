@@ -2,9 +2,10 @@ import gleam/list
 import gleam/option.{None, Option}
 import gleam/dynamic.{Dynamic}
 import sprocket/html/attribute.{Attribute, Event, Key}
-import sprocket/socket.{
-  AbstractFunctionalComponent, Component, Element, Raw, SafeHtml, Socket,
+import sprocket/element.{
+  AbstractFunctionalComponent, Component, Element, Raw, SafeHtml,
 }
+import sprocket/socket.{Socket}
 
 pub type Renderer(result) {
   Renderer(render: fn(RenderedElement) -> result)

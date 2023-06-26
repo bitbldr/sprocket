@@ -1,7 +1,7 @@
 import gleam/list
 import gleam/string
 import gleam/string_builder
-import sprocket/socket.{Element, Raw, SafeHtml}
+import sprocket/element.{Element, Raw, SafeHtml}
 import sprocket/html/attribute.{Attribute}
 
 pub type Children =
