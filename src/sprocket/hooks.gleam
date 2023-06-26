@@ -1,6 +1,14 @@
 import gleam/option.{Option}
 import gleam/dynamic.{Dynamic}
 
+pub type HookDependencies =
+  List(Dynamic)
+
+pub type HookTrigger {
+  OnUpdate
+  WithDeps(deps: HookDependencies)
+}
+
 pub type HookCleanup =
   Option(fn() -> Nil)
 
@@ -12,12 +20,4 @@ pub type Hook {
 pub type HookResult {
   EmptyResult
   HookResult(cleanup: HookCleanup, deps: Option(HookDependencies))
-}
-
-pub type HookDependencies =
-  List(Dynamic)
-
-pub type HookTrigger {
-  OnUpdate
-  WithDeps(deps: HookDependencies)
 }
