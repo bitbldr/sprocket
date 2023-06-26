@@ -4,17 +4,16 @@ Persistent Reactive Sockets
 [![Package Version](https://img.shields.io/hexpm/v/sprocket)](https://hex.pm/packages/sprocket)
 [![Hex Docs](https://img.shields.io/badge/hex-docs-ffaff3)](https://hexdocs.pm/sprocket/)
 
-A server-side framework for building type-safe, scalable, real-time apps in [Gleam](https://gleam.run/). Heavily inspired by [Phoenix LiveView](https://github.com/phoenixframework/phoenix_live_view), [React](https://github.com/facebook/react) and [Elm](https://github.com/elm). The name "sprocket" is loosly derived from the metaphor of a bicycle's sprocket cassette and chain.
+A framework for building type-safe, scalable, real-time apps in [Gleam](https://gleam.run/). Heavily inspired by [Phoenix LiveView](https://github.com/phoenixframework/phoenix_live_view), [React](https://github.com/facebook/react) and [Elm](https://github.com/elm). The name "sprocket" is loosly derived from the metaphor of a bicycle's sprocket cassette and chain.
 
-Sprocket combines the best of Gleam type-safety, LiveView scalability, React componentization and Elm state management. Like Phoenix LiveView, an initial static view is rendered as HTML on the "first paint" which then establishes a connection to the server over a WebSocket to facilitate receiving browser messages and send view update diffs. These updates are patched into browser DOM using morphdom. Like React, declarative views are built using functional components that accept props and render each time those props change. Finally, inspired by Elm, strongly-typed models and messages are used for state management via reducers.
+Sprocket combines the best of Phoenix LiveView server-side scalability, React components and Elm functional patterns implemented in Gleam, a type-safe language built on top of the venerable BEAM (Erlang Virtual Machine). Similar to LiveView, an initial static view is rendered as HTML on the "first paint" which then establishes a connection to the server over a WebSocket to facilitate sending browser events and receiving view update diffs. These updates are patched into browser DOM using morphdom. Like React, declarative views are built using functional components that accept props and render each time those props change. Finally, inspired by Elm, strongly-typed models and message structs are used for state management via reducers.
 
-Under the hood, each reducer is a lightweight [Gleam Actor](https://hexdocs.pm/gleam_otp/0.1.3/gleam/otp/actor/) OTP process (similar to a GenServer) and changes to the state result in a re-render of the view.
+Under the hood, a reducer is a lightweight [Gleam Actor](https://hexdocs.pm/gleam_otp/0.1.3/gleam/otp/actor/) OTP process (i.e. gen_server) and changes to the state result in a re-render of the view.
 
 This library is a collection of patterns and common functions that facilitate building declarative, functional
-components that are composable. Components are combined by other parent components to create views. Data flows into components
-in the form of props and out of components in the form of events. It's useful to think of the data flow as **Events** always
-bubbling up via event hander functions (passed in as props, e.g. `onSomeEvent("Something happened")`) and **State** always
-flowing down via props.
+components that are composable. Components are composed to create higher-level views. Data flows down into components
+in the form of props and out of components in the form of events. It's useful to think of the data flow as **State** always
+flowing down via props and **Events** always bubbling up using event hander functions (passed in as props, e.g. `onSomeEvent("Something happened")`).
 
 This library is currently in a **proof of concept** state and should be considered highly unstable.
 There is still a lot of work to be done, including building out all HTML
@@ -24,10 +23,9 @@ coverage, providing extensive documentation of modules and API, and optimizing p
 ## Key Features
 
 - Real-time server-side app framework
-- Renders initial HTML and patches updates over a WebSocket connection
+- Renders initial HTML and efficiently patches update diffs using a WebSocket connection
 - Declarative views using functional components that rerender on prop changes
 - Strongly-typed functional reducers for state management
-- Uses lambda functions as event handlers for API calls and dispatching state updates
 - Built on lightwieght otp processes for composable & scalable state management
 - Encourages declarative and composable views
 
@@ -35,6 +33,26 @@ coverage, providing extensive documentation of modules and API, and optimizing p
 
 ### Clock Component
 ```gleam
+type Model {
+  Model(time: Int, timezone: String)
+}
+
+type Msg {
+  UpdateTime(Int)
+}
+
+fn update(model: Model, msg: Msg) -> Model {
+  case msg {
+    UpdateTime(time) -> {
+      Model(..model, time: time)
+    }
+  }
+}
+
+fn initial() -> Model {
+  Model(time: erlang.system_time(erlang.Second), timezone: "UTC")
+}
+
 pub type ClockProps {
   ClockProps(label: Option(String))
 }
@@ -74,27 +92,6 @@ pub fn clock(socket: Socket, props) {
     },
   )
 }
-
-type Model {
-  Model(time: Int, timezone: String)
-}
-
-type Msg {
-  UpdateTime(Int)
-}
-
-fn update(model: Model, msg: Msg) -> Model {
-  case msg {
-    UpdateTime(time) -> {
-      Model(..model, time: time)
-    }
-  }
-}
-
-fn initial() -> Model {
-  Model(time: erlang.system_time(erlang.Second), timezone: "UTC")
-}
-
 ```
 
 ### Usage from a parent view
