@@ -1,15 +1,30 @@
 import gleam/io
 import gleam/int
-import gleam/dynamic
 import gleam/string
 import gleam/option.{None, Option}
 import sprocket/socket.{Socket}
-import sprocket/hooks.{WithDeps}
+import sprocket/hooks.{WithDeps, dep}
 import sprocket/component.{render}
 import sprocket/hooks/reducer.{State, reducer}
 import sprocket/hooks/effect.{effect}
+import sprocket/hooks/callback.{callback}
 import sprocket/html.{button, div, span, text}
 import sprocket/html/attribute.{class, on_click}
+
+type Model =
+  Int
+
+type Msg {
+  UpdateCounter(Int)
+}
+
+fn update(_model: Model, msg: Msg) -> Model {
+  case msg {
+    UpdateCounter(count) -> {
+      count
+    }
+  }
+}
 
 pub type CounterProps {
   CounterProps(initial: Option(Int))
@@ -32,12 +47,20 @@ pub fn counter(socket: Socket, props: CounterProps) {
       io.println(string.append("Count: ", int.to_string(count)))
       None
     },
-    WithDeps([dynamic.from(count)]),
+    WithDeps([dep(count)]),
   )
 
   // Define event handlers. Alternatively, these could be defined inline
-  let on_increment = fn() { dispatch(UpdateCounter(count + 1)) }
-  let on_decrement = fn() { dispatch(UpdateCounter(count - 1)) }
+  use socket, on_increment <- callback(
+    socket,
+    fn() { dispatch(UpdateCounter(count + 1)) },
+    WithDeps([dep(count)]),
+  )
+  use socket, on_decrement <- callback(
+    socket,
+    fn() { dispatch(UpdateCounter(count - 1)) },
+    WithDeps([dep(count)]),
+  )
 
   render(
     socket,
@@ -67,19 +90,4 @@ pub fn counter(socket: Socket, props: CounterProps) {
       ),
     ],
   )
-}
-
-type Model =
-  Int
-
-type Msg {
-  UpdateCounter(Int)
-}
-
-fn update(_model: Model, msg: Msg) -> Model {
-  case msg {
-    UpdateCounter(count) -> {
-      count
-    }
-  }
 }

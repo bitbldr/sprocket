@@ -1,16 +1,19 @@
+import gleam/io
 import gleam/otp/actor
 import gleam/erlang/process.{Subject}
 import gleam/list
+import gleam/map.{Map}
 import gleam/option.{None, Option, Some}
 import sprocket/logger
 import sprocket/element.{Element}
 import sprocket/socket.{EventHandler, Socket, Updater, WebSocket}
 import sprocket/hooks.{
-  Effect, EmptyResult, Hook, HookCleanup, HookDependencies, HookResult,
-  HookTrigger, OnUpdate, WithDeps,
+  Callback, CallbackResult, Effect, EffectCleanup, EffectResult, Hook,
+  HookDependencies, HookTrigger, OnUpdate, Reducer, WithDeps,
 }
 import sprocket/render.{RenderResult, RenderedElement, live_render}
 import sprocket/patch.{Patch}
+import sprocket/ordered_map.{KeyedItem, OrderedMapIter}
 
 pub type Sprocket =
   Subject(Message)
@@ -28,6 +31,7 @@ pub type Message {
   Shutdown
   HasWebSocket(reply_with: Subject(Bool), websocket: WebSocket)
   SetRenderUpdate(fn() -> Nil)
+  // SetAsyncCallbackDispatch(fn() -> Nil)
   RenderImmediate(reply_with: Subject(RenderedElement))
   RenderUpdate
   GetEventHandler(reply_with: Subject(Result(EventHandler, Nil)), id: String)
@@ -50,15 +54,28 @@ fn handle_message(message: Message, state: State) -> actor.Next(State) {
       actor.Continue(state)
     }
 
-    SetRenderUpdate(render_update_fn) -> {
+    SetRenderUpdate(render_update) -> {
       actor.Continue(
         State(
           ..state,
-          socket: Socket(..state.socket, render_update: render_update_fn),
+          socket: Socket(..state.socket, render_update: render_update),
         ),
       )
     }
 
+    // SetAsyncCallbackDispatch(async_callback_dispatch) -> {
+    //   actor.Continue(
+    //     State(
+    //       ..state,
+    //       socket: Socket(
+    //         ..state.socket,
+    //         async_callback_dispatch: async_callback_dispatch,
+    //       ),
+    //     ),
+    //   )
+    // }
+    // AsyncCallbackDispatch(id: String) -> {
+    // }
     RenderImmediate(reply_with) -> {
       let state = case state {
         State(socket: socket, view: Some(view), ..) -> {
@@ -69,7 +86,7 @@ fn handle_message(message: Message, state: State) -> actor.Next(State) {
 
           actor.send(reply_with, rendered)
 
-          process_pending_hooks(
+          process_hooks(
             State(..state, socket: socket, rendered: Some(rendered)),
           )
         }
@@ -109,7 +126,7 @@ fn handle_message(message: Message, state: State) -> actor.Next(State) {
           // hooks might contain effects that will trigger a rerender. That is okay because any
           // RenderUpdate messages sent during this operation will be placed into this actor's mailbox
           // and will be processed in order after this current render is complete
-          process_pending_hooks(
+          process_hooks(
             State(..state, socket: socket, rendered: Some(rendered)),
           )
         }
@@ -168,6 +185,12 @@ pub fn start(
     )
 
   actor.send(actor, SetRenderUpdate(fn() { actor.send(actor, RenderUpdate) }))
+  // actor.send(
+  //   actor,
+  //   SetAsyncCallbackDispatch(fn() {
+  //     actor.send(actor, AsyncCallbackDispatch)
+  //   }),
+  // )
 
   actor
 }
@@ -192,104 +215,209 @@ pub fn render_update(actor) -> Nil {
   actor.send(actor, RenderUpdate)
 }
 
-fn process_pending_hooks(state: State) -> State {
-  let pending_hooks = state.socket.pending_hooks
-
-  // prev_hook_results will be None on the first render cycle
-  let prev_hook_results = state.socket.hook_results
-
-  let hook_results =
-    pending_hooks
-    |> list.index_map(fn(i, hook: Hook) {
-      let prev_hook_result: Option(HookResult) =
-        prev_hook_results
-        |> option.then(fn(r) {
-          case list.at(r, i) {
-            Ok(hook_result) -> Some(hook_result)
-            _ -> None
-          }
-        })
-
-      case hook {
-        Effect(effect_fn, trigger) -> {
-          // run the effect, returning the effect result
-          run_effect(effect_fn, trigger, prev_hook_result)
-        }
-        _ -> EmptyResult
-      }
-    })
+fn process_hooks(state: State) -> State {
+  let #(r_ordered, by_index, size) =
+    state.socket.hooks
+    |> ordered_map.iter()
+    |> process_next_hook(#([], map.new(), 0))
 
   State(
     ..state,
     socket: Socket(
       ..state.socket,
-      pending_hooks: [],
-      hook_results: Some(hook_results),
+      hooks: ordered_map.from(list.reverse(r_ordered), by_index, size),
     ),
   )
 }
 
-fn run_effect(
-  effect_fn: fn() -> HookCleanup,
+fn process_next_hook(
+  iter: OrderedMapIter(Int, Hook),
+  acc: #(List(KeyedItem(Int, Hook)), Map(Int, Hook), Int),
+) -> #(List(KeyedItem(Int, Hook)), Map(Int, Hook), Int) {
+  case ordered_map.next(iter) {
+    Ok(#(iter, KeyedItem(index, hook))) -> {
+      let #(ordered, by_index, size) = acc
+
+      let updated = case hook {
+        Callback(callback_fn, trigger, prev) -> {
+          let result = handle_callback(callback_fn, trigger, prev)
+          Callback(callback_fn, trigger, Some(result))
+        }
+        Effect(effect_fn, trigger, prev) -> {
+          let result = handle_effect(effect_fn, trigger, prev)
+
+          Effect(effect_fn, trigger, Some(result))
+        }
+        Reducer(reducer: reducer) -> {
+          Reducer(reducer)
+        }
+      }
+
+      process_next_hook(
+        iter,
+        #(
+          [KeyedItem(index, updated), ..ordered],
+          map.insert(by_index, index, updated),
+          size + 1,
+        ),
+      )
+    }
+    Error(_) -> acc
+  }
+}
+
+fn handle_effect(
+  effect_fn: fn() -> EffectCleanup,
   trigger: HookTrigger,
-  prev_hook_result: Option(HookResult),
-) -> HookResult {
+  prev: Option(EffectResult),
+) -> EffectResult {
   case trigger {
     // trigger effect on every update
     OnUpdate -> {
-      case prev_hook_result {
-        Some(HookResult(cleanup: cleanup, ..)) ->
+      case prev {
+        Some(EffectResult(cleanup: cleanup, ..)) ->
           maybe_cleanup_and_rerun_effect(cleanup, effect_fn, None)
-        _ -> HookResult(effect_fn(), None)
+        _ -> EffectResult(effect_fn(), None)
       }
     }
 
     // only trigger the update on the first render and when the dependencies change
     WithDeps(deps) -> {
-      case prev_hook_result {
-        Some(HookResult(cleanup: cleanup, deps: Some(prev_deps))) -> {
-          // zip deps together and compare each one with the previous to see if they are equal
-          case list.strict_zip(prev_deps, deps) {
-            // TODO: this should never occur and should issue a warning/error
-            // dependency lists are different sizes, they must have changed
-            Error(list.LengthMismatch) ->
+      case prev {
+        Some(EffectResult(cleanup, Some(prev_deps))) -> {
+          case compare_deps(prev_deps, deps) {
+            Changed(_) ->
               maybe_cleanup_and_rerun_effect(cleanup, effect_fn, Some(deps))
-
-            Ok(zipped_deps) -> {
-              case
-                list.all(
-                  zipped_deps,
-                  fn(z) {
-                    let #(a, b) = z
-                    a == b
-                  },
-                )
-              {
-                True -> HookResult(cleanup: cleanup, deps: Some(prev_deps))
-                _ ->
-                  maybe_cleanup_and_rerun_effect(cleanup, effect_fn, Some(deps))
-              }
-            }
+            Unchanged -> EffectResult(cleanup, Some(deps))
           }
         }
 
-        _ -> maybe_cleanup_and_rerun_effect(None, effect_fn, Some(deps))
+        None -> maybe_cleanup_and_rerun_effect(None, effect_fn, Some(deps))
+
+        _ -> {
+          // this should never occur and means that a hook was dynamically added
+          throw_on_unexpected_hook_result(#("handle_effect", prev))
+        }
       }
     }
-    _ -> EmptyResult
   }
 }
 
 fn maybe_cleanup_and_rerun_effect(
-  cleanup: HookCleanup,
-  effect_fn: fn() -> HookCleanup,
+  cleanup: EffectCleanup,
+  effect_fn: fn() -> EffectCleanup,
   deps: Option(HookDependencies),
 ) {
   case cleanup {
     Some(cleanup_fn) -> {
       cleanup_fn()
-      HookResult(effect_fn(), deps)
+      EffectResult(effect_fn(), deps)
     }
-    _ -> HookResult(effect_fn(), deps)
+    _ -> EffectResult(effect_fn(), deps)
   }
+}
+
+fn handle_callback(
+  callback_fn: fn() -> Nil,
+  trigger: HookTrigger,
+  prev: Option(CallbackResult),
+) -> CallbackResult {
+  case trigger {
+    // recompute callback on every update
+    OnUpdate -> {
+      replace_callback(callback_fn, None)
+    }
+
+    // only compute callback on the first render and when the dependencies change
+    WithDeps(deps) -> {
+      case prev {
+        Some(
+          CallbackResult(callback: _, deps: Some(prev_deps)) as prev_callback_result,
+        ) -> {
+          case compare_deps(prev_deps, deps) {
+            Changed(_) -> replace_callback(callback_fn, Some(deps))
+            Unchanged -> prev_callback_result
+          }
+        }
+
+        Some(prev_callback_result) -> prev_callback_result
+
+        None -> replace_callback(callback_fn, Some(deps))
+
+        _ -> {
+          // this should never occur and means that a hook was dynamically added
+          throw_on_unexpected_hook_result(#("handle_callback", prev))
+        }
+      }
+    }
+  }
+}
+
+fn replace_callback(
+  callback_fn: fn() -> Nil,
+  deps: Option(HookDependencies),
+) -> CallbackResult {
+  CallbackResult(callback_fn, deps)
+}
+
+pub type Compared(a) {
+  Changed(changed: a)
+  Unchanged
+}
+
+pub fn compare_deps(
+  prev_deps: HookDependencies,
+  deps: HookDependencies,
+) -> Compared(HookDependencies) {
+  // zip deps together and compare each one with the previous to see if they are equal
+  case list.strict_zip(prev_deps, deps) {
+    Error(list.LengthMismatch) ->
+      // Dependency lists are different sizes, so they must have changed
+      // this should never occur and means that a hook's deps list was dynamically changed
+      throw_on_unexpected_deps_mismatch(#("compare_deps", prev_deps, deps))
+
+    Ok(zipped_deps) -> {
+      case
+        list.all(
+          zipped_deps,
+          fn(z) {
+            let #(a, b) = z
+            a == b
+          },
+        )
+      {
+        True -> Unchanged
+        _ -> Changed(deps)
+      }
+    }
+  }
+}
+
+fn throw_on_unexpected_hook_result(meta: any) {
+  logger.error(
+    "
+    An unexpected hook result was encountered. This means that a hook was dynamically added
+    after the initial render. This is not supported and will result in undefined behavior.
+    ",
+  )
+
+  io.debug(meta)
+
+  // TODO: we probably want to try and handle this more gracefully in production configurations
+  panic
+}
+
+fn throw_on_unexpected_deps_mismatch(meta: any) {
+  logger.error(
+    "
+    An unexpected change in hook dependencies was encountered. This means that the list of hook
+    dependencies dynamically changed after the initial render. This is not supported and will 
+    result in undefined behavior.
+    ",
+  )
+
+  io.debug(meta)
+
+  // TODO: we probably want to try and handle this more gracefully in production configurations
+  panic
 }

@@ -3,6 +3,7 @@ import gleam/otp/actor
 import gleam/erlang/process.{Subject}
 import sprocket/element.{Element}
 import sprocket/socket.{Socket}
+import sprocket/hooks
 
 pub type Updater(msg) =
   fn(msg) -> Nil
@@ -27,10 +28,10 @@ pub fn reducer(
 ) -> #(Socket, List(Element)) {
   let Socket(render_update: render_update, ..) = socket
 
-  // creates an actor process for a reducer that handles two types of messages:
-  //  1. StateReducer msg, which simply returns the state of the reducer
-  //  2. DispatchReducer msg, which will update the reducer state when a dispatch is triggered
   let reducer_init = fn() {
+    // creates an actor process for a reducer that handles two types of messages:
+    //  1. StateReducer msg, which simply returns the state of the reducer
+    //  2. DispatchReducer msg, which will update the reducer state when a dispatch is triggered
     let assert Ok(actor) =
       actor.start(
         initial,
@@ -51,11 +52,11 @@ pub fn reducer(
         },
       )
 
-    dynamic.from(actor)
+    hooks.Reducer(dynamic.from(actor))
   }
 
-  let #(socket, dyn_reducer_actor) =
-    socket.fetch_or_create_reducer(socket, reducer_init)
+  let assert #(socket, hooks.Reducer(reducer: dyn_reducer_actor), _index) =
+    socket.fetch_or_init_hook(socket, reducer_init)
 
   // we dont know what types of reducer messages a component will implement so the best
   // we can do is store the actors as dynamic and coerce them back when updating

@@ -2,14 +2,33 @@ import gleam/io
 import gleam/erlang
 import gleam/int
 import gleam/option.{None, Option, Some}
-import gleam/dynamic
 import sprocket/socket.{Socket}
 import sprocket/component.{render}
-import sprocket/hooks.{WithDeps}
+import sprocket/hooks.{WithDeps, dep}
 import sprocket/hooks/reducer.{State, reducer}
 import sprocket/hooks/effect.{effect}
 import sprocket/html.{span, text}
 import example/utils/timer.{interval}
+
+type Model {
+  Model(time: Int, timezone: String)
+}
+
+type Msg {
+  UpdateTime(Int)
+}
+
+fn update(model: Model, msg: Msg) -> Model {
+  case msg {
+    UpdateTime(time) -> {
+      Model(..model, time: time)
+    }
+  }
+}
+
+fn initial() -> Model {
+  Model(time: erlang.system_time(erlang.Second), timezone: "UTC")
+}
 
 pub type ClockProps {
   ClockProps(label: Option(String))
@@ -47,7 +66,7 @@ pub fn clock(socket: Socket, props) {
 
       Some(fn() { cancel() })
     },
-    WithDeps([dynamic.from(time)]),
+    WithDeps([dep(time)]),
   )
 
   let current_time = int.to_string(time)
@@ -59,24 +78,4 @@ pub fn clock(socket: Socket, props) {
       None -> [text(current_time)]
     },
   )
-}
-
-type Model {
-  Model(time: Int, timezone: String)
-}
-
-type Msg {
-  UpdateTime(Int)
-}
-
-fn update(model: Model, msg: Msg) -> Model {
-  case msg {
-    UpdateTime(time) -> {
-      Model(..model, time: time)
-    }
-  }
-}
-
-fn initial() -> Model {
-  Model(time: erlang.system_time(erlang.Second), timezone: "UTC")
 }

@@ -1,14 +1,10 @@
 import gleam/list
-import gleam/option.{None, Option}
-import gleam/dynamic.{Dynamic}
+import gleam/option.{Option}
 import gleam/erlang/process.{Subject}
 import glisten/handler.{HandlerMessage}
 import sprocket/uuid
-import sprocket/hooks.{Hook, HookResult}
-
-pub type IndexTracker {
-  IndexTracker(reducer: Int, effect: Int)
-}
+import sprocket/hooks.{Hook}
+import sprocket/ordered_map.{OrderedMap}
 
 pub type EventHandler {
   EventHandler(id: String, handler: fn() -> Nil)
@@ -23,77 +19,76 @@ pub type Updater(r) {
 
 pub type Socket {
   Socket(
-    index_tracker: IndexTracker,
-    reducers: List(Dynamic),
-    pending_hooks: List(Hook),
-    hook_results: Option(List(HookResult)),
+    hooks: OrderedMap(Int, Hook),
+    hook_index: Int,
     handlers: List(EventHandler),
     ws: Option(WebSocket),
     render_update: fn() -> Nil,
+    async_callback_dispatch: fn() -> Nil,
   )
 }
 
 pub fn new(ws: Option(WebSocket)) -> Socket {
   Socket(
-    index_tracker: IndexTracker(reducer: 0, effect: 0),
-    reducers: [],
-    pending_hooks: [],
-    hook_results: None,
+    hooks: ordered_map.new(),
+    hook_index: 0,
     handlers: [],
     ws: ws,
     render_update: fn() { Nil },
+    async_callback_dispatch: fn() { Nil },
   )
 }
 
 pub fn reset_for_render(socket: Socket) {
-  Socket(
-    ..socket,
-    index_tracker: IndexTracker(reducer: 0, effect: 0),
-    handlers: [],
-    pending_hooks: [],
-  )
+  Socket(..socket, handlers: [], hook_index: 0)
 }
 
-pub fn fetch_or_create_reducer(
+pub fn fetch_or_init_hook(
   socket: Socket,
-  reducer_init: fn() -> Dynamic,
-) -> #(Socket, Dynamic) {
-  let index = socket.index_tracker.reducer
-  case list.at(socket.reducers, index) {
-    Ok(reducer) -> {
-      // reducer found, return it
-      #(
-        Socket(
-          ..socket,
-          index_tracker: IndexTracker(
-            ..socket.index_tracker,
-            reducer: index + 1,
-          ),
-        ),
-        reducer,
-      )
+  init: fn() -> Hook,
+) -> #(Socket, Hook, Int) {
+  let index = socket.hook_index
+
+  case ordered_map.get(socket.hooks, index) {
+    Ok(hook) -> {
+      // hook found, return it
+      #(Socket(..socket, hook_index: index + 1), hook, index)
     }
     Error(Nil) -> {
-      // reducer doesnt exist, create it
-      let reducer = reducer_init()
-      let r_reducers = list.reverse(socket.reducers)
-      let updated_reducers = list.reverse([reducer, ..r_reducers])
+      // TODO: add a check here for is_first_render and if it isnt, throw an error
+      // case is_first_render {
+      //   True -> {
+      //     logger.error(
+      //       "
+      //       Hook not found for index: " <> int.to_string(index) <> ". This indicates a hook was dynamically
+      //       created since first render which is not allowed.
+      //     ",
+      //     )
 
-      let index = socket.index_tracker.reducer
+      //     // TODO: we should handle this error more gracefully in production environments
+      //     panic
+      //   }
+      //   False -> Nil
+      // }
+
+      // first render, return the initialized hook and index
+      let hook = init()
 
       #(
         Socket(
           ..socket,
-          reducers: updated_reducers,
-          index_tracker: IndexTracker(
-            ..socket.index_tracker,
-            reducer: index + 1,
-          ),
+          hooks: ordered_map.insert(socket.hooks, index, hook),
+          hook_index: index + 1,
         ),
-        reducer,
+        hook,
+        index,
       )
     }
   }
+}
+
+pub fn update_hook(socket: Socket, hook: Hook, index: Int) -> Socket {
+  Socket(..socket, hooks: ordered_map.update(socket.hooks, index, hook))
 }
 
 pub fn push_event_handler(
@@ -122,11 +117,4 @@ pub fn get_event_handler(
     )
 
   #(socket, handler)
-}
-
-pub fn push_hook(socket: Socket, hook: Hook) -> Socket {
-  Socket(
-    ..socket,
-    pending_hooks: list.reverse([hook, ..list.reverse(socket.pending_hooks)]),
-  )
 }

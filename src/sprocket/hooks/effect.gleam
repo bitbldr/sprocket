@@ -1,17 +1,24 @@
-import gleam/dynamic
-import gleam/otp/actor
-import gleam/erlang/process.{Subject}
+import gleam/option.{None}
 import sprocket/socket.{Socket}
 import sprocket/element.{Element}
-import sprocket/hooks.{Effect, Hook, HookCleanup, HookTrigger}
+import sprocket/hooks.{Effect, EffectCleanup, HookTrigger}
 
 pub fn effect(
   socket: Socket,
-  effect_fn: fn() -> HookCleanup,
+  effect_fn: fn() -> EffectCleanup,
   trigger: HookTrigger,
   cb: fn(Socket) -> #(Socket, List(Element)),
 ) -> #(Socket, List(Element)) {
-  let socket = socket.push_hook(socket, Effect(effect_fn, trigger))
+  // define the initial effect function that will only run on the first render
+  let init = fn() { Effect(effect_fn, trigger, None) }
+
+  // get the previous effect result, if one exists
+  let #(socket, Effect(_effect_fn, _trigger, prev), index) =
+    socket.fetch_or_init_hook(socket, init)
+
+  // update the effect hook, combining with the previous result
+  let socket =
+    socket.update_hook(socket, Effect(effect_fn, trigger, prev), index)
 
   cb(socket)
 }
