@@ -1,4 +1,3 @@
-import gleam/io
 import gleam/otp/actor
 import gleam/erlang/process.{Subject}
 import gleam/list
@@ -8,12 +7,13 @@ import sprocket/logger
 import sprocket/element.{Element}
 import sprocket/socket.{EventHandler, Socket, Updater, WebSocket}
 import sprocket/hooks.{
-  Callback, CallbackResult, Effect, EffectCleanup, EffectResult, Hook,
-  HookDependencies, HookTrigger, OnUpdate, Reducer, WithDeps,
+  Changed, Effect, EffectCleanup, EffectResult, Hook, HookDependencies,
+  HookTrigger, OnUpdate, Unchanged, WithDeps, compare_deps,
 }
 import sprocket/render.{RenderResult, RenderedElement, live_render}
 import sprocket/patch.{Patch}
 import sprocket/ordered_map.{KeyedItem, OrderedMapIter}
+import sprocket/exception.{throw_on_unexpected_hook_result}
 
 pub type Sprocket =
   Subject(Message)
@@ -31,7 +31,6 @@ pub type Message {
   Shutdown
   HasWebSocket(reply_with: Subject(Bool), websocket: WebSocket)
   SetRenderUpdate(fn() -> Nil)
-  // SetAsyncCallbackDispatch(fn() -> Nil)
   RenderImmediate(reply_with: Subject(RenderedElement))
   RenderUpdate
   GetEventHandler(reply_with: Subject(Result(EventHandler, Nil)), id: String)
@@ -63,19 +62,6 @@ fn handle_message(message: Message, state: State) -> actor.Next(State) {
       )
     }
 
-    // SetAsyncCallbackDispatch(async_callback_dispatch) -> {
-    //   actor.Continue(
-    //     State(
-    //       ..state,
-    //       socket: Socket(
-    //         ..state.socket,
-    //         async_callback_dispatch: async_callback_dispatch,
-    //       ),
-    //     ),
-    //   )
-    // }
-    // AsyncCallbackDispatch(id: String) -> {
-    // }
     RenderImmediate(reply_with) -> {
       let state = case state {
         State(socket: socket, view: Some(view), ..) -> {
@@ -185,12 +171,6 @@ pub fn start(
     )
 
   actor.send(actor, SetRenderUpdate(fn() { actor.send(actor, RenderUpdate) }))
-  // actor.send(
-  //   actor,
-  //   SetAsyncCallbackDispatch(fn() {
-  //     actor.send(actor, AsyncCallbackDispatch)
-  //   }),
-  // )
 
   actor
 }
@@ -238,19 +218,14 @@ fn process_next_hook(
     Ok(#(iter, KeyedItem(index, hook))) -> {
       let #(ordered, by_index, size) = acc
 
+      // for now, only effects are processed during this phase
       let updated = case hook {
-        Callback(callback_fn, trigger, prev) -> {
-          let result = handle_callback(callback_fn, trigger, prev)
-          Callback(callback_fn, trigger, Some(result))
-        }
         Effect(effect_fn, trigger, prev) -> {
           let result = handle_effect(effect_fn, trigger, prev)
 
           Effect(effect_fn, trigger, Some(result))
         }
-        Reducer(reducer: reducer) -> {
-          Reducer(reducer)
-        }
+        other -> other
       }
 
       process_next_hook(
@@ -315,109 +290,4 @@ fn maybe_cleanup_and_rerun_effect(
     }
     _ -> EffectResult(effect_fn(), deps)
   }
-}
-
-fn handle_callback(
-  callback_fn: fn() -> Nil,
-  trigger: HookTrigger,
-  prev: Option(CallbackResult),
-) -> CallbackResult {
-  case trigger {
-    // recompute callback on every update
-    OnUpdate -> {
-      replace_callback(callback_fn, None)
-    }
-
-    // only compute callback on the first render and when the dependencies change
-    WithDeps(deps) -> {
-      case prev {
-        Some(
-          CallbackResult(callback: _, deps: Some(prev_deps)) as prev_callback_result,
-        ) -> {
-          case compare_deps(prev_deps, deps) {
-            Changed(_) -> replace_callback(callback_fn, Some(deps))
-            Unchanged -> prev_callback_result
-          }
-        }
-
-        Some(prev_callback_result) -> prev_callback_result
-
-        None -> replace_callback(callback_fn, Some(deps))
-
-        _ -> {
-          // this should never occur and means that a hook was dynamically added
-          throw_on_unexpected_hook_result(#("handle_callback", prev))
-        }
-      }
-    }
-  }
-}
-
-fn replace_callback(
-  callback_fn: fn() -> Nil,
-  deps: Option(HookDependencies),
-) -> CallbackResult {
-  CallbackResult(callback_fn, deps)
-}
-
-pub type Compared(a) {
-  Changed(changed: a)
-  Unchanged
-}
-
-pub fn compare_deps(
-  prev_deps: HookDependencies,
-  deps: HookDependencies,
-) -> Compared(HookDependencies) {
-  // zip deps together and compare each one with the previous to see if they are equal
-  case list.strict_zip(prev_deps, deps) {
-    Error(list.LengthMismatch) ->
-      // Dependency lists are different sizes, so they must have changed
-      // this should never occur and means that a hook's deps list was dynamically changed
-      throw_on_unexpected_deps_mismatch(#("compare_deps", prev_deps, deps))
-
-    Ok(zipped_deps) -> {
-      case
-        list.all(
-          zipped_deps,
-          fn(z) {
-            let #(a, b) = z
-            a == b
-          },
-        )
-      {
-        True -> Unchanged
-        _ -> Changed(deps)
-      }
-    }
-  }
-}
-
-fn throw_on_unexpected_hook_result(meta: any) {
-  logger.error(
-    "
-    An unexpected hook result was encountered. This means that a hook was dynamically added
-    after the initial render. This is not supported and will result in undefined behavior.
-    ",
-  )
-
-  io.debug(meta)
-
-  // TODO: we probably want to try and handle this more gracefully in production configurations
-  panic
-}
-
-fn throw_on_unexpected_deps_mismatch(meta: any) {
-  logger.error(
-    "
-    An unexpected change in hook dependencies was encountered. This means that the list of hook
-    dependencies dynamically changed after the initial render. This is not supported and will 
-    result in undefined behavior.
-    ",
-  )
-
-  io.debug(meta)
-
-  // TODO: we probably want to try and handle this more gracefully in production configurations
-  panic
 }

@@ -2,7 +2,7 @@ import gleam/list
 import gleam/option.{Option}
 import gleam/erlang/process.{Subject}
 import glisten/handler.{HandlerMessage}
-import sprocket/uuid
+import sprocket/html/attribute.{IdentifiableCallback}
 import sprocket/hooks.{Hook}
 import sprocket/ordered_map.{OrderedMap}
 
@@ -24,7 +24,6 @@ pub type Socket {
     handlers: List(EventHandler),
     ws: Option(WebSocket),
     render_update: fn() -> Nil,
-    async_callback_dispatch: fn() -> Nil,
   )
 }
 
@@ -35,7 +34,6 @@ pub fn new(ws: Option(WebSocket)) -> Socket {
     handlers: [],
     ws: ws,
     render_update: fn() { Nil },
-    async_callback_dispatch: fn() { Nil },
   )
 }
 
@@ -93,14 +91,11 @@ pub fn update_hook(socket: Socket, hook: Hook, index: Int) -> Socket {
 
 pub fn push_event_handler(
   socket: Socket,
-  handler: fn() -> Nil,
+  identifiable_cb: IdentifiableCallback,
 ) -> #(Socket, String) {
-  let assert Ok(id) = uuid.v4()
+  let IdentifiableCallback(id, cb) = identifiable_cb
 
-  #(
-    Socket(..socket, handlers: [EventHandler(id, handler), ..socket.handlers]),
-    id,
-  )
+  #(Socket(..socket, handlers: [EventHandler(id, cb), ..socket.handlers]), id)
 }
 
 pub fn get_event_handler(

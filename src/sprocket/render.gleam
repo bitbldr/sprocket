@@ -85,8 +85,9 @@ fn element(
             RenderResult(socket, [RenderedKey(key), ..rendered_attrs])
           }
 
-          Event(kind, handler) -> {
-            let #(socket, id) = socket.push_event_handler(socket, handler)
+          Event(kind, identifiable_cb) -> {
+            let #(socket, id) =
+              socket.push_event_handler(socket, identifiable_cb)
             RenderResult(
               socket,
               [RenderedEventHandler(kind, id), ..rendered_attrs],
