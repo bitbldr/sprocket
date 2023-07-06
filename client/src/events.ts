@@ -8,34 +8,16 @@ export type EventHandler = {
   el: Element;
 };
 
-export function attachEventHandlers(socket): EventHandler[] {
-  return supportedEventKinds.reduce((acc, kind) => {
-    const elements = Array.from(
-      document.querySelectorAll(`[${c.EventAttrPrefix}-${kind}]`)
-    )
-      .filter((el) => !!el)
-      .map((el) => {
-        let id = el.attributes[`${c.EventAttrPrefix}-${kind}`].value;
+export function initEventHandlers(socket) {
+  supportedEventKinds.forEach((kind) => {
+    window.addEventListener(kind, (e) => {
+      let target = e.target as Element;
 
-        const handler = (e) => {
-          socket.send(JSON.stringify({ kind, id }));
-        };
+      if (target.hasAttribute(`${c.EventAttrPrefix}-${kind}`)) {
+        let id = target.attributes[`${c.EventAttrPrefix}-${kind}`].value;
 
-        el.addEventListener(kind, handler);
-
-        return {
-          el,
-          kind,
-          handler,
-        };
-      });
-
-    return [...acc, ...elements];
-  }, [] as EventHandler[]);
-}
-
-export function detachEventHandlers(handlers: EventHandler[]) {
-  handlers.forEach(({ el, kind, handler }) => {
-    el.removeEventListener(kind, handler);
+        socket.send(JSON.stringify({ kind, id }));
+      }
+    });
   });
 }

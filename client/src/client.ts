@@ -1,17 +1,12 @@
 import morphdom from "morphdom";
 import { renderDom } from "./render";
 import { applyPatch } from "./patch";
-import {
-  EventHandler,
-  attachEventHandlers,
-  detachEventHandlers,
-} from "./events";
+import { initEventHandlers } from "./events";
 
 window.addEventListener("DOMContentLoaded", () => {
   const socket = new WebSocket("ws://localhost:3000/live");
 
   let dom: Record<string, any>;
-  let handlers: EventHandler[] = [];
 
   socket.addEventListener("open", function (event) {
     socket.send(JSON.stringify(["join"]));
@@ -28,15 +23,11 @@ window.addEventListener("DOMContentLoaded", () => {
           break;
 
         case "update":
-          detachEventHandlers(handlers);
-
           dom = applyPatch(dom, parsed[1]) as Element;
 
           let rendered = renderDom(dom);
 
           morphdom(document.documentElement, rendered);
-
-          handlers = attachEventHandlers(socket);
 
           break;
       }
@@ -44,5 +35,5 @@ window.addEventListener("DOMContentLoaded", () => {
   });
 
   // wire up event handlers
-  handlers = attachEventHandlers(socket);
+  initEventHandlers(socket);
 });
