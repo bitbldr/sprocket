@@ -2,7 +2,7 @@
 // import gleam/int
 // import gleam/option.{None, Some}
 // import gleeunit/should
-// import sprocket/sprocket
+// import sprocket
 // import sprocket/cassette
 // import sprocket/socket.{Socket, Updater}
 // import sprocket/patch.{Change, NoOp, Update}

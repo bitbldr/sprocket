@@ -1,194 +1,293 @@
-import example/utils/logger
-import gleam/io
-import gleam/int
-import gleam/string
-import gleam/result
-import gleam/option.{Some}
-import gleam/erlang/os
-import gleam/erlang/process
-import gleam/json
-import gleam/dynamic.{field}
-import mist
-import mist/websocket
-import mist/internal/websocket.{TextMessage} as internal_websocket
-import sprocket/cassette.{Cassette}
-import gleam/http/request.{Request}
-import gleam/http/response.{Response}
-import gleam/http.{Get}
-import gleam/bit_builder.{BitBuilder}
-import sprocket/socket.{Updater}
-import sprocket/sprocket
-import sprocket/render.{RenderedElement}
-import sprocket/render/json as json_renderer
-import sprocket/component.{component}
-import sprocket/patch.{Patch}
-import example/hello_view.{HelloViewProps, hello_view}
-import example/routes
-import example/app_context.{AppContext}
-import gleam/http/service.{Service}
-
-pub fn main() {
-  logger.configure_backend()
-
-  let port = load_port()
-  let ca = cassette.start()
-  let router = routes.stack(AppContext(ca))
-
-  let assert Ok(_) =
-    mist.serve(
-      port,
-      mist.handler_func(fn(req) {
-        case req.method, request.path_segments(req) {
-          Get, ["live"] -> websocket_service(ca)
-          _, _ -> http_service(req, router)
-        }
-      }),
-    )
-
-  string.concat(["Listening on localhost:", int.to_string(port), " ✨"])
-  |> logger.info
-
-  process.sleep_forever()
+import gleam/otp/actor
+import gleam/erlang/process.{Subject}
+import gleam/list
+import gleam/map.{Map}
+import gleam/option.{None, Option, Some}
+import sprocket/logger
+import sprocket/element.{Element}
+import sprocket/socket.{EventHandler, Socket, Updater, WebSocket}
+import sprocket/hooks.{
+  Changed, Effect, EffectCleanup, EffectResult, Hook, HookDependencies,
+  HookTrigger, OnUpdate, Unchanged, WithDeps, compare_deps,
 }
+import sprocket/render.{RenderResult, RenderedElement, live_render}
+import sprocket/patch.{Patch}
+import sprocket/ordered_map.{KeyedItem, OrderedMapIter}
+import sprocket/exception.{throw_on_unexpected_hook_result}
 
-fn http_service(
-  req: Request(mist.Body),
-  router: Service(BitString, BitBuilder),
-) -> mist.Response {
-  req
-  |> mist.read_body
-  |> result.map(fn(http_req: Request(BitString)) {
-    http_req
-    |> router()
-    |> mist_response()
-  })
-  |> result.unwrap(
-    response.new(500)
-    |> mist.empty_response(),
+pub type Sprocket =
+  Subject(Message)
+
+type State {
+  State(
+    socket: Socket,
+    view: Option(Element),
+    updater: Option(Updater(Patch)),
+    rendered: Option(RenderedElement),
   )
 }
 
-fn mist_response(response: Response(BitBuilder)) -> mist.Response {
-  response
-  |> mist.bit_builder_response(response.body)
+pub type Message {
+  Shutdown
+  HasWebSocket(reply_with: Subject(Bool), websocket: WebSocket)
+  SetRenderUpdate(fn() -> Nil)
+  RenderImmediate(reply_with: Subject(RenderedElement))
+  RenderUpdate
+  GetEventHandler(reply_with: Subject(Result(EventHandler, Nil)), id: String)
 }
 
-fn websocket_service(ca: Cassette) {
-  websocket.with_handler(fn(msg, ws) {
-    // let _ = websocket.send(sender, TextMessage("hello client"))
+fn handle_message(message: Message, state: State) -> actor.Next(State) {
+  case message {
+    Shutdown -> actor.Stop(process.Normal)
 
-    case msg {
-      TextMessage("[\"join\"]") -> {
-        io.println("New client joined")
-
-        case cassette.get_sprocket(ca, ws) {
-          Ok(spkt) -> {
-            sprocket.render_update(spkt)
-
-            Nil
-          }
-          _ -> Nil
+    HasWebSocket(reply_with, websocket) -> {
+      case state.socket {
+        Socket(ws: Some(ws), ..) -> {
+          actor.send(reply_with, ws == websocket)
+        }
+        _ -> {
+          actor.send(reply_with, False)
         }
       }
-      TextMessage(text) -> {
-        case decode_event(text) {
-          Ok(event) -> {
-            io.debug(event)
 
-            case cassette.get_sprocket(ca, ws) {
-              Ok(socket) -> {
-                case sprocket.get_handler(socket, event.id) {
-                  Ok(socket.EventHandler(_, handler)) -> {
-                    // call the event handler
-                    handler()
-                  }
-                  _ -> Nil
-                }
-              }
-              _ -> Nil
+      actor.Continue(state)
+    }
+
+    SetRenderUpdate(render_update) -> {
+      actor.Continue(
+        State(
+          ..state,
+          socket: Socket(..state.socket, render_update: render_update),
+        ),
+      )
+    }
+
+    RenderImmediate(reply_with) -> {
+      let state = case state {
+        State(socket: socket, view: Some(view), ..) -> {
+          let RenderResult(socket, rendered) =
+            socket
+            |> socket.reset_for_render
+            |> live_render(view)
+
+          actor.send(reply_with, rendered)
+
+          process_hooks(
+            State(..state, socket: socket, rendered: Some(rendered)),
+          )
+        }
+        _ -> {
+          logger.error("No renderer found!")
+          state
+        }
+      }
+
+      actor.Continue(state)
+    }
+
+    RenderUpdate -> {
+      let state = case state {
+        State(
+          socket: socket,
+          view: Some(view),
+          updater: Some(updater),
+          rendered: Some(prev_rendered),
+        ) -> {
+          let RenderResult(socket, rendered) =
+            socket
+            |> socket.reset_for_render
+            |> live_render(view)
+
+          let update = patch.create(prev_rendered, rendered)
+
+          // send the rendered update using updater
+          case updater.send(update) {
+            Ok(_) -> Nil
+            Error(_) -> {
+              logger.error("Failed to send update patch!")
+              Nil
             }
           }
 
-          Error(e) -> {
-            io.debug("Error decoding event:")
-            io.debug(e)
-
-            Nil
+          // hooks might contain effects that will trigger a rerender. That is okay because any
+          // RenderUpdate messages sent during this operation will be placed into this actor's mailbox
+          // and will be processed in order after this current render is complete
+          process_hooks(
+            State(..state, socket: socket, rendered: Some(rendered)),
+          )
+        }
+        _ -> {
+          case state {
+            State(view: None, ..) ->
+              logger.error("No view found! A view must be provided to render.")
+            State(updater: None, ..) ->
+              logger.error(
+                "No updater found! An updater must be provided to send updates to the client.",
+              )
+            State(rendered: None, ..) ->
+              logger.error(
+                "No previous render found! View must be rendered at least once before updates can be sent.",
+              )
           }
+
+          state
         }
       }
-      internal_websocket.BinaryMessage(_) -> {
-        io.debug("Received binary message")
-        Nil
-      }
+
+      actor.Continue(state)
     }
 
-    Ok(Nil)
-  })
-  // Here you can gain access to the `Subject` to send message to
-  // with:
-  |> websocket.on_init(fn(ws) {
-    let updater =
-      Updater(send: fn(update) {
-        let _ = websocket.send(ws, TextMessage(update_to_json(update)))
-        Ok(Nil)
-      })
+    GetEventHandler(reply_with, id) -> {
+      let handler =
+        list.find(
+          state.socket.handlers,
+          fn(h) {
+            let EventHandler(i, _) = h
+            i == id
+          },
+        )
 
-    let view = component(hello_view, HelloViewProps)
+      process.send(reply_with, handler)
 
-    let sprocket = sprocket.start(Some(ws), Some(view), Some(updater))
-    cassette.push_sprocket(ca, sprocket)
-
-    // intitial live render
-    let rendered = sprocket.render(sprocket)
-    websocket.send(ws, TextMessage(rendered_to_json(rendered)))
-
-    io.println("Client connected!")
-    io.debug(ws)
-
-    Nil
-  })
-  |> websocket.on_close(fn(ws) {
-    let assert Ok(_) = cassette.pop_sprocket(ca, ws)
-
-    io.println("Disconnected!")
-    io.debug(ws)
-
-    Nil
-  })
-  |> mist.upgrade
+      actor.Continue(state)
+    }
+  }
 }
 
-fn load_port() -> Int {
-  os.get_env("PORT")
-  |> result.then(int.parse)
-  |> result.unwrap(3000)
+pub fn start(
+  ws: Option(WebSocket),
+  view: Option(Element),
+  updater: Option(Updater(Patch)),
+) {
+  let assert Ok(actor) =
+    actor.start(
+      State(
+        socket: socket.new(ws),
+        view: view,
+        updater: updater,
+        rendered: None,
+      ),
+      handle_message,
+    )
+
+  actor.send(actor, SetRenderUpdate(fn() { actor.send(actor, RenderUpdate) }))
+
+  actor
 }
 
-type Event {
-  Event(event: String, id: String)
+pub fn stop(actor) {
+  actor.send(actor, Shutdown)
 }
 
-fn decode_event(body: String) {
-  json.decode(
-    body,
-    dynamic.decode2(
-      Event,
-      field("kind", dynamic.string),
-      field("id", dynamic.string),
+pub fn has_websocket(actor, websocket) -> Bool {
+  actor.call(actor, HasWebSocket(_, websocket), 100)
+}
+
+pub fn get_handler(actor, id) {
+  actor.call(actor, GetEventHandler(_, id), 100)
+}
+
+pub fn render(actor) -> RenderedElement {
+  actor.call(actor, RenderImmediate(_), 100)
+}
+
+pub fn render_update(actor) -> Nil {
+  actor.send(actor, RenderUpdate)
+}
+
+fn process_hooks(state: State) -> State {
+  let #(r_ordered, by_index, size) =
+    state.socket.hooks
+    |> ordered_map.iter()
+    |> process_next_hook(#([], map.new(), 0))
+
+  State(
+    ..state,
+    socket: Socket(
+      ..state.socket,
+      hooks: ordered_map.from(list.reverse(r_ordered), by_index, size),
     ),
   )
 }
 
-fn rendered_to_json(update: RenderedElement) -> String {
-  json.preprocessed_array([
-    json.string("init"),
-    json_renderer.renderer().render(update),
-  ])
-  |> json.to_string()
+fn process_next_hook(
+  iter: OrderedMapIter(Int, Hook),
+  acc: #(List(KeyedItem(Int, Hook)), Map(Int, Hook), Int),
+) -> #(List(KeyedItem(Int, Hook)), Map(Int, Hook), Int) {
+  case ordered_map.next(iter) {
+    Ok(#(iter, KeyedItem(index, hook))) -> {
+      let #(ordered, by_index, size) = acc
+
+      // for now, only effects are processed during this phase
+      let updated = case hook {
+        Effect(effect_fn, trigger, prev) -> {
+          let result = handle_effect(effect_fn, trigger, prev)
+
+          Effect(effect_fn, trigger, Some(result))
+        }
+        other -> other
+      }
+
+      process_next_hook(
+        iter,
+        #(
+          [KeyedItem(index, updated), ..ordered],
+          map.insert(by_index, index, updated),
+          size + 1,
+        ),
+      )
+    }
+    Error(_) -> acc
+  }
 }
 
-fn update_to_json(update: Patch) -> String {
-  json.preprocessed_array([json.string("update"), patch.patch_to_json(update)])
-  |> json.to_string()
+fn handle_effect(
+  effect_fn: fn() -> EffectCleanup,
+  trigger: HookTrigger,
+  prev: Option(EffectResult),
+) -> EffectResult {
+  case trigger {
+    // trigger effect on every update
+    OnUpdate -> {
+      case prev {
+        Some(EffectResult(cleanup: cleanup, ..)) ->
+          maybe_cleanup_and_rerun_effect(cleanup, effect_fn, None)
+        _ -> EffectResult(effect_fn(), None)
+      }
+    }
+
+    // only trigger the update on the first render and when the dependencies change
+    WithDeps(deps) -> {
+      case prev {
+        Some(EffectResult(cleanup, Some(prev_deps))) -> {
+          case compare_deps(prev_deps, deps) {
+            Changed(_) ->
+              maybe_cleanup_and_rerun_effect(cleanup, effect_fn, Some(deps))
+            Unchanged -> EffectResult(cleanup, Some(deps))
+          }
+        }
+
+        None -> maybe_cleanup_and_rerun_effect(None, effect_fn, Some(deps))
+
+        _ -> {
+          // this should never occur and means that a hook was dynamically added
+          throw_on_unexpected_hook_result(#("handle_effect", prev))
+        }
+      }
+    }
+  }
+}
+
+fn maybe_cleanup_and_rerun_effect(
+  cleanup: EffectCleanup,
+  effect_fn: fn() -> EffectCleanup,
+  deps: Option(HookDependencies),
+) {
+  case cleanup {
+    Some(cleanup_fn) -> {
+      cleanup_fn()
+      EffectResult(effect_fn(), deps)
+    }
+    _ -> EffectResult(effect_fn(), deps)
+  }
 }

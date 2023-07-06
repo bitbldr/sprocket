@@ -83,3 +83,11 @@ pub fn h1(attrs: List(Attribute), children: Children) {
 pub fn p(attrs: List(Attribute), children: Children) {
   el("p", attrs, children)
 }
+
+pub fn a(attrs: List(Attribute), children: Children) {
+  el("a", attrs, children)
+}
+
+pub fn input(attrs: List(Attribute)) {
+  el("input", attrs, [])
+}

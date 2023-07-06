@@ -1,7 +1,7 @@
 import gleam/otp/actor
 import gleam/erlang/process.{Subject}
 import gleam/list
-import sprocket/sprocket.{Sprocket}
+import sprocket.{Sprocket}
 import sprocket/socket.{WebSocket}
 
 pub type Cassette =

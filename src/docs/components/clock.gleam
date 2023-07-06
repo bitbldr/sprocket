@@ -8,7 +8,7 @@ import sprocket/hooks.{WithDeps, dep}
 import sprocket/hooks/reducer.{State, reducer}
 import sprocket/hooks/effect.{effect}
 import sprocket/html.{span, text}
-import example/utils/timer.{interval}
+import docs/utils/timer.{interval}
 
 type Model {
   Model(time: Int, timezone: String)

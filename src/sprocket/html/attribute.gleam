@@ -46,3 +46,15 @@ pub fn rel(value: String) -> Attribute {
 pub fn src(value: String) -> Attribute {
   attribute("src", value)
 }
+
+pub fn placeholder(value: String) -> Attribute {
+  attribute("placeholder", value)
+}
+
+pub fn input_type(value: String) -> Attribute {
+  attribute("type", value)
+}
+
+pub fn value(value: String) -> Attribute {
+  attribute("value", value)
+}

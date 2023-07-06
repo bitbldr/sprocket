@@ -4,10 +4,10 @@ import gleam/http.{Get}
 import gleam/http/request.{Request}
 import gleam/http/response.{Response}
 import gleam/http/service.{Service}
-import example/log_requests
-import example/static
-import example/controllers/index.{index}
-import example/app_context.{AppContext}
+import docs/log_requests
+import docs/static
+import docs/controllers/index.{index}
+import docs/app_context.{AppContext}
 
 pub fn router(ctx: AppContext) {
   fn(request: Request(String)) -> Response(String) {

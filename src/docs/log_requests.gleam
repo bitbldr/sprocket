@@ -4,7 +4,7 @@ import gleam/http/response.{Response}
 import gleam/http/service.{Service}
 import gleam/int
 import gleam/string
-import example/utils/logger
+import docs/utils/logger
 
 fn format_log_line(
   request: Request(a),
