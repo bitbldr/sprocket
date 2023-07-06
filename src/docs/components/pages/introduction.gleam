@@ -3,6 +3,7 @@ import sprocket/socket.{Socket}
 import sprocket/component.{component, render}
 import docs/components/clock.{ClockProps, clock}
 import docs/components/counter.{CounterProps, counter}
+import docs/components/say_hello.{SayHelloProps, say_hello}
 import sprocket/html.{dangerous_raw_html, div, h1, p, text}
 import sprocket/html/attribute.{class}
 
@@ -44,6 +45,7 @@ pub fn introduction_page(socket: Socket, _props: IntroductionPageProps) {
                 ],
               ),
               component(counter, CounterProps(initial: Some(0))),
+              component(say_hello, SayHelloProps),
             ],
           ),
         ],

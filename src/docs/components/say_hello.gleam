@@ -1,0 +1,114 @@
+import gleam/int
+import gleam/list
+import gleam/pair
+import gleam/option.{None, Option, Some}
+import sprocket/socket.{Socket}
+import sprocket/component.{render}
+import sprocket/hooks.{WithDeps}
+import sprocket/hooks/reducer.{State, reducer}
+import sprocket/hooks/callback.{callback}
+import sprocket/html.{button, div, span, text}
+import sprocket/html/attribute.{class, on_click}
+
+type Model {
+  Model(selection: Option(Int), options: List(HelloOption))
+}
+
+type Msg {
+  NoOp
+  SayHello
+}
+
+fn update(model: Model, msg: Msg) -> Model {
+  case msg {
+    NoOp -> model
+    SayHello ->
+      Model(..model, selection: Some(int.random(0, list.length(model.options))))
+  }
+}
+
+fn initial(options: List(HelloOption)) -> Model {
+  Model(selection: None, options: options)
+}
+
+pub type SayHelloProps {
+  SayHelloProps
+}
+
+pub fn say_hello(socket: Socket, _props: SayHelloProps) {
+  use socket, State(Model(selection: selection, options: options), dispatch) <- reducer(
+    socket,
+    initial(hello_strings()),
+    update,
+  )
+
+  use socket, on_say_hello <- callback(
+    socket,
+    fn() { dispatch(SayHello) },
+    WithDeps([]),
+  )
+
+  let hello =
+    selection
+    |> option.map(fn(i) {
+      list.at(options, i)
+      |> option.from_result()
+    })
+    |> option.flatten()
+
+  render(
+    socket,
+    [
+      div(
+        [],
+        [
+          button(
+            [
+              class("p-2 bg-blue-500 hover:bg-blue-700 text-white rounded"),
+              on_click(on_say_hello),
+            ],
+            [text("Say Hello")],
+          ),
+          ..case hello {
+            None -> []
+            Some(hello) -> [
+              span([class("ml-2")], [text(pair.second(hello))]),
+              span(
+                [class("ml-2 text-gray-400 bold")],
+                [text(pair.first(hello))],
+              ),
+            ]
+          }
+        ],
+      ),
+    ],
+  )
+}
+
+type HelloOption =
+  #(String, String)
+
+fn hello_strings() -> List(HelloOption) {
+  [
+    #("English", "Hello"),
+    #("Spanish", "Hola"),
+    #("French", "Bonjour"),
+    #("German", "Hallo"),
+    #("Italian", "Ciao"),
+    #("Portuguese", "Olá"),
+    #("Russian", "Приве, (Privet)"),
+    #("Chinese (Mandarin)", "你好,(Nǐ hǎo)"),
+    #("Japanese", "こんにち, (Konnichiwa)"),
+    #("Korean", "안녕하세, (Annyeonghaseyo)"),
+    #("Arabic", "مرحب, (Marhaba)"),
+    #("Hindi", "नमस्त, (Namaste)"),
+    #("Turkish", "Merhaba"),
+    #("Dutch", "Hallo"),
+    #("Swedish", "Hej"),
+    #("Norwegian", "Hei"),
+    #("Danish", "Hej"),
+    #("Greek", "Γεια σας,(Yia sas)"),
+    #("Polish", "Cześć"),
+    #("Swahili", "Hujambo"),
+  ]
+}
