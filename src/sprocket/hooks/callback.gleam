@@ -1,13 +1,12 @@
 import gleam/option.{None, Option, Some}
 import sprocket/element.{Element}
-import sprocket/hooks/identifiable_callback.{CallbackFn, IdentifiableCallback}
+import sprocket/identifiable_callback.{CallbackFn, IdentifiableCallback}
 import sprocket/socket.{Socket}
 import sprocket/hooks.{
   Callback, CallbackResult, Changed, HookDependencies, HookTrigger, OnMount,
   OnUpdate, Unchanged, WithDeps, compare_deps,
 }
 import sprocket/exception.{throw_on_unexpected_hook_result}
-import sprocket/utils/uuid
 import sprocket/utils/unique
 
 pub fn callback(

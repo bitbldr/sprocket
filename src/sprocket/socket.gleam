@@ -2,7 +2,7 @@ import gleam/list
 import gleam/option.{Option}
 import gleam/erlang/process.{Subject}
 import glisten/handler.{HandlerMessage}
-import sprocket/hooks/identifiable_callback.{CallbackFn, IdentifiableCallback}
+import sprocket/identifiable_callback.{CallbackFn, IdentifiableCallback}
 import sprocket/hooks.{Hook}
 import sprocket/utils/ordered_map.{OrderedMap}
 import sprocket/utils/unique.{Unique}

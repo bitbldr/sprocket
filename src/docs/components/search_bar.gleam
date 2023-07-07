@@ -2,7 +2,7 @@ import sprocket/socket.{Socket}
 import sprocket/component.{render}
 import sprocket/hooks.{WithDeps}
 import sprocket/hooks/callback.{callback}
-import sprocket/hooks/identifiable_callback.{CallbackWithValueFn}
+import sprocket/identifiable_callback.{CallbackWithValueFn}
 import sprocket/hooks/reducer.{State, reducer}
 import sprocket/html.{input}
 import sprocket/html/attribute.{class, input_type, on_input, placeholder, value}

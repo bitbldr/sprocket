@@ -1,7 +1,7 @@
 import gleam/otp/actor
 import gleam/list
 import gleam/dynamic.{field}
-import sprocket/hooks/identifiable_callback.{CallbackFn, CallbackWithValueFn}
+import sprocket/identifiable_callback.{CallbackFn, CallbackWithValueFn}
 import gleam/io
 import gleam/option.{Some}
 import gleam/erlang/process.{Subject}

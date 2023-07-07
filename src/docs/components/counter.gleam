@@ -8,7 +8,7 @@ import sprocket/component.{render}
 import sprocket/hooks/reducer.{State, reducer}
 import sprocket/hooks/effect.{effect}
 import sprocket/hooks/callback.{callback}
-import sprocket/hooks/identifiable_callback.{CallbackFn}
+import sprocket/identifiable_callback.{CallbackFn}
 import sprocket/html.{button, div, span, text}
 import sprocket/html/attribute.{class, on_click}
 

@@ -1,6 +1,6 @@
 import gleam/string
 import gleam/dynamic.{Dynamic}
-import sprocket/hooks/identifiable_callback.{IdentifiableCallback}
+import sprocket/identifiable_callback.{IdentifiableCallback}
 
 pub type Attribute {
   Attribute(name: String, value: Dynamic)

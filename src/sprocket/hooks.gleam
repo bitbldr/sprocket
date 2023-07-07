@@ -2,7 +2,7 @@ import gleam/list
 import gleam/option.{Option}
 import gleam/dynamic.{Dynamic}
 import sprocket/exception.{throw_on_unexpected_deps_mismatch}
-import sprocket/hooks/identifiable_callback.{CallbackFn}
+import sprocket/identifiable_callback.{CallbackFn}
 import sprocket/utils/unique.{Unique}
 
 pub type HookDependencies =

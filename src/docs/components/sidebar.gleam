@@ -5,7 +5,7 @@ import sprocket/component.{component, render}
 import sprocket/hooks.{WithDeps, dep}
 import sprocket/hooks/reducer.{State, reducer}
 import sprocket/hooks/callback.{callback}
-import sprocket/hooks/identifiable_callback.{CallbackFn}
+import sprocket/identifiable_callback.{CallbackFn}
 import sprocket/html.{a, div, text}
 import sprocket/html/attribute.{class, classes}
 import docs/components/search_bar.{SearchBarProps, search_bar}
