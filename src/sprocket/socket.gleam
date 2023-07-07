@@ -2,12 +2,12 @@ import gleam/list
 import gleam/option.{Option}
 import gleam/erlang/process.{Subject}
 import glisten/handler.{HandlerMessage}
-import sprocket/html/attribute.{IdentifiableCallback}
+import sprocket/hooks/identifiable_callback.{CallbackFn, IdentifiableCallback}
 import sprocket/hooks.{Hook}
 import sprocket/ordered_map.{OrderedMap}
 
 pub type EventHandler {
-  EventHandler(id: String, handler: fn() -> Nil)
+  EventHandler(id: String, handler: CallbackFn)
 }
 
 pub type WebSocket =

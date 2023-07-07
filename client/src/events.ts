@@ -16,7 +16,7 @@ export function initEventHandlers(socket) {
       if (target.hasAttribute(`${c.EventAttrPrefix}-${kind}`)) {
         let id = target.attributes[`${c.EventAttrPrefix}-${kind}`].value;
 
-        socket.send(JSON.stringify({ kind, id }));
+        socket.send(JSON.stringify({ kind, id, value: (target as any).value }));
       }
     });
   });

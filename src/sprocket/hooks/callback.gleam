@@ -1,6 +1,6 @@
 import gleam/option.{None, Option, Some}
 import sprocket/element.{Element}
-import sprocket/html/attribute.{IdentifiableCallback}
+import sprocket/hooks/identifiable_callback.{CallbackFn, IdentifiableCallback}
 import sprocket/socket.{Socket}
 import sprocket/hooks.{
   Callback, CallbackResult, Changed, HookDependencies, HookTrigger, OnUpdate,
@@ -11,7 +11,7 @@ import sprocket/uuid
 
 pub fn callback(
   socket: Socket,
-  callback_fn: fn() -> Nil,
+  callback_fn: CallbackFn,
   trigger: HookTrigger,
   cb: fn(Socket, IdentifiableCallback) -> #(Socket, List(Element)),
 ) -> #(Socket, List(Element)) {
@@ -39,7 +39,7 @@ pub fn callback(
 }
 
 fn maybe_update_callback(
-  callback_fn: fn() -> Nil,
+  callback_fn: CallbackFn,
   trigger: HookTrigger,
   prev: Option(CallbackResult),
 ) -> CallbackResult {
@@ -75,7 +75,7 @@ fn maybe_update_callback(
 }
 
 fn replace_callback(
-  callback_fn: fn() -> Nil,
+  callback_fn: CallbackFn,
   deps: Option(HookDependencies),
 ) -> CallbackResult {
   CallbackResult(callback_fn, deps)

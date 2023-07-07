@@ -22,6 +22,7 @@ import sprocket/render.{RenderedElement}
 import sprocket/render/json as json_renderer
 import sprocket/component.{component}
 import sprocket/patch.{Patch}
+import sprocket/hooks/identifiable_callback.{CallbackFn, ChangedCallbackFn}
 import docs/views/page_view.{PageViewProps, page_view}
 import docs/routes
 import docs/app_context.{AppContext}
@@ -100,7 +101,21 @@ fn websocket_service(req: Request(mist.Body), ca: Cassette) {
                 case sprocket.get_handler(socket, event.id) {
                   Ok(socket.EventHandler(_, handler)) -> {
                     // call the event handler
-                    handler()
+                    case handler {
+                      CallbackFn(cb) -> {
+                        cb()
+                      }
+                      ChangedCallbackFn(cb) -> {
+                        case decode_event_value(text) {
+                          Ok(value) -> cb(value)
+                          _ -> {
+                            logger.error("Error decoding event value:")
+                            io.debug(text)
+                            panic
+                          }
+                        }
+                      }
+                    }
                   }
                   _ -> Nil
                 }
@@ -178,6 +193,10 @@ fn decode_event(body: String) {
       field("id", dynamic.string),
     ),
   )
+}
+
+fn decode_event_value(body: String) {
+  json.decode(body, field("value", dynamic.string))
 }
 
 fn rendered_to_json(update: RenderedElement) -> String {

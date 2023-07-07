@@ -1,9 +1,6 @@
 import gleam/string
 import gleam/dynamic.{Dynamic}
-
-pub type IdentifiableCallback {
-  IdentifiableCallback(id: String, cb: fn() -> Nil)
-}
+import sprocket/hooks/identifiable_callback.{IdentifiableCallback}
 
 pub type Attribute {
   Attribute(name: String, value: Dynamic)
@@ -21,6 +18,14 @@ pub fn event(name: String, identifiable_cb: IdentifiableCallback) -> Attribute {
 
 pub fn on_click(identifiable_cb: IdentifiableCallback) -> Attribute {
   event("click", identifiable_cb)
+}
+
+pub fn on_change(identifiable_cb: IdentifiableCallback) -> Attribute {
+  event("change", identifiable_cb)
+}
+
+pub fn on_input(identifiable_cb: IdentifiableCallback) -> Attribute {
+  event("input", identifiable_cb)
 }
 
 pub fn lang(value: String) -> Attribute {

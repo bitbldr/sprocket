@@ -8,6 +8,7 @@ import sprocket/component.{render}
 import sprocket/hooks/reducer.{State, reducer}
 import sprocket/hooks/effect.{effect}
 import sprocket/hooks/callback.{callback}
+import sprocket/hooks/identifiable_callback.{CallbackFn}
 import sprocket/html.{button, div, span, text}
 import sprocket/html/attribute.{class, on_click}
 
@@ -53,12 +54,12 @@ pub fn counter(socket: Socket, props: CounterProps) {
   // Define event handlers. Alternatively, these could be defined inline
   use socket, on_increment <- callback(
     socket,
-    fn() { dispatch(UpdateCounter(count + 1)) },
+    CallbackFn(fn() { dispatch(UpdateCounter(count + 1)) }),
     WithDeps([dep(count)]),
   )
   use socket, on_decrement <- callback(
     socket,
-    fn() { dispatch(UpdateCounter(count - 1)) },
+    CallbackFn(fn() { dispatch(UpdateCounter(count - 1)) }),
     WithDeps([dep(count)]),
   )
 

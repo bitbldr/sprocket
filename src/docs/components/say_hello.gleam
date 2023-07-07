@@ -7,6 +7,7 @@ import sprocket/component.{render}
 import sprocket/hooks.{WithDeps}
 import sprocket/hooks/reducer.{State, reducer}
 import sprocket/hooks/callback.{callback}
+import sprocket/hooks/identifiable_callback.{CallbackFn}
 import sprocket/html.{button, div, span, text}
 import sprocket/html/attribute.{class, on_click}
 
@@ -44,7 +45,7 @@ pub fn say_hello(socket: Socket, _props: SayHelloProps) {
 
   use socket, on_say_hello <- callback(
     socket,
-    fn() { dispatch(SayHello) },
+    CallbackFn(fn() { dispatch(SayHello) }),
     WithDeps([]),
   )
 

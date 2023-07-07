@@ -5,6 +5,7 @@ import sprocket/component.{component, render}
 import sprocket/hooks.{WithDeps, dep}
 import sprocket/hooks/reducer.{State, reducer}
 import sprocket/hooks/callback.{callback}
+import sprocket/hooks/identifiable_callback.{CallbackFn}
 import sprocket/html.{a, div, text}
 import sprocket/html/attribute.{class, classes}
 import docs/components/search_bar.{SearchBarProps, search_bar}
@@ -66,10 +67,10 @@ pub fn sidebar(socket: Socket, props) {
                     int.to_string(i + 1) <> ". " <> page.title,
                     page.href,
                     page.href == active,
-                    fn() {
+                    CallbackFn(fn() {
                       dispatch(SetActive(page.href))
                       Nil
-                    },
+                    }),
                   ),
                 )
               },
@@ -83,7 +84,7 @@ pub fn sidebar(socket: Socket, props) {
 }
 
 type LinkProps {
-  LinkProps(title: String, href: String, is_active: Bool, on_click: fn() -> Nil)
+  LinkProps(title: String, href: String, is_active: Bool, on_click: CallbackFn)
 }
 
 fn link(socket: Socket, props: LinkProps) {
