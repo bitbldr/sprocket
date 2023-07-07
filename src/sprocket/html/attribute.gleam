@@ -48,6 +48,18 @@ pub fn rel(value: String) -> Attribute {
   attribute("rel", value)
 }
 
+pub fn integrity(value: String) -> Attribute {
+  attribute("integrity", value)
+}
+
+pub fn crossorigin(value: String) -> Attribute {
+  attribute("crossorigin", value)
+}
+
+pub fn referrerpolicy(value: String) -> Attribute {
+  attribute("referrerpolicy", value)
+}
+
 pub fn src(value: String) -> Attribute {
   attribute("src", value)
 }
@@ -62,4 +74,8 @@ pub fn input_type(value: String) -> Attribute {
 
 pub fn value(value: String) -> Attribute {
   attribute("value", value)
+}
+
+pub fn target(value: String) -> Attribute {
+  attribute("target", value)
 }

@@ -71,7 +71,9 @@ pub fn counter(socket: Socket, props: CounterProps) {
         [
           button(
             [
-              class("p-1 px-2 border rounded-l bg-gray-100"),
+              class(
+                "p-1 px-2 border rounded-l bg-gray-100 hover:bg-gray-200 active:bg-gray-300",
+              ),
               on_click(on_decrement),
             ],
             [text("-")],
@@ -82,7 +84,9 @@ pub fn counter(socket: Socket, props: CounterProps) {
           ),
           button(
             [
-              class("p-1 px-2 border rounded-r bg-gray-100"),
+              class(
+                "p-1 px-2 border rounded-r bg-gray-100 hover:bg-gray-200 active:bg-gray-300",
+              ),
               on_click(on_increment),
             ],
             [text("+")],

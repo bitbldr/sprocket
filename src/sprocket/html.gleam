@@ -72,6 +72,10 @@ pub fn span(attrs: List(Attribute), children: Children) {
   el("span", attrs, children)
 }
 
+pub fn i(attrs: List(Attribute), children: Children) {
+  el("i", attrs, children)
+}
+
 pub fn button(attrs: List(Attribute), children: Children) {
   el("button", attrs, children)
 }

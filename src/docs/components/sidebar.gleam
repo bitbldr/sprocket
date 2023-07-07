@@ -52,7 +52,7 @@ pub fn sidebar(socket: Socket, props) {
     case show {
       True -> [
         div(
-          [class("bg-gray-100 dark:bg-gray-800")],
+          [class("border-r border-gray-200 p-2 w-[20rem]")],
           [
             component(
               search_bar,

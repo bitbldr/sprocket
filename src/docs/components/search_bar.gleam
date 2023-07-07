@@ -53,7 +53,7 @@ pub fn search_bar(socket: Socket, _props) {
       input([
         input_type("text"),
         class(
-          "m-2 pl-2 pr-4 py-1 rounded bg-white border border-gray-200 text-gray-600",
+          "m-2 pl-2 pr-4 py-1 rounded bg-white border border-gray-200 text-gray-600 focus:outline-none focus:border-blue-500",
         ),
         placeholder("Search..."),
         value(query),
