@@ -3,6 +3,7 @@ import gleam/option.{Option}
 import gleam/dynamic.{Dynamic}
 import sprocket/exception.{throw_on_unexpected_deps_mismatch}
 import sprocket/hooks/identifiable_callback.{CallbackFn}
+import sprocket/utils/unique.{Unique}
 
 pub type HookDependencies =
   List(Dynamic)
@@ -13,6 +14,7 @@ pub fn dep(dependency: a) -> Dynamic {
 }
 
 pub type HookTrigger {
+  OnMount
   OnUpdate
   WithDeps(deps: HookDependencies)
 }
@@ -30,7 +32,7 @@ pub type CallbackResult {
 
 pub type Hook {
   Callback(
-    id: String,
+    id: Unique,
     callback: CallbackFn,
     trigger: HookTrigger,
     prev: Option(CallbackResult),

@@ -1,11 +1,10 @@
-import gleam/option.{None, Option, Some}
 import sprocket/socket.{Socket}
 import sprocket/component.{render}
 import sprocket/hooks.{WithDeps}
 import sprocket/hooks/callback.{callback}
-import sprocket/hooks/identifiable_callback.{ChangedCallbackFn}
+import sprocket/hooks/identifiable_callback.{CallbackWithValueFn}
 import sprocket/hooks/reducer.{State, reducer}
-import sprocket/html.{button, div, input, text}
+import sprocket/html.{input}
 import sprocket/html/attribute.{class, input_type, on_input, placeholder, value}
 
 type Model {
@@ -44,7 +43,7 @@ pub fn search_bar(socket: Socket, _props) {
 
   use socket, on_input_query <- callback(
     socket,
-    ChangedCallbackFn(fn(value: String) { dispatch(SetQuery(value)) }),
+    CallbackWithValueFn(fn(value: String) { dispatch(SetQuery(value)) }),
     WithDeps([]),
   )
 

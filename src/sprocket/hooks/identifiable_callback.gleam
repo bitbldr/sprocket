@@ -1,8 +1,10 @@
+import sprocket/utils/unique.{Unique}
+
 pub type CallbackFn {
   CallbackFn(cb: fn() -> Nil)
-  ChangedCallbackFn(cb: fn(String) -> Nil)
+  CallbackWithValueFn(cb: fn(String) -> Nil)
 }
 
 pub type IdentifiableCallback {
-  IdentifiableCallback(id: String, cb: CallbackFn)
+  IdentifiableCallback(id: Unique, cb: CallbackFn)
 }

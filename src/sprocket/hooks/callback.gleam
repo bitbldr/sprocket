@@ -3,11 +3,12 @@ import sprocket/element.{Element}
 import sprocket/hooks/identifiable_callback.{CallbackFn, IdentifiableCallback}
 import sprocket/socket.{Socket}
 import sprocket/hooks.{
-  Callback, CallbackResult, Changed, HookDependencies, HookTrigger, OnUpdate,
-  Unchanged, WithDeps, compare_deps,
+  Callback, CallbackResult, Changed, HookDependencies, HookTrigger, OnMount,
+  OnUpdate, Unchanged, WithDeps, compare_deps,
 }
 import sprocket/exception.{throw_on_unexpected_hook_result}
-import sprocket/uuid
+import sprocket/utils/uuid
+import sprocket/utils/unique
 
 pub fn callback(
   socket: Socket,
@@ -16,8 +17,7 @@ pub fn callback(
   cb: fn(Socket, IdentifiableCallback) -> #(Socket, List(Element)),
 ) -> #(Socket, List(Element)) {
   let init_callback = fn() {
-    let assert Ok(id) = uuid.v4()
-    Callback(id, callback_fn, trigger, None)
+    Callback(unique.new(), callback_fn, trigger, None)
   }
 
   let #(socket, Callback(id, _callback_fn, _trigger, prev), index) =
@@ -44,12 +44,17 @@ fn maybe_update_callback(
   prev: Option(CallbackResult),
 ) -> CallbackResult {
   case trigger {
-    // recompute callback on every update
+    // Only compute callback on the first render. This is a convience for WithDeps([]).
+    OnMount -> {
+      replace_callback(callback_fn, Some([]))
+    }
+
+    // Recompute callback on every update
     OnUpdate -> {
       replace_callback(callback_fn, None)
     }
 
-    // only compute callback on the first render and when the dependencies change
+    // Only compute callback on the first render and when the dependencies change
     WithDeps(deps) -> {
       case prev {
         Some(

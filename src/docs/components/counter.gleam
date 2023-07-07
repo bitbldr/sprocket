@@ -51,7 +51,7 @@ pub fn counter(socket: Socket, props: CounterProps) {
     WithDeps([dep(count)]),
   )
 
-  // Define event handlers. Alternatively, these could be defined inline
+  // Define event handlers
   use socket, on_increment <- callback(
     socket,
     CallbackFn(fn() { dispatch(UpdateCounter(count + 1)) }),

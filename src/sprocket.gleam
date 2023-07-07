@@ -8,11 +8,12 @@ import sprocket/element.{Element}
 import sprocket/socket.{EventHandler, Socket, Updater, WebSocket}
 import sprocket/hooks.{
   Changed, Effect, EffectCleanup, EffectResult, Hook, HookDependencies,
-  HookTrigger, OnUpdate, Unchanged, WithDeps, compare_deps,
+  HookTrigger, OnMount, OnUpdate, Unchanged, WithDeps, compare_deps,
 }
 import sprocket/render.{RenderResult, RenderedElement, live_render}
 import sprocket/patch.{Patch}
-import sprocket/ordered_map.{KeyedItem, OrderedMapIter}
+import sprocket/utils/ordered_map.{KeyedItem, OrderedMapIter}
+import sprocket/utils/unique.{Unique}
 import sprocket/exception.{throw_on_unexpected_hook_result}
 
 pub type Sprocket =
@@ -33,7 +34,7 @@ pub type Message {
   SetRenderUpdate(fn() -> Nil)
   RenderImmediate(reply_with: Subject(RenderedElement))
   RenderUpdate
-  GetEventHandler(reply_with: Subject(Result(EventHandler, Nil)), id: String)
+  GetEventHandler(reply_with: Subject(Result(EventHandler, Nil)), id: Unique)
 }
 
 fn handle_message(message: Message, state: State) -> actor.Next(State) {
@@ -183,8 +184,8 @@ pub fn has_websocket(actor, websocket) -> Bool {
   actor.call(actor, HasWebSocket(_, websocket), 100)
 }
 
-pub fn get_handler(actor, id) {
-  actor.call(actor, GetEventHandler(_, id), 100)
+pub fn get_handler(actor, id: String) {
+  actor.call(actor, GetEventHandler(_, unique.from_string(id)), 100)
 }
 
 pub fn render(actor) -> RenderedElement {
@@ -247,6 +248,11 @@ fn handle_effect(
   prev: Option(EffectResult),
 ) -> EffectResult {
   case trigger {
+    // Only compute callback on the first render. This is a convience for WithDeps([]).
+    OnMount -> {
+      EffectResult(effect_fn(), Some([]))
+    }
+
     // trigger effect on every update
     OnUpdate -> {
       case prev {

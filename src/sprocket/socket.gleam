@@ -4,10 +4,11 @@ import gleam/erlang/process.{Subject}
 import glisten/handler.{HandlerMessage}
 import sprocket/hooks/identifiable_callback.{CallbackFn, IdentifiableCallback}
 import sprocket/hooks.{Hook}
-import sprocket/ordered_map.{OrderedMap}
+import sprocket/utils/ordered_map.{OrderedMap}
+import sprocket/utils/unique.{Unique}
 
 pub type EventHandler {
-  EventHandler(id: String, handler: CallbackFn)
+  EventHandler(id: Unique, handler: CallbackFn)
 }
 
 pub type WebSocket =
@@ -92,7 +93,7 @@ pub fn update_hook(socket: Socket, hook: Hook, index: Int) -> Socket {
 pub fn push_event_handler(
   socket: Socket,
   identifiable_cb: IdentifiableCallback,
-) -> #(Socket, String) {
+) -> #(Socket, Unique) {
   let IdentifiableCallback(id, cb) = identifiable_cb
 
   #(Socket(..socket, handlers: [EventHandler(id, cb), ..socket.handlers]), id)
@@ -100,7 +101,7 @@ pub fn push_event_handler(
 
 pub fn get_event_handler(
   socket: Socket,
-  id: String,
+  id: Unique,
 ) -> #(Socket, Result(EventHandler, Nil)) {
   let handler =
     list.find(

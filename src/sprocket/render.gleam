@@ -6,6 +6,7 @@ import sprocket/element.{
   AbstractFunctionalComponent, Component, Element, Raw, SafeHtml,
 }
 import sprocket/socket.{Socket}
+import sprocket/utils/unique
 
 pub type Renderer(result) {
   Renderer(render: fn(RenderedElement) -> result)
@@ -90,7 +91,10 @@ fn element(
               socket.push_event_handler(socket, identifiable_cb)
             RenderResult(
               socket,
-              [RenderedEventHandler(kind, id), ..rendered_attrs],
+              [
+                RenderedEventHandler(kind, unique.to_string(id)),
+                ..rendered_attrs
+              ],
             )
           }
         }
