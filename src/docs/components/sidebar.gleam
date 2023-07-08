@@ -1,12 +1,13 @@
 import gleam/int
 import gleam/list
+import gleam/option.{None, Option, Some}
 import sprocket/socket.{Socket}
 import sprocket/component.{component, render}
 import sprocket/hooks.{WithDeps, dep}
 import sprocket/hooks/reducer.{State, reducer}
 import sprocket/hooks/callback.{callback}
 import sprocket/identifiable_callback.{CallbackFn}
-import sprocket/html.{a, div, text}
+import sprocket/html.{a, div, span, text}
 import sprocket/html/attribute.{class, classes}
 import docs/components/search_bar.{SearchBarProps, search_bar}
 
@@ -15,23 +16,26 @@ pub type Page {
 }
 
 type Model {
-  Model(show: Bool, active: String)
+  Model(show: Bool, active: String, search_filter: Option(String))
 }
 
 type Msg {
   NoOp
   SetActive(String)
+  SetSearchFilter(Option(String))
 }
 
 fn update(model: Model, msg: Msg) -> Model {
   case msg {
     NoOp -> model
     SetActive(active) -> Model(..model, active: active)
+    SetSearchFilter(search_filter) ->
+      Model(..model, search_filter: search_filter)
   }
 }
 
 fn initial() -> Model {
-  Model(show: True, active: "/")
+  Model(show: True, active: "/", search_filter: None)
 }
 
 pub type SidebarProps {
@@ -41,11 +45,13 @@ pub type SidebarProps {
 pub fn sidebar(socket: Socket, props) {
   let SidebarProps(pages: pages) = props
 
-  use socket, State(Model(show: show, active: active), dispatch) <- reducer(
+  use
     socket,
-    initial(),
-    update,
-  )
+    State(
+      Model(show: show, active: active, search_filter: search_filter),
+      dispatch,
+    )
+  <- reducer(socket, initial(), update)
 
   render(
     socket,
@@ -56,25 +62,42 @@ pub fn sidebar(socket: Socket, props) {
           [
             component(
               search_bar,
-              SearchBarProps(on_search: fn(_query) { todo }),
+              SearchBarProps(on_search: fn(query) {
+                case query {
+                  "" -> dispatch(SetSearchFilter(None))
+                  _ -> dispatch(SetSearchFilter(Some(query)))
+                }
+              }),
             ),
-            ..list.index_map(
-              pages,
-              fn(i, page) {
-                component(
-                  link,
-                  LinkProps(
-                    int.to_string(i + 1) <> ". " <> page.title,
-                    page.href,
-                    page.href == active,
-                    CallbackFn(fn() {
-                      dispatch(SetActive(page.href))
-                      Nil
-                    }),
-                  ),
+            ..case search_filter {
+              Some(query) -> [
+                div(
+                  [],
+                  [
+                    span([class("bold italic")], [text("No results for: ")]),
+                    span([], [text(query)]),
+                  ],
+                ),
+              ]
+              None ->
+                list.index_map(
+                  pages,
+                  fn(i, page) {
+                    component(
+                      link,
+                      LinkProps(
+                        int.to_string(i + 1) <> ". " <> page.title,
+                        page.href,
+                        page.href == active,
+                        CallbackFn(fn() {
+                          dispatch(SetActive(page.href))
+                          Nil
+                        }),
+                      ),
+                    )
+                  },
                 )
-              },
-            )
+            }
           ],
         ),
       ]

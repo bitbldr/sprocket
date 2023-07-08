@@ -16,7 +16,7 @@ pub fn introduction_page(socket: Socket, _props: IntroductionPageProps) {
     socket,
     [
       div(
-        [class("flex flex-col p-4")],
+        [class("flex flex-col p-10")],
         [
           div(
             [],
