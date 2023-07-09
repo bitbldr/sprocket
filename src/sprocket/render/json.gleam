@@ -7,7 +7,7 @@ import sprocket/render.{
   RenderedAttribute, RenderedComponent, RenderedElement, RenderedEventHandler,
   RenderedText, Renderer,
 }
-import sprocket/constants.{EventAttrPrefix, KeyAttr, const_str}
+import sprocket/constants.{EventAttrPrefix, KeyAttr, constant}
 
 pub fn renderer() -> Renderer(Json) {
   Renderer(render: fn(el) { render(el) })
@@ -37,7 +37,7 @@ fn element(
         }
         RenderedEventHandler(kind, id) -> {
           #(
-            string.concat([const_str(EventAttrPrefix), "-", kind]),
+            string.concat([constant(EventAttrPrefix), "-", kind]),
             json.string(id),
           )
         }
@@ -45,7 +45,7 @@ fn element(
     })
 
   let attrs = case key {
-    Some(k) -> list.append(attrs, [#(const_str(KeyAttr), json.string(k))])
+    Some(k) -> list.append(attrs, [#(constant(KeyAttr), json.string(k))])
     None -> attrs
   }
 

@@ -5,7 +5,7 @@ import sprocket/render.{
   RenderedAttribute, RenderedComponent, RenderedElement, RenderedEventHandler,
   RenderedText, Renderer,
 }
-import sprocket/constants.{EventAttrPrefix, KeyAttr, const_str}
+import sprocket/constants.{EventAttrPrefix, KeyAttr, constant}
 
 pub fn renderer() -> Renderer(String) {
   Renderer(render: fn(el) { string_builder.to_string(render(el)) })
@@ -43,7 +43,7 @@ fn element(
               acc,
               string_builder.from_strings([
                 " ",
-                const_str(EventAttrPrefix),
+                constant(EventAttrPrefix),
                 "-",
                 kind,
                 "=\"",
@@ -60,7 +60,7 @@ fn element(
     Some(k) ->
       string_builder.append_builder(
         rendered_attrs,
-        string_builder.from_strings([" ", const_str(KeyAttr), "=\"", k, "\""]),
+        string_builder.from_strings([" ", constant(KeyAttr), "=\"", k, "\""]),
       )
     None -> rendered_attrs
   }

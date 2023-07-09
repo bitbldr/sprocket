@@ -9,7 +9,7 @@ import sprocket/render.{
 }
 import gleam/json.{Json}
 import sprocket/render/json as json_renderer
-import sprocket/constants.{EventAttrPrefix, const_str}
+import sprocket/constants.{EventAttrPrefix, constant}
 
 pub type Patch {
   NoOp
@@ -405,7 +405,7 @@ fn attrs_to_json(attrs: List(RenderedAttribute)) -> Json {
       }
       RenderedEventHandler(kind, id) -> {
         #(
-          string.concat([const_str(EventAttrPrefix), "-", kind]),
+          string.concat([constant(EventAttrPrefix), "-", kind]),
           json.string(id),
         )
       }
