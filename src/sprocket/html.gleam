@@ -1,7 +1,7 @@
 import gleam/list
 import gleam/string
 import gleam/string_builder
-import sprocket/element.{Element, Raw, SafeHtml}
+import sprocket/element.{Element, Keyed, Raw, SafeHtml}
 import sprocket/html/attribute.{Attribute}
 
 pub type Children =
@@ -42,6 +42,10 @@ fn escape_html(unsafe: String) {
 pub fn text(text: String) -> Element {
   // safely escape any html text
   escape_html(text)
+}
+
+pub fn keyed(key: String, element: Element) {
+  Keyed(key, element)
 }
 
 pub fn html(attrs: List(Attribute), children: Children) {

@@ -5,11 +5,11 @@ import gleam/map.{Map}
 import gleam/option.{None, Option, Some}
 import sprocket/render.{
   RenderedAttribute, RenderedComponent, RenderedElement, RenderedEventHandler,
-  RenderedKey, RenderedText,
+  RenderedText,
 }
 import gleam/json.{Json}
 import sprocket/render/json as json_renderer
-import sprocket/constants.{EventAttrPrefix, KeyAttr, c}
+import sprocket/constants.{EventAttrPrefix, const_str}
 
 pub type Patch {
   NoOp
@@ -77,9 +77,17 @@ pub fn create(old: RenderedElement, new: RenderedElement) -> Patch {
       }
     }
     // old and new components and props are the same
-    RenderedComponent(fc: old_fc, props: old_props, children: old_children), RenderedComponent(
+    RenderedComponent(
+      fc: old_fc,
+      key: _old_key,
+      props: old_props,
+      hooks: _old_hooks,
+      children: old_children,
+    ), RenderedComponent(
       fc: new_fc,
+      key: _key,
       props: new_props,
+      hooks: _hooks,
       children: new_children,
     ) if old_fc == new_fc && old_props == new_props -> {
       // functional components and props are the same, check and children
@@ -185,9 +193,6 @@ fn attr_key(attribute) {
   case attribute {
     RenderedAttribute(name: name, ..) -> {
       name
-    }
-    RenderedKey(key: key) -> {
-      key
     }
     RenderedEventHandler(id: id, ..) -> {
       id
@@ -398,11 +403,11 @@ fn attrs_to_json(attrs: List(RenderedAttribute)) -> Json {
       RenderedAttribute(name, value) -> {
         #(name, json.string(value))
       }
-      RenderedKey(key) -> {
-        #(c(KeyAttr), json.string(key))
-      }
       RenderedEventHandler(kind, id) -> {
-        #(string.concat([c(EventAttrPrefix), "-", kind]), json.string(id))
+        #(
+          string.concat([const_str(EventAttrPrefix), "-", kind]),
+          json.string(id),
+        )
       }
     }
   })

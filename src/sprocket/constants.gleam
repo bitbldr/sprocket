@@ -3,7 +3,7 @@ pub type Const {
   EventAttrPrefix
 }
 
-pub fn c(constant: Const) -> String {
+pub fn const_str(constant: Const) -> String {
   case constant {
     KeyAttr -> "spkt-key"
     EventAttrPrefix -> "spkt-event"

@@ -1,10 +1,11 @@
 import gleam/list
+import gleam/option.{None, Option, Some}
 import gleam/string_builder.{StringBuilder}
 import sprocket/render.{
   RenderedAttribute, RenderedComponent, RenderedElement, RenderedEventHandler,
-  RenderedKey, RenderedText, Renderer,
+  RenderedText, Renderer,
 }
-import sprocket/constants.{EventAttrPrefix, KeyAttr, c}
+import sprocket/constants.{EventAttrPrefix, KeyAttr, const_str}
 
 pub fn renderer() -> Renderer(String) {
   Renderer(render: fn(el) { string_builder.to_string(render(el)) })
@@ -12,8 +13,8 @@ pub fn renderer() -> Renderer(String) {
 
 fn render(el: RenderedElement) -> StringBuilder {
   case el {
-    RenderedElement(tag: tag, key: _key, attrs: attrs, children: children) ->
-      element(tag, attrs, children)
+    RenderedElement(tag: tag, key: key, attrs: attrs, children: children) ->
+      element(tag, key, attrs, children)
     RenderedComponent(children: children, ..) -> component(children)
     RenderedText(text: t) -> text(t)
   }
@@ -21,6 +22,7 @@ fn render(el: RenderedElement) -> StringBuilder {
 
 fn element(
   tag: String,
+  key: Option(String),
   attrs: List(RenderedAttribute),
   children: List(RenderedElement),
 ) -> StringBuilder {
@@ -41,7 +43,7 @@ fn element(
               acc,
               string_builder.from_strings([
                 " ",
-                c(EventAttrPrefix),
+                const_str(EventAttrPrefix),
                 "-",
                 kind,
                 "=\"",
@@ -50,15 +52,18 @@ fn element(
               ]),
             )
           }
-          RenderedKey(k) -> {
-            string_builder.append_builder(
-              acc,
-              string_builder.from_strings([" ", c(KeyAttr), "=\"", k, "\""]),
-            )
-          }
         }
       },
     )
+
+  let rendered_attrs = case key {
+    Some(k) ->
+      string_builder.append_builder(
+        rendered_attrs,
+        string_builder.from_strings([" ", const_str(KeyAttr), "=\"", k, "\""]),
+      )
+    None -> rendered_attrs
+  }
 
   let inner_html =
     children

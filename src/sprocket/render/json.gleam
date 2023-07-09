@@ -1,12 +1,13 @@
 import gleam/int
 import gleam/list
 import gleam/string
+import gleam/option.{None, Option, Some}
 import gleam/json.{Json}
 import sprocket/render.{
   RenderedAttribute, RenderedComponent, RenderedElement, RenderedEventHandler,
-  RenderedKey, RenderedText, Renderer,
+  RenderedText, Renderer,
 }
-import sprocket/constants.{EventAttrPrefix, KeyAttr, c}
+import sprocket/constants.{EventAttrPrefix, KeyAttr, const_str}
 
 pub fn renderer() -> Renderer(Json) {
   Renderer(render: fn(el) { render(el) })
@@ -14,8 +15,8 @@ pub fn renderer() -> Renderer(Json) {
 
 fn render(el: RenderedElement) -> Json {
   case el {
-    RenderedElement(tag: tag, key: _key, attrs: attrs, children: children) ->
-      element(tag, attrs, children)
+    RenderedElement(tag: tag, key: key, attrs: attrs, children: children) ->
+      element(tag, key, attrs, children)
     RenderedComponent(children: children, ..) -> component(children)
     RenderedText(text: t) -> text(t)
   }
@@ -23,6 +24,7 @@ fn render(el: RenderedElement) -> Json {
 
 fn element(
   tag: String,
+  key: Option(String),
   attrs: List(RenderedAttribute),
   children: List(RenderedElement),
 ) -> Json {
@@ -34,13 +36,18 @@ fn element(
           #(name, json.string(value))
         }
         RenderedEventHandler(kind, id) -> {
-          #(string.concat([c(EventAttrPrefix), "-", kind]), json.string(id))
-        }
-        RenderedKey(k) -> {
-          #(c(KeyAttr), json.string(k))
+          #(
+            string.concat([const_str(EventAttrPrefix), "-", kind]),
+            json.string(id),
+          )
         }
       }
     })
+
+  let attrs = case key {
+    Some(k) -> list.append(attrs, [#(const_str(KeyAttr), json.string(k))])
+    None -> attrs
+  }
 
   let children =
     children

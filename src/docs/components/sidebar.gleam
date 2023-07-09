@@ -7,7 +7,7 @@ import sprocket/hooks.{WithDeps, dep}
 import sprocket/hooks/reducer.{State, reducer}
 import sprocket/hooks/callback.{callback}
 import sprocket/identifiable_callback.{CallbackFn}
-import sprocket/html.{a, div, span, text}
+import sprocket/html.{a, div, keyed, span, text}
 import sprocket/html/attribute.{class, classes}
 import docs/components/search_bar.{SearchBarProps, search_bar}
 
@@ -83,16 +83,19 @@ pub fn sidebar(socket: Socket, props) {
                 list.index_map(
                   pages,
                   fn(i, page) {
-                    component(
-                      link,
-                      LinkProps(
-                        int.to_string(i + 1) <> ". " <> page.title,
-                        page.href,
-                        page.href == active,
-                        CallbackFn(fn() {
-                          dispatch(SetActive(page.href))
-                          Nil
-                        }),
+                    keyed(
+                      page.title,
+                      component(
+                        link,
+                        LinkProps(
+                          int.to_string(i + 1) <> ". " <> page.title,
+                          page.href,
+                          page.href == active,
+                          CallbackFn(fn() {
+                            dispatch(SetActive(page.href))
+                            Nil
+                          }),
+                        ),
                       ),
                     )
                   },

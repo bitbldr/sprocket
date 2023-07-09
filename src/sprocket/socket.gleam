@@ -18,10 +18,16 @@ pub type Updater(r) {
   Updater(send: fn(r) -> Result(Nil, Nil))
 }
 
+pub type ComponentHooks =
+  OrderedMap(Int, Hook)
+
+pub type ComponentWip {
+  ComponentWip(hooks: ComponentHooks, index: Int)
+}
+
 pub type Socket {
   Socket(
-    hooks: OrderedMap(Int, Hook),
-    hook_index: Int,
+    wip: ComponentWip,
     handlers: List(EventHandler),
     ws: Option(WebSocket),
     render_update: fn() -> Nil,
@@ -30,8 +36,7 @@ pub type Socket {
 
 pub fn new(ws: Option(WebSocket)) -> Socket {
   Socket(
-    hooks: ordered_map.new(),
-    hook_index: 0,
+    wip: ComponentWip(hooks: ordered_map.new(), index: 0),
     handlers: [],
     ws: ws,
     render_update: fn() { Nil },
@@ -39,19 +44,24 @@ pub fn new(ws: Option(WebSocket)) -> Socket {
 }
 
 pub fn reset_for_render(socket: Socket) {
-  Socket(..socket, handlers: [], hook_index: 0)
+  Socket(..socket, handlers: [])
 }
 
 pub fn fetch_or_init_hook(
   socket: Socket,
   init: fn() -> Hook,
 ) -> #(Socket, Hook, Int) {
-  let index = socket.hook_index
+  let index = socket.wip.index
+  let hooks = socket.wip.hooks
 
-  case ordered_map.get(socket.hooks, index) {
+  case ordered_map.get(hooks, index) {
     Ok(hook) -> {
       // hook found, return it
-      #(Socket(..socket, hook_index: index + 1), hook, index)
+      #(
+        Socket(..socket, wip: ComponentWip(..socket.wip, index: index + 1)),
+        hook,
+        index,
+      )
     }
     Error(Nil) -> {
       // TODO: add a check here for is_first_render and if it isnt, throw an error
@@ -76,8 +86,10 @@ pub fn fetch_or_init_hook(
       #(
         Socket(
           ..socket,
-          hooks: ordered_map.insert(socket.hooks, index, hook),
-          hook_index: index + 1,
+          wip: ComponentWip(
+            hooks: ordered_map.insert(socket.wip.hooks, index, hook),
+            index: index + 1,
+          ),
         ),
         hook,
         index,
@@ -87,7 +99,13 @@ pub fn fetch_or_init_hook(
 }
 
 pub fn update_hook(socket: Socket, hook: Hook, index: Int) -> Socket {
-  Socket(..socket, hooks: ordered_map.update(socket.hooks, index, hook))
+  Socket(
+    ..socket,
+    wip: ComponentWip(
+      ..socket.wip,
+      hooks: ordered_map.update(socket.wip.hooks, index, hook),
+    ),
+  )
 }
 
 pub fn push_event_handler(

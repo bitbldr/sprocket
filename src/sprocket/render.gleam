@@ -1,12 +1,14 @@
 import gleam/list
-import gleam/option.{None, Option}
+import gleam/option.{None, Option, Some}
 import gleam/dynamic.{Dynamic}
-import sprocket/html/attribute.{Attribute, Event, Key}
+import sprocket/html/attribute.{Attribute, Event}
 import sprocket/element.{
-  AbstractFunctionalComponent, Component, Element, Raw, SafeHtml,
+  AbstractFunctionalComponent, Component, Element, Keyed, Raw, SafeHtml,
 }
-import sprocket/socket.{Socket}
+import sprocket/socket.{ComponentHooks, ComponentWip, Socket}
 import sprocket/utils/unique
+import sprocket/utils/ordered_map
+import sprocket/logger
 
 pub type Renderer(result) {
   Renderer(render: fn(RenderedElement) -> result)
@@ -14,7 +16,6 @@ pub type Renderer(result) {
 
 pub type RenderedAttribute {
   RenderedAttribute(name: String, value: String)
-  RenderedKey(key: String)
   RenderedEventHandler(kind: String, id: String)
 }
 
@@ -27,7 +28,9 @@ pub type RenderedElement {
   )
   RenderedComponent(
     fc: AbstractFunctionalComponent,
+    key: Option(String),
     props: Dynamic,
+    hooks: ComponentHooks,
     children: List(RenderedElement),
   )
   RenderedText(text: String)
@@ -42,19 +45,27 @@ pub type RenderResult(a) {
 // Internally this function uses live_render with a placeholder socket to render the tree,
 // but then discards the socket and returns the result.
 pub fn render(el: Element, renderer: Renderer(r)) -> r {
-  let RenderResult(rendered: rendered, ..) = live_render(socket.new(None), el)
+  let RenderResult(rendered: rendered, ..) =
+    live_render(socket.new(None), el, None, None)
 
   renderer.render(rendered)
 }
 
 // Renders the given element into a RenderedElement tree.
 // Returns the socket and a stateful RenderedElement tree using the given socket.
-pub fn live_render(socket: Socket, el: Element) -> RenderResult(RenderedElement) {
+pub fn live_render(
+  socket: Socket,
+  el: Element,
+  key: Option(String),
+  prev: Option(RenderedElement),
+) -> RenderResult(RenderedElement) {
   // TODO: render_count > SOME_THRESHOLD then panic("Possible infinite rerender loop")
 
   case el {
-    Element(tag, attrs, children) -> element(socket, tag, attrs, children)
-    Component(fc, props) -> component(socket, fc, props)
+    Element(tag, attrs, children) ->
+      element(socket, tag, key, attrs, children, prev)
+    Component(fc, props) -> component(socket, fc, key, props, prev)
+    Keyed(key, el) -> live_render(socket, el, Some(key), prev)
     SafeHtml(html) -> safe_html(socket, html)
     Raw(text) -> raw(socket, text)
   }
@@ -63,8 +74,10 @@ pub fn live_render(socket: Socket, el: Element) -> RenderResult(RenderedElement)
 fn element(
   socket: Socket,
   tag: String,
+  key: Option(String),
   attrs: List(Attribute),
   children: List(Element),
+  prev: Option(RenderedElement),
 ) -> RenderResult(RenderedElement) {
   let RenderResult(socket, rendered_attrs) =
     list.fold(
@@ -81,11 +94,6 @@ fn element(
               [RenderedAttribute(name, value), ..rendered_attrs],
             )
           }
-
-          Key(key) -> {
-            RenderResult(socket, [RenderedKey(key), ..rendered_attrs])
-          }
-
           Event(kind, identifiable_cb) -> {
             let #(socket, id) =
               socket.push_event_handler(socket, identifiable_cb)
@@ -103,33 +111,24 @@ fn element(
 
   let RenderResult(socket, children) =
     children
-    |> list.fold(
+    |> list.index_fold(
       RenderResult(socket, []),
-      fn(acc, child) {
+      fn(acc, child, i) {
         let RenderResult(socket, rendered) = acc
 
-        let RenderResult(socket, rendered_child) = live_render(socket, child)
+        let prev_child = find_prev_child(prev, child, i)
+
+        let RenderResult(socket, rendered_child) =
+          live_render(socket, child, None, prev_child)
         RenderResult(socket, [rendered_child, ..rendered])
       },
     )
-
-  let maybe_key =
-    list.find_map(
-      rendered_attrs,
-      fn(attr) {
-        case attr {
-          RenderedKey(key) -> Ok(key)
-          _ -> Error(Nil)
-        }
-      },
-    )
-    |> option.from_result()
 
   RenderResult(
     socket,
     RenderedElement(
       tag,
-      maybe_key,
+      key,
       list.reverse(rendered_attrs),
       list.reverse(children),
     ),
@@ -139,23 +138,159 @@ fn element(
 fn component(
   socket: Socket,
   fc: AbstractFunctionalComponent,
+  key: Option(String),
   props: Dynamic,
+  prev: Option(RenderedElement),
 ) -> RenderResult(RenderedElement) {
+  // Prepare socket wip (work in progress) for component render
+  let socket = case prev {
+    None ->
+      // There is no previous rendered element, so this is the first render
+      Socket(..socket, wip: ComponentWip(ordered_map.new(), 0))
+    Some(RenderedComponent(_, _, _, hooks, _)) ->
+      // There is a previous rendered element, so use the previously rendered hooks
+      Socket(..socket, wip: ComponentWip(hooks, 0))
+    Some(_) -> {
+      // This should never happen
+      logger.error("Invalid previous element")
+      panic
+    }
+  }
+
+  // render the component
   let #(socket, children) = fc(socket, props)
 
+  // capture hook results
+  let hooks = socket.wip.hooks
+
+  // process children
   let RenderResult(socket, children) =
     children
-    |> list.fold(
+    |> list.index_fold(
       RenderResult(socket, []),
-      fn(acc, child) {
+      fn(acc, child, i) {
         let RenderResult(socket, rendered) = acc
 
-        let RenderResult(socket, rendered_child) = live_render(socket, child)
+        let prev_child = find_prev_child(prev, child, i)
+
+        let RenderResult(socket, rendered_child) =
+          live_render(socket, child, None, prev_child)
+
         RenderResult(socket, [rendered_child, ..rendered])
       },
     )
 
-  RenderResult(socket, RenderedComponent(fc, props, list.reverse(children)))
+  RenderResult(
+    socket,
+    RenderedComponent(fc, key, props, hooks, list.reverse(children)),
+  )
+}
+
+fn get_key(el: Element) -> Option(String) {
+  case el {
+    Keyed(key, _) -> Some(key)
+    _ -> None
+  }
+}
+
+// Attempts to find a previous child by key, otherwise by matching function component at given index.
+// If no previous child is found, returns None
+fn find_prev_child(prev: Option(RenderedElement), child: Element, index: Int) {
+  let child_key = get_key(child)
+  option.or(
+    get_child_by_key(prev, child_key),
+    get_matching_prev_child_by_index(prev, child, index),
+  )
+  // TODO: Remove. This is a much simpler matcher that doesn't account for element type and
+  // component function changes
+  // get_prev_child_at_index(prev, index)
+}
+
+// fn get_prev_child_at_index(
+//   prev: Option(RenderedElement),
+//   index: Int,
+// ) -> Option(RenderedElement) {
+//   case prev {
+//     Some(RenderedComponent(_, _, _, _, children)) -> {
+//       list.at(children, index)
+//       |> option.from_result()
+//     }
+//     Some(RenderedElement(_, _, _, children)) -> {
+//       list.at(children, index)
+//       |> option.from_result()
+//     }
+//     _ -> None
+//   }
+// }
+
+fn get_matching_prev_child_by_index(
+  prev: Option(RenderedElement),
+  child: Element,
+  index: Int,
+) -> Option(RenderedElement) {
+  case prev {
+    Some(RenderedComponent(_, _, _, _, children)) -> {
+      case list.at(children, index) {
+        Ok(prev_child) -> {
+          maybe_matching_el(prev_child, child)
+        }
+        Error(Nil) -> None
+      }
+    }
+    Some(RenderedElement(_, _, _, children)) -> {
+      case list.at(children, index) {
+        Ok(prev_child) -> {
+          maybe_matching_el(prev_child, child)
+        }
+        Error(Nil) -> None
+      }
+    }
+    _ -> None
+  }
+}
+
+fn maybe_matching_el(
+  prev_child: RenderedElement,
+  child: Element,
+) -> Option(RenderedElement) {
+  case prev_child, child {
+    RenderedComponent(prev_fc, _, _, _, _), Component(fc, ..) -> {
+      case prev_fc == fc {
+        True -> Some(prev_child)
+        False -> None
+      }
+    }
+    RenderedElement(prev_tag, _, _, _), Element(tag, ..) -> {
+      case prev_tag == tag {
+        True -> Some(prev_child)
+        False -> None
+      }
+    }
+    _, _ -> None
+  }
+}
+
+fn get_child_by_key(
+  prev: Option(RenderedElement),
+  key: Option(String),
+) -> Option(RenderedElement) {
+  case prev, key {
+    Some(RenderedComponent(_, _, _, _, children)), Some(key) -> {
+      // find prev child by given key
+      list.find(
+        children,
+        fn(child) {
+          case child {
+            RenderedComponent(_, Some(child_key), _, _, _) -> child_key == key
+            RenderedElement(_, Some(child_key), _, _) -> child_key == key
+            _ -> False
+          }
+        },
+      )
+      |> option.from_result()
+    }
+    _, _ -> None
+  }
 }
 
 fn safe_html(socket: Socket, html: String) -> RenderResult(RenderedElement) {

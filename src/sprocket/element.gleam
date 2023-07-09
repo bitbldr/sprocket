@@ -11,6 +11,7 @@ pub type FunctionalComponent(p) =
 pub type Element {
   Element(tag: String, attrs: List(Attribute), children: List(Element))
   Component(component: FunctionalComponent(Dynamic), props: Dynamic)
+  Keyed(key: String, element: Element)
   SafeHtml(html: String)
   Raw(text: String)
 }

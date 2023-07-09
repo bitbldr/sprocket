@@ -4,7 +4,6 @@ import sprocket/identifiable_callback.{IdentifiableCallback}
 
 pub type Attribute {
   Attribute(name: String, value: Dynamic)
-  Key(value: String)
   Event(name: String, identifiable_cb: IdentifiableCallback)
 }
 

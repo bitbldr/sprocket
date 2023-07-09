@@ -1,4 +1,4 @@
-import { c } from "./constants";
+import { constStr } from "./constants";
 
 const supportedEventKinds = ["click", "change", "input"];
 
@@ -13,8 +13,8 @@ export function initEventHandlers(socket) {
     window.addEventListener(kind, (e) => {
       let target = e.target as Element;
 
-      if (target.hasAttribute(`${c.EventAttrPrefix}-${kind}`)) {
-        let id = target.attributes[`${c.EventAttrPrefix}-${kind}`].value;
+      if (target.hasAttribute(`${constStr.EventAttrPrefix}-${kind}`)) {
+        let id = target.attributes[`${constStr.EventAttrPrefix}-${kind}`].value;
 
         socket.send(JSON.stringify({ kind, id, value: (target as any).value }));
       }

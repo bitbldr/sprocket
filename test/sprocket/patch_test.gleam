@@ -7,6 +7,7 @@ import sprocket/render.{
   RenderedAttribute, RenderedComponent, RenderedElement, RenderedText,
 }
 import sprocket/patch.{Change, Insert, Move, NoOp, Replace, Update}
+import sprocket/utils/ordered_map
 
 // gleeunit test functions end in `_test`
 pub fn text_change_test() {
@@ -16,7 +17,9 @@ pub fn text_change_test() {
   let first =
     RenderedComponent(
       fc: fc,
+      key: None,
       props: props,
+      hooks: ordered_map.new(),
       children: [
         RenderedElement(
           tag: "div",
@@ -43,7 +46,9 @@ pub fn text_change_test() {
   let second =
     RenderedComponent(
       fc: fc,
+      key: None,
       props: props,
+      hooks: ordered_map.new(),
       children: [
         RenderedElement(
           tag: "div",
@@ -94,12 +99,21 @@ pub fn first_fc_without_children_test() {
   let fc = fn(socket, _) { #(socket, []) }
   let props = dynamic.from([])
 
-  let first = RenderedComponent(fc: fc, props: props, children: [])
+  let first =
+    RenderedComponent(
+      fc: fc,
+      key: None,
+      props: props,
+      hooks: ordered_map.new(),
+      children: [],
+    )
 
   let second =
     RenderedComponent(
       fc: fc,
+      key: None,
       props: props,
+      hooks: ordered_map.new(),
       children: [
         RenderedElement(
           tag: "div",
@@ -160,7 +174,9 @@ pub fn add_child_test() {
   let first =
     RenderedComponent(
       fc: fc,
+      key: None,
       props: props,
+      hooks: ordered_map.new(),
       children: [
         RenderedElement(
           tag: "div",
@@ -187,7 +203,9 @@ pub fn add_child_test() {
   let second =
     RenderedComponent(
       fc: fc,
+      key: None,
       props: props,
+      hooks: ordered_map.new(),
       children: [
         RenderedElement(
           tag: "div",
@@ -265,7 +283,9 @@ pub fn add_move_child_with_keys_test() {
   let first =
     RenderedComponent(
       fc: fc,
+      key: None,
       props: props,
+      hooks: ordered_map.new(),
       children: [
         RenderedElement(
           tag: "div",
@@ -292,7 +312,9 @@ pub fn add_move_child_with_keys_test() {
   let second =
     RenderedComponent(
       fc: fc,
+      key: None,
       props: props,
+      hooks: ordered_map.new(),
       children: [
         RenderedElement(
           tag: "div",
@@ -370,7 +392,9 @@ pub fn add_move_update_child_with_keys_test() {
   let first =
     RenderedComponent(
       fc: fc,
+      key: None,
       props: props,
+      hooks: ordered_map.new(),
       children: [
         RenderedElement(
           tag: "div",
@@ -397,7 +421,9 @@ pub fn add_move_update_child_with_keys_test() {
   let second =
     RenderedComponent(
       fc: fc,
+      key: None,
       props: props,
+      hooks: ordered_map.new(),
       children: [
         RenderedElement(
           tag: "div",
@@ -493,7 +519,9 @@ pub fn add_move_replace_child_with_keys_test() {
   let first =
     RenderedComponent(
       fc: fc,
+      key: None,
       props: props,
+      hooks: ordered_map.new(),
       children: [
         RenderedElement(
           tag: "div",
@@ -520,7 +548,9 @@ pub fn add_move_replace_child_with_keys_test() {
   let second =
     RenderedComponent(
       fc: fc,
+      key: None,
       props: props,
+      hooks: ordered_map.new(),
       children: [
         RenderedElement(
           tag: "div",
@@ -609,7 +639,9 @@ pub fn attribute_change_test() {
   let first =
     RenderedComponent(
       fc: fc,
+      key: None,
       props: props,
+      hooks: ordered_map.new(),
       children: [
         RenderedElement(
           tag: "div",
@@ -636,7 +668,9 @@ pub fn attribute_change_test() {
   let second =
     RenderedComponent(
       fc: fc,
+      key: None,
       props: props,
+      hooks: ordered_map.new(),
       children: [
         RenderedElement(
           tag: "div",
@@ -704,7 +738,9 @@ pub fn fc_change_test() {
   let first =
     RenderedComponent(
       fc: fc1,
+      key: None,
       props: props,
+      hooks: ordered_map.new(),
       children: [
         RenderedElement(
           tag: "div",
@@ -727,7 +763,9 @@ pub fn fc_change_test() {
   let second =
     RenderedComponent(
       fc: fc2,
+      key: None,
       props: props,
+      hooks: ordered_map.new(),
       children: [
         RenderedElement(
           tag: "div",
@@ -754,7 +792,9 @@ pub fn fc_change_test() {
   patch.create(first, second)
   |> should.equal(Replace(RenderedComponent(
     fc: fc2,
+    key: None,
     props: props,
+    hooks: ordered_map.new(),
     children: [
       RenderedElement(
         tag: "div",
@@ -787,7 +827,9 @@ pub fn fc_props_change_test() {
   let first =
     RenderedComponent(
       fc: fc,
+      key: None,
       props: original_props,
+      hooks: ordered_map.new(),
       children: [
         RenderedElement(
           tag: "div",
@@ -810,7 +852,9 @@ pub fn fc_props_change_test() {
   let second =
     RenderedComponent(
       fc: fc,
+      key: None,
       props: new_props,
+      hooks: ordered_map.new(),
       children: [
         RenderedElement(
           tag: "div",
@@ -837,7 +881,9 @@ pub fn fc_props_change_test() {
   patch.create(first, second)
   |> should.equal(Replace(RenderedComponent(
     fc: fc,
+    key: None,
     props: new_props,
+    hooks: ordered_map.new(),
     children: [
       RenderedElement(
         tag: "div",
@@ -869,7 +915,9 @@ pub fn patch_to_json_test() {
   let first =
     RenderedComponent(
       fc: fc,
+      key: None,
       props: props,
+      hooks: ordered_map.new(),
       children: [
         RenderedElement(
           tag: "div",
@@ -896,7 +944,9 @@ pub fn patch_to_json_test() {
   let second =
     RenderedComponent(
       fc: fc,
+      key: None,
       props: props,
+      hooks: ordered_map.new(),
       children: [
         RenderedElement(
           tag: "div",
@@ -948,7 +998,7 @@ pub fn patch_to_json_test() {
                       2,
                       {
                           \"type\": \"p\",
-                          \"attrs\": {},
+                          \"attrs\": {\"spkt-key\":\"great\"},
                           \"0\": \"Great\"
                       }
                   ],
@@ -956,7 +1006,7 @@ pub fn patch_to_json_test() {
                       3,
                       {
                           \"type\": \"p\",
-                          \"attrs\": {},
+                          \"attrs\": {\"spkt-key\":\"big\"},
                           \"0\": \"Big\"
                       }
                   ],

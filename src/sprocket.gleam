@@ -1,16 +1,19 @@
-import gleam/otp/actor
-import gleam/erlang/process.{Subject}
 import gleam/list
 import gleam/map.{Map}
+import gleam/otp/actor
+import gleam/erlang/process.{Subject}
 import gleam/option.{None, Option, Some}
 import sprocket/logger
 import sprocket/element.{Element}
-import sprocket/socket.{EventHandler, Socket, Updater, WebSocket}
+import sprocket/socket.{ComponentHooks,
+  EventHandler, Socket, Updater, WebSocket}
 import sprocket/hooks.{
   Changed, Effect, EffectCleanup, EffectResult, Hook, HookDependencies,
   HookTrigger, OnMount, OnUpdate, Unchanged, WithDeps, compare_deps,
 }
-import sprocket/render.{RenderResult, RenderedElement, live_render}
+import sprocket/render.{
+  RenderResult, RenderedComponent, RenderedElement, live_render,
+}
 import sprocket/patch.{Patch}
 import sprocket/utils/ordered_map.{KeyedItem, OrderedMapIter}
 import sprocket/utils/unique.{Unique}
@@ -65,15 +68,15 @@ fn handle_message(message: Message, state: State) -> actor.Next(State) {
 
     RenderImmediate(reply_with) -> {
       let state = case state {
-        State(socket: socket, view: Some(view), ..) -> {
+        State(socket: socket, view: Some(view), rendered: prev_rendered, ..) -> {
           let RenderResult(socket, rendered) =
             socket
             |> socket.reset_for_render
-            |> live_render(view)
+            |> live_render(view, None, prev_rendered)
 
           actor.send(reply_with, rendered)
 
-          process_hooks(
+          post_process_hooks(
             State(..state, socket: socket, rendered: Some(rendered)),
           )
         }
@@ -97,7 +100,7 @@ fn handle_message(message: Message, state: State) -> actor.Next(State) {
           let RenderResult(socket, rendered) =
             socket
             |> socket.reset_for_render
-            |> live_render(view)
+            |> live_render(view, None, Some(prev_rendered))
 
           let update = patch.create(prev_rendered, rendered)
 
@@ -113,7 +116,7 @@ fn handle_message(message: Message, state: State) -> actor.Next(State) {
           // hooks might contain effects that will trigger a rerender. That is okay because any
           // RenderUpdate messages sent during this operation will be placed into this actor's mailbox
           // and will be processed in order after this current render is complete
-          process_hooks(
+          post_process_hooks(
             State(..state, socket: socket, rendered: Some(rendered)),
           )
         }
@@ -196,19 +199,55 @@ pub fn render_update(actor) -> Nil {
   actor.send(actor, RenderUpdate)
 }
 
-fn process_hooks(state: State) -> State {
+// traverse the rendered tree and process all pending effect hooks after rendering
+fn post_process_hooks(state: State) -> State {
+  let rendered =
+    option.map(state.rendered, fn(node) { visit_rendered_node(node) })
+
+  State(..state, rendered: rendered)
+}
+
+fn visit_rendered_node(node: RenderedElement) {
+  case node {
+    RenderedComponent(fc, key, props, hooks, children) -> {
+      let processed_hooks = process_hooks(hooks)
+
+      let r_children =
+        list.fold(
+          children,
+          [],
+          fn(acc, child) { [visit_rendered_node(child), ..acc] },
+        )
+
+      RenderedComponent(
+        fc,
+        key,
+        props,
+        processed_hooks,
+        list.reverse(r_children),
+      )
+    }
+    RenderedElement(tag, key, hooks, children) -> {
+      let r_children =
+        list.fold(
+          children,
+          [],
+          fn(acc, child) { [visit_rendered_node(child), ..acc] },
+        )
+
+      RenderedElement(tag, key, hooks, list.reverse(r_children))
+    }
+    _ -> node
+  }
+}
+
+fn process_hooks(hooks: ComponentHooks) -> ComponentHooks {
   let #(r_ordered, by_index, size) =
-    state.socket.hooks
+    hooks
     |> ordered_map.iter()
     |> process_next_hook(#([], map.new(), 0))
 
-  State(
-    ..state,
-    socket: Socket(
-      ..state.socket,
-      hooks: ordered_map.from(list.reverse(r_ordered), by_index, size),
-    ),
-  )
+  ordered_map.from(list.reverse(r_ordered), by_index, size)
 }
 
 fn process_next_hook(
@@ -222,7 +261,7 @@ fn process_next_hook(
       // for now, only effects are processed during this phase
       let updated = case hook {
         Effect(effect_fn, trigger, prev) -> {
-          let result = handle_effect(effect_fn, trigger, prev)
+          let result = process_effect(effect_fn, trigger, prev)
 
           Effect(effect_fn, trigger, Some(result))
         }
@@ -242,7 +281,7 @@ fn process_next_hook(
   }
 }
 
-fn handle_effect(
+fn process_effect(
   effect_fn: fn() -> EffectCleanup,
   trigger: HookTrigger,
   prev: Option(EffectResult),
