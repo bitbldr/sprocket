@@ -4,16 +4,29 @@ Persistent Reactive Sockets
 [![Package Version](https://img.shields.io/hexpm/v/sprocket)](https://hex.pm/packages/sprocket)
 [![Hex Docs](https://img.shields.io/badge/hex-docs-ffaff3)](https://hexdocs.pm/sprocket/)
 
-A framework for building type-safe, scalable, real-time apps in [Gleam](https://gleam.run/). Heavily inspired by [Phoenix LiveView](https://github.com/phoenixframework/phoenix_live_view), [React](https://github.com/facebook/react) and [Elm](https://github.com/elm). The name "sprocket" is loosly derived from the metaphor of a bicycle's sprocket cassette and chain.
+A framework for building real-time server components in [Gleam ✨](https://gleam.run/). Heavily
+inspired by [Phoenix LiveView](https://github.com/phoenixframework/phoenix_live_view),
+[React](https://github.com/facebook/react) and [Elm](https://github.com/elm). The name "sprocket"
+is loosely derived from the metaphor of a bicycle's sprocket, cassette and chain.
 
-Sprocket combines the best of LiveView server-side scalability, React components and Elm functional state management patterns implemented in Gleam, a type-safe language built on top of the venerable BEAM (Erlang Virtual Machine). Similar to LiveView, an initial static view is rendered as HTML on the "first paint" which then establishes a connection to the server over a WebSocket to facilitate sending browser events and receiving view update diffs. These updates are patched into browser DOM using morphdom. Like React, declarative views are built using functional components that accept props and render each time those props change. Finally, inspired by Elm, strongly-typed models and message structs are used for state management via reducers.
+Sprocket combines the best of LiveView server-side productivity and scalability, React components
+and Elm functional state management patterns all wrapped up and implemented in Gleam, a type-safe
+language built on the venerable BEAM (Erlang Virtual Machine). Similar to LiveView, an initial static view is
+rendered as HTML on the "first paint" which then establishes a connection to the server over a
+WebSocket to facilitate sending browser events and receiving view update diffs. These update patches are
+rendered to browser DOM using morphdom. Like React, declarative views are built using functional
+components that accept props and render each time those props change. Finally, inspired by Elm,
+strongly-typed models and message structs are used for state management via reducers.
 
-Under the hood, a reducer is a lightweight [Gleam Actor](https://hexdocs.pm/gleam_otp/0.1.3/gleam/otp/actor/) OTP process (i.e. gen_server) and changes to the state result in a re-render of the view.
+Under the hood, a reducer is a lightweight [Gleam
+Actor](https://hexdocs.pm/gleam_otp/0.1.3/gleam/otp/actor/) OTP process (i.e. gen_server) and
+changes to the state result in a re-render of the view. 
 
-This library is a collection of patterns and common functions that facilitate building declarative, functional
-components that are composable. Components are composed to create higher-level views. Data flows down into components
-in the form of props and out of components in the form of events. It's useful to think of the data flow as **State** always
-flowing down via props and **Events** always bubbling up using event hander functions (passed in as props, e.g. `onSomeEvent("Something happened")`).
+This library is a collection of patterns and common functions that facilitate building declarative
+views from composable functional components. Components are used to create higher-level views, like Lego blocks.
+Data flows down into components in the form of props and out of components in the form of events.
+It's useful to think of the data flow as "uni-directional" in that **State** always flows down via
+props and **Events** always bubbles up using event handler functions (passed in as props, e.g. `onSomeEvent("Something happened")`).
 
 This library is currently in a **proof of concept** state and should be considered highly unstable.
 There is still a lot of work to be done, including building out all HTML
@@ -22,11 +35,11 @@ coverage, providing extensive documentation of modules and API, and optimizing p
 
 ## Key Features
 
-- Real-time server-side app framework
+- Real-time, scalable, server-side component framework
 - Renders initial HTML and efficiently patches update diffs using a WebSocket connection
 - Declarative views using functional components that rerender on prop changes
 - Strongly-typed functional reducers for state management
-- Built on lightwieght otp processes for composable & scalable state management
+- Built on lightweight OTP processes for composable & scalable state management
 - Encourages declarative and composable views
 
 ## Example
@@ -94,7 +107,7 @@ pub fn clock(socket: Socket, props) {
 }
 ```
 
-### Usage from a parent view
+### Parent composable view
 ```gleam
 pub type ExampleViewProps {
   ExampleViewProps
@@ -145,7 +158,7 @@ yarn
 yarn run watch
 ```
 
-4. Open your web browser and visit `http://localhost:3000` to see the sample app.
+4. Open your web browser and visit `http://localhost:3000` to see the docs sample app.
 
 
 ## TODO: Installation

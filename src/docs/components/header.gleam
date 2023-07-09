@@ -29,10 +29,10 @@ pub fn header(socket: Socket, props) {
           div(
             [class("p-2 mx-2")],
             [
-              span([class("italic bold text-3xl")], [text("Sprocket")]),
-              span(
-                [class("text-gray-500 text-sm ml-2")],
-                [text("A server-side web framework written in Gleam ✨")],
+              div([class("italic bold text-2xl")], [text("Sprocket")]),
+              div(
+                [class("text-gray-500 text-sm")],
+                [text("Real-time server components in Gleam ✨")],
               ),
             ],
           ),
@@ -63,7 +63,7 @@ fn menu_item(socket: Socket, props: MenuItemProps) {
     [
       a(
         [
-          class("block p-4 border-b-2 border-transparent hover:border-blue-500"),
+          class("block p-5 border-b-2 border-transparent hover:border-blue-500"),
           attribute.href(href),
           ..case is_external {
             True -> [attribute.target("_blank")]
