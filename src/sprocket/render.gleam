@@ -201,27 +201,7 @@ fn find_prev_child(prev: Option(RenderedElement), child: Element, index: Int) {
     get_child_by_key(prev, child_key),
     get_matching_prev_child_by_index(prev, child, index),
   )
-  // TODO: Remove. This is a much simpler matcher that doesn't account for element type and
-  // component function changes
-  // get_prev_child_at_index(prev, index)
 }
-
-// fn get_prev_child_at_index(
-//   prev: Option(RenderedElement),
-//   index: Int,
-// ) -> Option(RenderedElement) {
-//   case prev {
-//     Some(RenderedComponent(_, _, _, _, children)) -> {
-//       list.at(children, index)
-//       |> option.from_result()
-//     }
-//     Some(RenderedElement(_, _, _, children)) -> {
-//       list.at(children, index)
-//       |> option.from_result()
-//     }
-//     _ -> None
-//   }
-// }
 
 fn get_matching_prev_child_by_index(
   prev: Option(RenderedElement),
