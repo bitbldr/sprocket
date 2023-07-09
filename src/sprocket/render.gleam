@@ -1,9 +1,10 @@
+import gleam/io
 import gleam/list
 import gleam/option.{None, Option, Some}
 import gleam/dynamic.{Dynamic}
 import sprocket/html/attribute.{Attribute, Event}
 import sprocket/element.{
-  AbstractFunctionalComponent, Component, Element, Keyed, Raw, SafeHtml,
+  AbstractFunctionalComponent, Component, Debug, Element, Keyed, Raw, SafeHtml,
 }
 import sprocket/socket.{ComponentHooks, ComponentWip, Socket}
 import sprocket/utils/unique
@@ -59,12 +60,17 @@ pub fn live_render(
   key: Option(String),
   prev: Option(RenderedElement),
 ) -> RenderResult(RenderedElement) {
-  // TODO: render_count > SOME_THRESHOLD then panic("Possible infinite rerender loop")
+  // TODO: detect infinite render loop - render_count > SOME_THRESHOLD then panic "Possible infinite rerender loop"
 
   case el {
     Element(tag, attrs, children) ->
       element(socket, tag, key, attrs, children, prev)
     Component(fc, props) -> component(socket, fc, key, props, prev)
+    Debug(id, meta, el) -> {
+      // unwrap debug element, print details and continue with rendering
+      io.debug(#(id, meta))
+      io.debug(live_render(socket, el, key, prev))
+    }
     Keyed(key, el) -> live_render(socket, el, Some(key), prev)
     SafeHtml(html) -> safe_html(socket, html)
     Raw(text) -> raw(socket, text)
@@ -246,6 +252,7 @@ fn maybe_matching_el(
         False -> None
       }
     }
+    _, Debug(_, _, el) -> maybe_matching_el(prev_child, el)
     _, _ -> None
   }
 }

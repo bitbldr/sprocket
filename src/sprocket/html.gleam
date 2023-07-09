@@ -1,7 +1,9 @@
 import gleam/list
+import gleam/option.{Option}
+import gleam/dynamic.{Dynamic}
 import gleam/string
 import gleam/string_builder
-import sprocket/element.{Element, Keyed, Raw, SafeHtml}
+import sprocket/element.{Debug, Element, Keyed, Raw, SafeHtml}
 import sprocket/html/attribute.{Attribute}
 
 pub type Children =
@@ -46,6 +48,10 @@ pub fn text(text: String) -> Element {
 
 pub fn keyed(key: String, element: Element) {
   Keyed(key, element)
+}
+
+pub fn debug(id: String, meta: Option(Dynamic), element: Element) {
+  Debug(id, meta, element)
 }
 
 pub fn html(attrs: List(Attribute), children: Children) {

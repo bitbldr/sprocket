@@ -7,7 +7,7 @@ import sprocket/hooks.{WithDeps, dep}
 import sprocket/hooks/reducer.{State, reducer}
 import sprocket/hooks/callback.{callback}
 import sprocket/identifiable_callback.{CallbackFn}
-import sprocket/html.{a, div, keyed, span, text}
+import sprocket/html.{a, debug, div, keyed, span, text}
 import sprocket/html/attribute.{class, classes}
 import docs/components/search_bar.{SearchBarProps, search_bar}
 
@@ -57,51 +57,56 @@ pub fn sidebar(socket: Socket, props) {
     socket,
     case show {
       True -> [
-        div(
-          [class("border-r border-gray-200 p-2 w-[20rem]")],
-          [
-            component(
-              search_bar,
-              SearchBarProps(on_search: fn(query) {
-                case query {
-                  "" -> dispatch(SetSearchFilter(None))
-                  _ -> dispatch(SetSearchFilter(Some(query)))
-                }
-              }),
-            ),
-            ..case search_filter {
-              Some(query) -> [
-                div(
-                  [],
-                  [
-                    span([class("bold italic")], [text("No results for: ")]),
-                    span([], [text(query)]),
-                  ],
-                ),
-              ]
-              None ->
-                list.index_map(
-                  pages,
-                  fn(i, page) {
-                    keyed(
-                      page.title,
-                      component(
-                        link,
-                        LinkProps(
-                          int.to_string(i + 1) <> ". " <> page.title,
-                          page.href,
-                          page.href == active,
-                          CallbackFn(fn() {
-                            dispatch(SetActive(page.href))
-                            Nil
-                          }),
+        debug(
+          "sidebar",
+          None,
+          div(
+            [class("border-r border-gray-200 p-2 w-[20rem]")],
+            [
+              component(
+                search_bar,
+                SearchBarProps(on_search: fn(query) {
+                  case query {
+                    "" -> dispatch(SetSearchFilter(None))
+                    _ -> dispatch(SetSearchFilter(Some(query)))
+                  }
+                }),
+              ),
+              ..case search_filter {
+                Some(query) -> [
+                  div(
+                    [],
+                    [
+                      span([class("bold italic")], [text("No results for: ")]),
+                      span([], [text(query)]),
+                    ],
+                  ),
+                ]
+                None ->
+                  list.index_map(
+                    pages,
+                    fn(i, page) {
+                      keyed(
+                        page.title,
+                        component(
+                          link,
+                          LinkProps(
+                            int.to_string(i + 1) <> ". " <> page.title,
+                            page.href,
+                            page.href == active,
+                            // TODO: Remove this handler, links should be handled by the router
+                            CallbackFn(fn() {
+                              dispatch(SetActive(page.href))
+                              Nil
+                            }),
+                          ),
                         ),
-                      ),
-                    )
-                  },
-                )
-            }
-          ],
+                      )
+                    },
+                  )
+              }
+            ],
+          ),
         ),
       ]
       False -> []

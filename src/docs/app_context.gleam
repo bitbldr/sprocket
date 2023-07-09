@@ -1,4 +1,4 @@
-import sprocket/cassette.{Cassette}
+import cassette.{Cassette}
 
 pub type AppContext {
   AppContext(ca: Cassette)
