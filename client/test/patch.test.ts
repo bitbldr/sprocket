@@ -104,6 +104,72 @@ test("applyPatch replaces element", () => {
   });
 });
 
+test("applyPatch removes element in children", () => {
+  const original = {
+    tag: "div",
+    attrs: {
+      class: "foo",
+    },
+    0: {
+      tag: "p",
+      attrs: {},
+      0: "Hello",
+    },
+    1: {
+      tag: "p",
+      attrs: {},
+      0: "World",
+    },
+    2: {
+      tag: "p",
+      attrs: {},
+      0: "Removed",
+    },
+  };
+
+  const patch: Patch = [
+    1,
+    null,
+    {
+      "0": [
+        1,
+        null,
+        {
+          "0": [5, "Hello Changed"],
+        },
+      ],
+      "1": [
+        2,
+        {
+          tag: "div",
+          attrs: {},
+          0: "World Replaced",
+        },
+      ],
+      "2": [4],
+    },
+  ];
+
+  const dom = applyPatch(original, patch);
+
+  expect(dom).toEqual({
+    tag: "div",
+    attrs: {
+      class: "foo",
+    },
+    0: {
+      tag: "p",
+      attrs: {},
+      0: "Hello Changed",
+    },
+    1: {
+      tag: "div",
+      attrs: {},
+      0: "World Replaced",
+    },
+  });
+});
+
 test("applyPatch with root component", () => {
   const original = {
     type: "component",

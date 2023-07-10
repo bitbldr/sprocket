@@ -60,6 +60,8 @@ export function applyPatch(
                 ...updated,
                 [key]: newEl,
               };
+            } else {
+              delete updated[key];
             }
 
             return updated;

@@ -209,6 +209,36 @@ fn find_prev_child(prev: Option(RenderedElement), child: Element, index: Int) {
   )
 }
 
+fn get_child_by_key(
+  prev: Option(RenderedElement),
+  key: Option(String),
+) -> Option(RenderedElement) {
+  case prev, key {
+    Some(RenderedComponent(_, _, _, _, children)), Some(key) -> {
+      find_by_key(children, key)
+    }
+    Some(RenderedElement(_, _, _, children)), Some(key) -> {
+      find_by_key(children, key)
+    }
+    _, _ -> None
+  }
+}
+
+fn find_by_key(children, key) {
+  // find a child by given key
+  list.find(
+    children,
+    fn(child) {
+      case child {
+        RenderedComponent(_, Some(child_key), _, _, _) -> child_key == key
+        RenderedElement(_, Some(child_key), _, _) -> child_key == key
+        _ -> False
+      }
+    },
+  )
+  |> option.from_result()
+}
+
 fn get_matching_prev_child_by_index(
   prev: Option(RenderedElement),
   child: Element,
@@ -253,29 +283,6 @@ fn maybe_matching_el(
       }
     }
     _, Debug(_, _, el) -> maybe_matching_el(prev_child, el)
-    _, _ -> None
-  }
-}
-
-fn get_child_by_key(
-  prev: Option(RenderedElement),
-  key: Option(String),
-) -> Option(RenderedElement) {
-  case prev, key {
-    Some(RenderedComponent(_, _, _, _, children)), Some(key) -> {
-      // find prev child by given key
-      list.find(
-        children,
-        fn(child) {
-          case child {
-            RenderedComponent(_, Some(child_key), _, _, _) -> child_key == key
-            RenderedElement(_, Some(child_key), _, _) -> child_key == key
-            _ -> False
-          }
-        },
-      )
-      |> option.from_result()
-    }
     _, _ -> None
   }
 }

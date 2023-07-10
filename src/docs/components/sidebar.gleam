@@ -91,7 +91,7 @@ pub fn sidebar(socket: Socket, props) {
                           int.to_string(i + 1) <> ". " <> page.title,
                           page.href,
                           page.href == active,
-                          // TODO: Remove this handler, links should be handled by the router
+                          // TODO: Remove this handler, link changes should be handled by the router
                           CallbackFn(fn() {
                             dispatch(SetActive(page.href))
                             Nil
