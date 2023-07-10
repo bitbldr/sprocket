@@ -11,10 +11,6 @@ import sprocket/utils/unique
 import sprocket/utils/ordered_map
 import sprocket/logger
 
-pub type Renderer(result) {
-  Renderer(render: fn(RenderedElement) -> result)
-}
-
 pub type RenderedAttribute {
   RenderedAttribute(name: String, value: String)
   RenderedEventHandler(kind: String, id: String)
@@ -35,6 +31,10 @@ pub type RenderedElement {
     children: List(RenderedElement),
   )
   RenderedText(text: String)
+}
+
+pub type Renderer(result) {
+  Renderer(render: fn(RenderedElement) -> result)
 }
 
 pub type RenderResult(a) {
@@ -293,4 +293,30 @@ fn safe_html(socket: Socket, html: String) -> RenderResult(RenderedElement) {
 
 fn raw(socket: Socket, text: String) -> RenderResult(RenderedElement) {
   RenderResult(socket, RenderedText(text))
+}
+
+pub fn traverse(
+  el: RenderedElement,
+  updater: fn(RenderedElement) -> RenderedElement,
+) -> RenderedElement {
+  case updater(el) {
+    RenderedComponent(fc, key, props, hooks, children) -> {
+      RenderedComponent(
+        fc,
+        key,
+        props,
+        hooks,
+        list.map(children, fn(child) { traverse(child, updater) }),
+      )
+    }
+    RenderedElement(tag, key, attrs, children) -> {
+      RenderedElement(
+        tag,
+        key,
+        attrs,
+        list.map(children, fn(child) { traverse(child, updater) }),
+      )
+    }
+    _ -> el
+  }
 }

@@ -3,12 +3,22 @@ import gleam/option.{None, Option, Some}
 import gleam/string_builder.{StringBuilder}
 import sprocket/render.{
   RenderedAttribute, RenderedComponent, RenderedElement, RenderedEventHandler,
-  RenderedText, Renderer,
+  RenderedText, Renderer, traverse,
 }
 import sprocket/constants.{EventAttrPrefix, KeyAttr, constant}
+import cassette.{Preflight}
 
 pub fn renderer() -> Renderer(String) {
   Renderer(render: fn(el) { string_builder.to_string(render(el)) })
+}
+
+pub fn renderer_with_preflight(preflight: Preflight) -> Renderer(String) {
+  Renderer(render: fn(el) {
+    el
+    |> inject_meta(Meta(name: "spkt-preflight-id", content: preflight.id))
+    |> render()
+    |> string_builder.to_string()
+  })
 }
 
 fn render(el: RenderedElement) -> StringBuilder {
@@ -94,4 +104,38 @@ fn component(children: List(RenderedElement)) {
 
 fn text(t: String) -> StringBuilder {
   string_builder.from_string(t)
+}
+
+type Meta {
+  Meta(name: String, content: String)
+}
+
+fn inject_meta(root: RenderedElement, meta: Meta) -> RenderedElement {
+  traverse(
+    root,
+    fn(el) {
+      case el {
+        RenderedElement(tag: "head", key: key, attrs: attrs, children: children) -> {
+          let meta =
+            RenderedElement(
+              tag: "meta",
+              key: None,
+              attrs: [
+                RenderedAttribute("name", meta.name),
+                RenderedAttribute("content", meta.content),
+              ],
+              children: [],
+            )
+
+          RenderedElement(
+            tag: "head",
+            key: key,
+            attrs: attrs,
+            children: list.append(children, [meta]),
+          )
+        }
+        _ -> el
+      }
+    },
+  )
 }

@@ -7,9 +7,12 @@ window.addEventListener("DOMContentLoaded", () => {
   const socket = new WebSocket("ws://localhost:3000/live");
 
   let dom: Record<string, any>;
+  const spktPreflightId = document
+    .querySelector("meta[name=spkt-preflight-id]")
+    ?.getAttribute("content");
 
   socket.addEventListener("open", function (event) {
-    socket.send(JSON.stringify(["join"]));
+    socket.send(JSON.stringify(["join", spktPreflightId]));
   });
 
   socket.addEventListener("message", function (event) {

@@ -5,11 +5,14 @@ import sprocket/component.{component}
 import docs/views/page_view.{PageViewProps, page_view}
 import docs/app_context.{AppContext}
 import sprocket/render/html
+import cassette
 
-pub fn index(request: Request(String), _ctx: AppContext) -> Response(String) {
+pub fn index(request: Request(String), ctx: AppContext) -> Response(String) {
   let view = component(page_view, PageViewProps(route: request.path))
 
-  let body = render(view, html.renderer())
+  let preflight = cassette.preflight(ctx.ca, view)
+
+  let body = render(view, html.renderer_with_preflight(preflight))
 
   response.new(200)
   |> response.set_body(body)

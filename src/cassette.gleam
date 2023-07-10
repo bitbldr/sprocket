@@ -1,9 +1,9 @@
 import gleam/otp/actor
 import gleam/list
-import gleam/dynamic.{field}
-import sprocket/identifiable_callback.{CallbackFn, CallbackWithValueFn}
+import gleam/dynamic.{Dynamic, field, optional_field}
 import gleam/io
-import gleam/option.{Some}
+import gleam/option.{Option, Some}
+import gleam/erlang
 import gleam/erlang/process.{Subject}
 import gleam/json
 import gleam/http/request.{Request}
@@ -14,20 +14,37 @@ import sprocket.{Sprocket}
 import sprocket/socket.{Updater, WebSocket}
 import sprocket/render.{RenderedElement}
 import sprocket/render/json as json_renderer
-import sprocket/component.{component}
+import sprocket/element.{Element}
 import sprocket/patch.{Patch}
+import sprocket/identifiable_callback.{CallbackFn, CallbackWithValueFn}
 import sprocket/logger
-import docs/views/page_view.{PageViewProps, page_view}
+import sprocket/utils/uuid
+import docs/utils/timer.{interval}
+
+pub type Time =
+  Int
+
+pub type Preflight {
+  Preflight(id: String, view: Element, created_at: Time)
+}
 
 pub type Cassette =
   Subject(Message)
 
 pub type State {
-  State(sprockets: List(Sprocket))
+  State(
+    sprockets: List(Sprocket),
+    preflights: List(Preflight),
+    cancel_preflight_cleanup_job: fn() -> Nil,
+  )
 }
 
 pub type Message {
   Shutdown
+  PushPreflight(preflight: Preflight)
+  CleanupPreflights
+  StartPreflightCleanupJob(cleanup_preflights: fn() -> Nil)
+  PopPreflight(reply_with: Subject(Result(Preflight, Nil)), id: String)
   PushSprocket(sprocket: Sprocket)
   GetSprocket(reply_with: Subject(Result(Sprocket, Nil)), ws: WebSocket)
   PopSprocket(reply_with: Subject(Result(Sprocket, Nil)), ws: WebSocket)
@@ -35,12 +52,56 @@ pub type Message {
 
 fn handle_message(message: Message, state: State) -> actor.Next(State) {
   case message {
-    Shutdown -> actor.Stop(process.Normal)
+    Shutdown -> {
+      state.cancel_preflight_cleanup_job()
+      actor.Stop(process.Normal)
+    }
+
+    PushPreflight(preflight) -> {
+      let updated_preflights = [preflight, ..state.preflights]
+
+      actor.Continue(State(..state, preflights: updated_preflights))
+    }
+
+    CleanupPreflights -> {
+      let now = erlang.system_time(erlang.Millisecond)
+
+      // cleanup all preflights older than 60 seconds
+      let updated_preflights =
+        list.filter(state.preflights, fn(p) { p.created_at + 60 * 1000 > now })
+
+      actor.Continue(State(..state, preflights: updated_preflights))
+    }
+
+    StartPreflightCleanupJob(cleanup_preflights) -> {
+      // start preflight cleanup job, run every minute
+      let cancel = interval(60 * 1000, fn() { cleanup_preflights() })
+
+      actor.Continue(State(..state, cancel_preflight_cleanup_job: cancel))
+    }
+
+    PopPreflight(reply_with, id) -> {
+      let preflight = list.find(state.preflights, fn(p) { p.id == id })
+
+      process.send(reply_with, preflight)
+
+      case preflight {
+        Ok(_preflight) -> {
+          let updated_preflights =
+            list.filter(state.preflights, fn(p) { p.id != id })
+
+          actor.Continue(State(..state, preflights: updated_preflights))
+        }
+
+        Error(_) -> actor.Continue(state)
+      }
+    }
 
     PushSprocket(sprocket) -> {
       let updated_sprockets =
         list.reverse([sprocket, ..list.reverse(state.sprockets)])
-      actor.Continue(State(sprockets: updated_sprockets))
+
+      actor.Continue(State(..state, sprockets: updated_sprockets))
     }
 
     GetSprocket(reply_with, ws) -> {
@@ -65,7 +126,7 @@ fn handle_message(message: Message, state: State) -> actor.Next(State) {
           let updated_sprockets =
             list.filter(state.sprockets, fn(s) { sprocket != s })
 
-          let new_state = State(sprockets: updated_sprockets)
+          let new_state = State(..state, sprockets: updated_sprockets)
 
           actor.Continue(new_state)
         }
@@ -77,7 +138,17 @@ fn handle_message(message: Message, state: State) -> actor.Next(State) {
 }
 
 pub fn start() {
-  let assert Ok(ca) = actor.start(State(sprockets: []), handle_message)
+  let assert Ok(ca) =
+    actor.start(
+      State(
+        sprockets: [],
+        preflights: [],
+        cancel_preflight_cleanup_job: fn() { Nil },
+      ),
+      handle_message,
+    )
+
+  start_preflight_cleanup_job(ca, cleanup_preflights)
 
   ca
 }
@@ -86,17 +157,44 @@ pub fn stop(ca: Cassette) {
   process.send(ca, Shutdown)
 }
 
-pub fn live_service(req: Request(mist.Body), ca: Cassette) {
+fn cleanup_preflights(ca: Cassette) {
+  process.send(ca, CleanupPreflights)
+}
+
+fn start_preflight_cleanup_job(
+  ca: Cassette,
+  cleanup_preflights: fn(Cassette) -> Nil,
+) {
+  process.send(ca, StartPreflightCleanupJob(fn() { cleanup_preflights(ca) }))
+}
+
+fn push_preflight(ca: Cassette, preflight: Preflight) -> Preflight {
+  process.send(ca, PushPreflight(preflight))
+
+  preflight
+}
+
+pub fn preflight(ca: Cassette, view: Element) {
+  let assert Ok(id) = uuid.v4()
+  Preflight(
+    id: id,
+    view: view,
+    created_at: erlang.system_time(erlang.Millisecond),
+  )
+  |> push_preflight(ca, _)
+}
+
+pub fn pop_preflight(ca: Cassette, id: String) -> Result(Preflight, Nil) {
+  process.call(ca, PopPreflight(_, id), 10)
+}
+
+pub fn live_service(_req: Request(mist.Body), ca: Cassette) {
   websocket.with_handler(fn(msg, ws) {
     handle_ws_message(ca, ws, msg)
 
     Ok(Nil)
   })
-  |> websocket.on_init(fn(ws) {
-    connect(req, ca, ws)
-
-    Nil
-  })
+  |> websocket.on_init(fn(_ws) { Nil })
   |> websocket.on_close(fn(ws) {
     let assert Ok(_) = pop_sprocket(ca, ws)
 
@@ -117,45 +215,46 @@ fn pop_sprocket(ca: Cassette, ws: WebSocket) {
   process.call(ca, PopSprocket(_, ws), 10)
 }
 
-fn connect(req: Request(mist.Body), ca: Cassette, ws: WebSocket) {
+fn connect(ca: Cassette, ws: WebSocket, preflight_id: String) {
   let updater =
     Updater(send: fn(update) {
       let _ = websocket.send(ws, TextMessage(update_to_json(update)))
       Ok(Nil)
     })
 
-  // TODO: Remove hard coded view and replace with dynamic view that is
-  // determined by the previous page request
-  let view = component(page_view, PageViewProps(route: req.path))
+  case pop_preflight(ca, preflight_id) {
+    Ok(Preflight(view: view, ..)) -> {
+      let sprocket = sprocket.start(Some(ws), Some(view), Some(updater))
+      push_sprocket(ca, sprocket)
 
-  let sprocket = sprocket.start(Some(ws), Some(view), Some(updater))
-  push_sprocket(ca, sprocket)
+      // intitial live render
+      let rendered = sprocket.render(sprocket)
+      websocket.send(ws, TextMessage(rendered_to_json(rendered)))
 
-  // intitial live render
-  let rendered = sprocket.render(sprocket)
-  websocket.send(ws, TextMessage(rendered_to_json(rendered)))
+      logger.info("Sprocket connected!")
 
-  logger.info("Client connected!")
-  io.debug(ws)
+      Nil
+    }
+    Error(Nil) -> {
+      logger.error("Error no sprocket found for preflight id:" <> preflight_id)
+
+      Nil
+    }
+  }
 }
 
 type Event {
-  Event(kind: String, id: String)
+  Event(kind: String, id: String, value: Option(String))
 }
 
-fn decode_event(body: String) {
-  json.decode(
-    body,
-    dynamic.decode2(
-      Event,
-      field("kind", dynamic.string),
-      field("id", dynamic.string),
-    ),
+fn decode_event(event: Dynamic) {
+  event
+  |> dynamic.decode3(
+    Event,
+    field("kind", dynamic.string),
+    field("id", dynamic.string),
+    optional_field("value", dynamic.string),
   )
-}
-
-fn decode_event_value(body: String) {
-  json.decode(body, field("value", dynamic.string))
 }
 
 fn handle_ws_message(
@@ -164,52 +263,68 @@ fn handle_ws_message(
   msg: internal_websocket.Message,
 ) {
   case msg {
-    TextMessage("[\"join\"]") -> {
-      logger.info("New client joined")
+    TextMessage(msg) -> {
+      case json.decode(msg, dynamic.tuple2(dynamic.string, dynamic.dynamic)) {
+        Ok(#("join", id)) -> {
+          case
+            id
+            |> dynamic.string
+          {
+            Ok(id) -> {
+              logger.info("New client joined with preflight id: " <> id)
 
-      case get_sprocket(ca, ws) {
-        Ok(spkt) -> {
-          sprocket.render_update(spkt)
+              connect(ca, ws, id)
+            }
+            Error(e) -> {
+              logger.error("Error decoding join id")
+              io.debug(e)
 
-          Nil
+              Nil
+            }
+          }
         }
-        _ -> Nil
-      }
-    }
-    TextMessage(body) -> {
-      case decode_event(body) {
-        Ok(event) -> {
-          logger.info("Event: " <> event.kind <> " " <> event.id)
+        Ok(#("event", event)) -> {
+          case decode_event(event) {
+            Ok(event) -> {
+              logger.info("Event: " <> event.kind <> " " <> event.id)
 
-          case get_sprocket(ca, ws) {
-            Ok(socket) -> {
-              case sprocket.get_handler(socket, event.id) {
-                Ok(socket.EventHandler(_, handler)) -> {
-                  // call the event handler
-                  case handler {
-                    CallbackFn(cb) -> {
-                      cb()
-                    }
-                    CallbackWithValueFn(cb) -> {
-                      case decode_event_value(body) {
-                        Ok(value) -> cb(value)
-                        _ -> {
-                          logger.error("Error decoding event value:")
-                          io.debug(body)
-                          panic
+              case get_sprocket(ca, ws) {
+                Ok(socket) -> {
+                  case sprocket.get_handler(socket, event.id) {
+                    Ok(socket.EventHandler(_, handler)) -> {
+                      // call the event handler
+                      case handler {
+                        CallbackFn(cb) -> {
+                          cb()
+                        }
+                        CallbackWithValueFn(cb) -> {
+                          case event.value {
+                            Some(value) -> cb(value)
+                            _ -> {
+                              logger.error("Error decoding event value:")
+                              io.debug(event)
+                              panic
+                            }
+                          }
                         }
                       }
                     }
+                    _ -> Nil
                   }
                 }
                 _ -> Nil
               }
             }
-            _ -> Nil
+            Error(e) -> {
+              logger.error("Error decoding event")
+              io.debug(e)
+
+              Nil
+            }
           }
         }
         Error(e) -> {
-          logger.error("Error decoding event")
+          logger.error("Error decoding message")
           io.debug(e)
 
           Nil
