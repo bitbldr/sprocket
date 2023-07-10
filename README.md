@@ -10,25 +10,27 @@ inspired by [Phoenix LiveView](https://github.com/phoenixframework/phoenix_live_
 is loosely derived from the metaphor of a bicycle's sprocket, cassette and chain.
 
 Sprocket combines the best of LiveView server-side productivity and scalability, React components
-and Elm functional state management patterns all implemented in Gleam, a type-safe
+and Elm functional state management patterns implemented in Gleam, a type-safe
 language built on the venerable BEAM (Erlang Virtual Machine).
 
 Similar to LiveView, an initial static view is
 rendered as HTML on the "first paint" which then establishes a connection to the server over a
-WebSocket to facilitate sending browser events and receiving view update diffs. These update patches are
-rendered to browser DOM using morphdom. Like React, declarative views are built using functional
-components that accept props and render each time those props change. Finally, inspired by Elm,
-strongly-typed models and message structs are used for state management via reducers.
+WebSocket to facilitate sending browser events and receiving view update diffs. These updates are
+patched into a client-side im-memory representation of the DOM and rendered to the browser using
+morphdom. Declarative views are built using functional components that accept props and re-render
+each time those props change and reducers are used for state management using strongly-typed models
+and message structs.
 
 Under the hood, a reducer is a lightweight [Gleam
 Actor](https://hexdocs.pm/gleam_otp/0.1.3/gleam/otp/actor/) OTP process (i.e. gen_server) and
-changes to the state result in a re-render of the view. 
+changes to the state (via dispatch) result in a re-render of the view.
 
 This library is a collection of patterns and common functions that facilitate building declarative
-views from composable functional components. Components are used to create higher-level views, like Lego blocks.
-Data flows down into components in the form of props and out of components in the form of events.
-It's useful to think of the data flow as "uni-directional" in that **State** always flows down via
-props and **Events** always bubbles up using event handler functions (passed in as props, e.g. `onSomeEvent("Something happened")`).
+views from composable functional components. Component interfaces snap together like Lego blocks
+which are used to create higher-level views. Data flows down into components in the form of props
+and out of components in the form of events. It's useful to think of the data flow as "uni-directional" in
+that **State** always flows down via props while **Events** bubble up using handler functions
+(passed in as props, e.g. `on_some_event("Something happened")`).
 
 This library is currently in a **proof of concept** state and should be considered highly unstable.
 There is still a lot of work to be done, including building out all HTML
@@ -39,7 +41,7 @@ coverage, providing extensive documentation of modules and API, and optimizing p
 
 - Real-time, scalable, server-side component framework
 - Renders initial HTML and efficiently patches update diffs using a WebSocket connection
-- Declarative views using functional components that rerender on prop changes
+- Declarative views using functional components that re-render on prop changes
 - Strongly-typed functional reducers for state management
 - Built on lightweight OTP processes for composable & scalable state management
 - Encourages declarative and composable views
@@ -109,7 +111,7 @@ pub fn clock(socket: Socket, props) {
 }
 ```
 
-### Parent composable view
+### Parent view
 ```gleam
 pub type ExampleViewProps {
   ExampleViewProps
