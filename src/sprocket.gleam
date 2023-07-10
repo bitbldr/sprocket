@@ -230,7 +230,7 @@ fn cleanup_disposed_hooks(
           Ok(Effect(_, _, _, prev)) -> {
             case prev {
               Some(EffectResult(Some(cleanup), _)) -> cleanup()
-              None -> Nil
+              _ -> Nil
             }
           }
           _ -> Nil
