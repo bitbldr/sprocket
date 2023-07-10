@@ -1,11 +1,13 @@
+import gleam/io
 import gleam/int
 import gleam/list
 import gleam/option.{None, Option, Some}
 import sprocket/socket.{Socket}
 import sprocket/component.{component, render}
-import sprocket/hooks.{WithDeps, dep}
+import sprocket/hooks.{OnMount, WithDeps, dep}
 import sprocket/hooks/reducer.{State, reducer}
 import sprocket/hooks/callback.{callback}
+import sprocket/hooks/effect.{effect}
 import sprocket/identifiable_callback.{CallbackFn}
 import sprocket/html.{a, div, keyed, span, text}
 import sprocket/html/attribute.{class, classes}
@@ -121,6 +123,17 @@ fn link(socket: Socket, props: LinkProps) {
     is_active: is_active,
     on_click: on_click,
   ) = props
+
+  use socket <- effect(
+    socket,
+    fn() {
+      Some(fn() {
+        io.debug("cleaning up link" <> title)
+        Nil
+      })
+    },
+    OnMount,
+  )
 
   use socket, on_click <- callback(socket, on_click, WithDeps([dep(on_click)]))
 

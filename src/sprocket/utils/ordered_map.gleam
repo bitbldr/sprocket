@@ -55,6 +55,10 @@ pub fn update(m: OrderedMap(k, a), key: k, value: a) -> OrderedMap(k, a) {
   }
 }
 
+pub fn has_key(m: OrderedMap(k, a), key: k) -> Bool {
+  map.has_key(m.map, key)
+}
+
 pub fn get(m: OrderedMap(k, a), key: k) -> Result(a, Nil) {
   map.get(m.map, key)
 }
@@ -87,4 +91,9 @@ pub fn next(
     OrderedMapIter(ordered: []) -> Error(Nil)
     OrderedMapIter(ordered: [item, ..rest]) -> Ok(#(OrderedMapIter(rest), item))
   }
+}
+
+pub fn fold(m: OrderedMap(k, a), acc: b, func: fn(b, KeyedItem(k, a)) -> b) -> b {
+  m.ordered
+  |> list.fold(acc, func)
 }

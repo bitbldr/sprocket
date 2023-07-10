@@ -3,7 +3,8 @@ import gleam/otp/actor
 import gleam/erlang/process.{Subject}
 import sprocket/element.{Element}
 import sprocket/socket.{Socket}
-import sprocket/hooks
+import sprocket/hooks.{Reducer}
+import sprocket/utils/unique
 
 pub type Updater(msg) =
   fn(msg) -> Nil
@@ -52,10 +53,10 @@ pub fn reducer(
         },
       )
 
-    hooks.Reducer(dynamic.from(actor))
+    Reducer(unique.new(), dynamic.from(actor))
   }
 
-  let assert #(socket, hooks.Reducer(reducer: dyn_reducer_actor), _index) =
+  let assert #(socket, Reducer(_id, dyn_reducer_actor), _index) =
     socket.fetch_or_init_hook(socket, reducer_init)
 
   // we dont know what types of reducer messages a component will implement so the best

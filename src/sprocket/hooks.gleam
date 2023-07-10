@@ -38,11 +38,12 @@ pub type Hook {
     prev: Option(CallbackResult),
   )
   Effect(
+    id: Unique,
     effect: fn() -> EffectCleanup,
     trigger: HookTrigger,
     prev: Option(EffectResult),
   )
-  Reducer(reducer: Dynamic)
+  Reducer(id: Unique, reducer: Dynamic)
 }
 
 pub type Compared(a) {
