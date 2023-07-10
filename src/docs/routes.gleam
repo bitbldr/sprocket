@@ -12,7 +12,7 @@ import docs/app_context.{AppContext}
 pub fn router(ctx: AppContext) {
   fn(request: Request(String)) -> Response(String) {
     case request.method, request.path_segments(request) {
-      Get, [] -> index(request, ctx)
+      Get, _ -> index(request, ctx)
 
       _, _ -> not_found()
     }

@@ -9,24 +9,22 @@ import docs/components/sidebar.{Page, SidebarProps, sidebar}
 import docs/components/pages/introduction.{
   IntroductionPageProps, introduction_page,
 }
+import docs/components/pages/components.{ComponentsPageProps, components_page}
+import docs/components/pages/misc.{MiscPageProps, misc_page}
+import docs/components/pages/not_found.{NotFoundPageProps, not_found_page}
 
 pub type PageViewProps {
-  PageViewProps(route: String)
+  PageViewProps(route: String, path_segments: List(String))
 }
 
 pub fn page_view(socket: Socket, props: PageViewProps) {
-  let PageViewProps(route: route) = props
+  let PageViewProps(route: route, ..) = props
 
   let pages = [
     Page("Introduction", "/"),
     Page("Components", "/components"),
     Page("Misc.", "/misc"),
   ]
-
-  let #(page_component, page_props) = case route {
-    "/" -> #(introduction_page, IntroductionPageProps)
-    _ -> #(introduction_page, IntroductionPageProps)
-  }
 
   render(
     socket,
@@ -75,8 +73,15 @@ pub fn page_view(socket: Socket, props: PageViewProps) {
               div(
                 [class("flex-1 flex flex-row")],
                 [
-                  component(sidebar, SidebarProps(pages)),
-                  component(page_component, page_props),
+                  component(sidebar, SidebarProps(pages, route)),
+                  ..case route {
+                    "/" -> [component(introduction_page, IntroductionPageProps)]
+                    "/components" -> [
+                      component(components_page, ComponentsPageProps),
+                    ]
+                    "/misc" -> [component(misc_page, MiscPageProps)]
+                    _ -> [component(not_found_page, NotFoundPageProps)]
+                  }
                 ],
               ),
               script([src("/client.js")], []),

@@ -3,10 +3,7 @@ import gleam/list
 import gleam/option.{None, Option, Some}
 import sprocket/socket.{Socket}
 import sprocket/component.{component, render}
-import sprocket/hooks.{WithDeps, dep}
 import sprocket/hooks/reducer.{State, reducer}
-import sprocket/hooks/callback.{callback}
-import sprocket/identifiable_callback.{CallbackFn}
 import sprocket/html.{a, div, keyed, span, text}
 import sprocket/html/attribute.{class, classes}
 import docs/components/search_bar.{SearchBarProps, search_bar}
@@ -16,42 +13,38 @@ pub type Page {
 }
 
 type Model {
-  Model(show: Bool, active: String, search_filter: Option(String))
+  Model(show: Bool, search_filter: Option(String))
 }
 
 type Msg {
   NoOp
-  SetActive(String)
   SetSearchFilter(Option(String))
 }
 
 fn update(model: Model, msg: Msg) -> Model {
   case msg {
     NoOp -> model
-    SetActive(active) -> Model(..model, active: active)
     SetSearchFilter(search_filter) ->
       Model(..model, search_filter: search_filter)
   }
 }
 
 fn initial() -> Model {
-  Model(show: True, active: "/", search_filter: None)
+  Model(show: True, search_filter: None)
 }
 
 pub type SidebarProps {
-  SidebarProps(pages: List(Page))
+  SidebarProps(pages: List(Page), active: String)
 }
 
 pub fn sidebar(socket: Socket, props) {
-  let SidebarProps(pages: pages) = props
+  let SidebarProps(pages: pages, active: active) = props
 
-  use
+  use socket, State(Model(show: show, search_filter: search_filter), dispatch) <- reducer(
     socket,
-    State(
-      Model(show: show, active: active, search_filter: search_filter),
-      dispatch,
-    )
-  <- reducer(socket, initial(), update)
+    initial(),
+    update,
+  )
 
   render(
     socket,
@@ -91,11 +84,6 @@ pub fn sidebar(socket: Socket, props) {
                           int.to_string(i + 1) <> ". " <> page.title,
                           page.href,
                           page.href == active,
-                          // TODO: Remove this handler, link changes should be handled by the router
-                          CallbackFn(fn() {
-                            dispatch(SetActive(page.href))
-                            Nil
-                          }),
                         ),
                       ),
                     )
@@ -111,18 +99,11 @@ pub fn sidebar(socket: Socket, props) {
 }
 
 type LinkProps {
-  LinkProps(title: String, href: String, is_active: Bool, on_click: CallbackFn)
+  LinkProps(title: String, href: String, is_active: Bool)
 }
 
 fn link(socket: Socket, props: LinkProps) {
-  let LinkProps(
-    title: title,
-    href: _href,
-    is_active: is_active,
-    on_click: on_click,
-  ) = props
-
-  use socket, on_click <- callback(socket, on_click, WithDeps([dep(on_click)]))
+  let LinkProps(title: title, href: href, is_active: is_active) = props
 
   render(
     socket,
@@ -136,9 +117,7 @@ fn link(socket: Socket, props: LinkProps) {
               False -> ""
             },
           ]),
-          // attribute.href(href),
-          attribute.href("#"),
-          attribute.on_click(on_click),
+          attribute.href(href),
         ],
         [text(title)],
       ),

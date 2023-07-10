@@ -7,8 +7,12 @@ import docs/app_context.{AppContext}
 import sprocket/render/html
 import cassette
 
-pub fn index(request: Request(String), ctx: AppContext) -> Response(String) {
-  let view = component(page_view, PageViewProps(route: request.path))
+pub fn index(req: Request(String), ctx: AppContext) -> Response(String) {
+  let view =
+    component(
+      page_view,
+      PageViewProps(route: req.path, path_segments: request.path_segments(req)),
+    )
 
   let preflight = cassette.preflight(ctx.ca, view)
 
