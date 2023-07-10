@@ -17,7 +17,11 @@ pub type PageViewProps {
 pub fn page_view(socket: Socket, props: PageViewProps) {
   let PageViewProps(route: route) = props
 
-  let pages = [Page("Introduction", "/"), Page("Components", "/components")]
+  let pages = [
+    Page("Introduction", "/"),
+    Page("Components", "/components"),
+    Page("Misc.", "/misc"),
+  ]
 
   let #(page_component, page_props) = case route {
     "/" -> #(introduction_page, IntroductionPageProps)
