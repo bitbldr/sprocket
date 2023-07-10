@@ -10,8 +10,10 @@ inspired by [Phoenix LiveView](https://github.com/phoenixframework/phoenix_live_
 is loosely derived from the metaphor of a bicycle's sprocket, cassette and chain.
 
 Sprocket combines the best of LiveView server-side productivity and scalability, React components
-and Elm functional state management patterns all wrapped up and implemented in Gleam, a type-safe
-language built on the venerable BEAM (Erlang Virtual Machine). Similar to LiveView, an initial static view is
+and Elm functional state management patterns all implemented in Gleam, a type-safe
+language built on the venerable BEAM (Erlang Virtual Machine).
+
+Similar to LiveView, an initial static view is
 rendered as HTML on the "first paint" which then establishes a connection to the server over a
 WebSocket to facilitate sending browser events and receiving view update diffs. These update patches are
 rendered to browser DOM using morphdom. Like React, declarative views are built using functional
