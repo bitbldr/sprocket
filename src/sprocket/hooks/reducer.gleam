@@ -1,11 +1,11 @@
-import gleam/io
 import gleam/dynamic
 import gleam/otp/actor
 import gleam/erlang/process.{Subject}
 import sprocket/element.{Element}
 import sprocket/socket.{Socket}
-import sprocket/hooks.{Reducer}
+import sprocket/hooks
 import sprocket/utils/unique
+import sprocket/constants.{call_timeout}
 
 pub type Updater(msg) =
   fn(msg) -> Nil
@@ -54,20 +54,18 @@ pub fn reducer(
         },
       )
 
-    Reducer(unique.new(), dynamic.from(actor))
+    hooks.Reducer(unique.new(), dynamic.from(actor))
   }
 
-  let assert #(socket, r, _index) =
+  let assert #(socket, hooks.Reducer(_id, dyn_reducer_actor), _index) =
     socket.fetch_or_init_hook(socket, reducer_init)
-
-  let assert Reducer(_id, dyn_reducer_actor) = r
 
   // we dont know what types of reducer messages a component will implement so the best
   // we can do is store the actors as dynamic and coerce them back when updating
   let reducer_actor = dynamic.unsafe_coerce(dyn_reducer_actor)
 
   // get the current state of the reducer
-  let state = process.call(reducer_actor, StateReducer(_), 10)
+  let state = process.call(reducer_actor, StateReducer(_), call_timeout())
 
   // create a dispatch function for updating the reducer's state and triggering a render update
   let dispatch = fn(msg) -> Nil {

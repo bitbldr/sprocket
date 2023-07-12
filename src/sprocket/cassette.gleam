@@ -19,6 +19,7 @@ import sprocket/patch.{Patch}
 import sprocket/identifiable_callback.{CallbackFn, CallbackWithValueFn}
 import sprocket/logger
 import sprocket/utils/uuid
+import sprocket/constants.{call_timeout}
 import docs/utils/timer.{interval}
 
 pub type Time =
@@ -185,7 +186,7 @@ pub fn preflight(ca: Cassette, view: Element) {
 }
 
 pub fn pop_preflight(ca: Cassette, id: String) -> Result(Preflight, Nil) {
-  process.call(ca, PopPreflight(_, id), 10)
+  process.call(ca, PopPreflight(_, id), call_timeout())
 }
 
 pub fn live_service(_req: Request(mist.Body), ca: Cassette) {
@@ -208,11 +209,11 @@ fn push_sprocket(ca: Cassette, sprocket: Sprocket) {
 }
 
 fn get_sprocket(ca: Cassette, ws: WebSocket) {
-  process.call(ca, GetSprocket(_, ws), 10)
+  process.call(ca, GetSprocket(_, ws), call_timeout())
 }
 
 fn pop_sprocket(ca: Cassette, ws: WebSocket) {
-  process.call(ca, PopSprocket(_, ws), 10)
+  process.call(ca, PopSprocket(_, ws), call_timeout())
 }
 
 fn connect(ca: Cassette, ws: WebSocket, preflight_id: String) {

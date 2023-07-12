@@ -9,3 +9,7 @@ pub fn constant(c: Const) -> String {
     EventAttrPrefix -> "spkt-event"
   }
 }
+
+pub fn call_timeout() -> Int {
+  1000
+}
