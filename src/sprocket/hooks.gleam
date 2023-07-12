@@ -43,7 +43,7 @@ pub type Hook {
     trigger: HookTrigger,
     prev: Option(EffectResult),
   )
-  Reducer(id: Unique, reducer: Dynamic)
+  Reducer(id: Unique, reducer: Dynamic, cleanup: fn() -> Nil)
 }
 
 pub type Compared(a) {

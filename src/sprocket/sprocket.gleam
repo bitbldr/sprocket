@@ -11,6 +11,7 @@ import sprocket/hooks.{
   Callback, Changed, Effect, EffectCleanup, EffectResult, Hook, HookDependencies,
   HookTrigger, OnMount, OnUpdate, Reducer, Unchanged, WithDeps, compare_deps,
 }
+import sprocket/hooks/reducer
 import sprocket/render.{
   RenderResult, RenderedComponent, RenderedElement, live_render,
 }
@@ -219,23 +220,25 @@ fn cleanup_disposed_hooks(
   let prev_hooks = build_hooks_map(prev_rendered, map.new())
   let new_hooks = build_hooks_map(rendered, map.new())
 
+  let removed_hooks =
+    prev_hooks
+    |> map.keys()
+    |> list.filter(fn(id) { !map.has_key(new_hooks, id) })
+
   // cleanup removed hooks
-  prev_hooks
-  |> map.keys()
+  removed_hooks
   |> list.each(fn(id) {
-    case map.has_key(new_hooks, id) {
-      True -> Nil
-      False -> {
-        case map.get(prev_hooks, id) {
-          Ok(Effect(_, _, _, prev)) -> {
-            case prev {
-              Some(EffectResult(Some(cleanup), _)) -> cleanup()
-              _ -> Nil
-            }
-          }
+    case map.get(prev_hooks, id) {
+      Ok(Effect(_, _, _, prev)) -> {
+        case prev {
+          Some(EffectResult(Some(cleanup), _)) -> cleanup()
           _ -> Nil
         }
       }
+
+      Ok(Reducer(_, _, cleanup)) -> cleanup()
+
+      _ -> Nil
     }
   })
 }
@@ -260,7 +263,7 @@ fn build_hooks_map(
               Effect(id, _, _, _) -> {
                 map.insert(acc, id, hook)
               }
-              Reducer(id, _) -> {
+              Reducer(id, _, _) -> {
                 map.insert(acc, id, hook)
               }
             }
