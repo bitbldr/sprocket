@@ -4,7 +4,8 @@ import { applyPatch } from "./patch";
 import { initEventHandlers } from "./events";
 
 window.addEventListener("DOMContentLoaded", () => {
-  const socket = new WebSocket("ws://" + location.host + "/live");
+  let ws_protocol = location.protocol === "https:" ? "wss:" : "ws:";
+  const socket = new WebSocket(ws_protocol + "//" + location.host + "/live");
 
   let dom: Record<string, any>;
   const spktPreflightId = document
