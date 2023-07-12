@@ -7,13 +7,16 @@ RUN npm install -g yarn typescript ts-node
 WORKDIR /build
 
 # copy source files
+COPY package.json yarn.lock ./
+
+# install node deps
+RUN yarn install
+
+# copy source files
 COPY . .
 
 # install gleam deps
 RUN gleam deps download
-
-# install node deps
-RUN yarn install
 
 # # install node deps
 RUN yarn run client:build

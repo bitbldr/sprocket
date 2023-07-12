@@ -1,3 +1,4 @@
+import gleam/io
 import gleam/dynamic
 import gleam/otp/actor
 import gleam/erlang/process.{Subject}
@@ -56,8 +57,10 @@ pub fn reducer(
     Reducer(unique.new(), dynamic.from(actor))
   }
 
-  let assert #(socket, Reducer(_id, dyn_reducer_actor), _index) =
+  let assert #(socket, r, _index) =
     socket.fetch_or_init_hook(socket, reducer_init)
+
+  let assert Reducer(_id, dyn_reducer_actor) = r
 
   // we dont know what types of reducer messages a component will implement so the best
   // we can do is store the actors as dynamic and coerce them back when updating
