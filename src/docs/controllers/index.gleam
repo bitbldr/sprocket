@@ -5,7 +5,7 @@ import sprocket/component.{component}
 import docs/views/page_view.{PageViewProps, page_view}
 import docs/app_context.{AppContext}
 import sprocket/render/html
-import cassette
+import sprocket/cassette
 
 pub fn index(req: Request(String), ctx: AppContext) -> Response(String) {
   let view =

@@ -10,7 +10,7 @@ import gleam/http/request.{Request}
 import mist
 import mist/websocket
 import mist/internal/websocket.{TextMessage} as internal_websocket
-import sprocket.{Sprocket}
+import sprocket/sprocket.{Sprocket}
 import sprocket/socket.{Updater, WebSocket}
 import sprocket/render.{RenderedElement}
 import sprocket/render/json as json_renderer

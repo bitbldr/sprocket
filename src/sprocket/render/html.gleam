@@ -6,7 +6,7 @@ import sprocket/render.{
   RenderedText, Renderer, traverse,
 }
 import sprocket/constants.{EventAttrPrefix, KeyAttr, constant}
-import cassette.{Preflight}
+import sprocket/cassette.{Preflight}
 
 pub fn renderer() -> Renderer(String) {
   Renderer(render: fn(el) { string_builder.to_string(render(el)) })

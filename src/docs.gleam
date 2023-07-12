@@ -9,7 +9,7 @@ import gleam/http/response.{Response}
 import gleam/http.{Get}
 import gleam/bit_builder.{BitBuilder}
 import mist
-import cassette
+import sprocket/cassette
 import docs/routes
 import docs/app_context.{AppContext}
 import docs/utils/logger

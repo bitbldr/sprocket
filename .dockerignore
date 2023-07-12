@@ -3,3 +3,4 @@ Dockerfile
 .dockerignore
 node_modules
 .git
+.parcel-cache
