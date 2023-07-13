@@ -31,6 +31,10 @@ pub fn lang(value: String) -> Attribute {
   attribute("lang", value)
 }
 
+pub fn id(value: String) -> Attribute {
+  attribute("id", value)
+}
+
 pub fn class(value: String) -> Attribute {
   attribute("class", value)
 }

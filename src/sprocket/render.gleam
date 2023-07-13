@@ -1,5 +1,5 @@
 import gleam/io
-import gleam/list
+import gleam/list.{Continue, Stop}
 import gleam/option.{None, Option, Some}
 import gleam/dynamic.{Dynamic}
 import sprocket/html/attribute.{Attribute, Event}
@@ -318,5 +318,41 @@ pub fn traverse(
       )
     }
     _ -> el
+  }
+}
+
+pub fn find(
+  el: RenderedElement,
+  matches: fn(RenderedElement) -> Bool,
+) -> Result(RenderedElement, Nil) {
+  case matches(el) {
+    True -> Ok(el)
+    False -> {
+      case el {
+        RenderedComponent(fc, key, props, hooks, children) -> {
+          list.find(
+            children,
+            fn(child) {
+              case find(child, matches) {
+                Ok(_child) -> True
+                Error(_) -> False
+              }
+            },
+          )
+        }
+        RenderedElement(tag, key, attrs, children) -> {
+          list.find(
+            children,
+            fn(child) {
+              case find(child, matches) {
+                Ok(_child) -> True
+                Error(_) -> False
+              }
+            },
+          )
+        }
+        _ -> Error(Nil)
+      }
+    }
   }
 }

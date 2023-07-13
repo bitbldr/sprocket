@@ -11,7 +11,6 @@ import sprocket/hooks.{
   Callback, Changed, Effect, EffectCleanup, EffectResult, Hook, HookDependencies,
   HookTrigger, OnMount, OnUpdate, Reducer, Unchanged, WithDeps, compare_deps,
 }
-import sprocket/hooks/reducer
 import sprocket/render.{
   RenderResult, RenderedComponent, RenderedElement, live_render,
 }
@@ -34,6 +33,7 @@ type State {
 
 pub type Message {
   Shutdown
+  GetRendered(reply_with: Subject(Option(RenderedElement)))
   HasWebSocket(reply_with: Subject(Bool), websocket: WebSocket)
   SetRenderUpdate(fn() -> Nil)
   Render(reply_with: Subject(RenderedElement))
@@ -44,6 +44,12 @@ pub type Message {
 fn handle_message(message: Message, state: State) -> actor.Next(State) {
   case message {
     Shutdown -> actor.Stop(process.Normal)
+
+    GetRendered(reply_with) -> {
+      actor.send(reply_with, state.rendered)
+
+      actor.Continue(state)
+    }
 
     HasWebSocket(reply_with, websocket) -> {
       case state.socket {
@@ -201,6 +207,10 @@ pub fn has_websocket(actor, websocket) -> Bool {
   actor.call(actor, HasWebSocket(_, websocket), 100)
 }
 
+pub fn get_rendered(actor) {
+  actor.call(actor, GetRendered(_), 100)
+}
+
 pub fn get_handler(actor, id: String) {
   actor.call(actor, GetEventHandler(_, unique.from_string(id)), 100)
 }
@@ -311,9 +321,20 @@ fn run_effect(
   prev: Option(EffectResult),
 ) -> EffectResult {
   case trigger {
-    // Only compute callback on the first render. This is a convience for WithDeps([]).
+    // Only compute callback on the first render. This is a convience that is equivalent to WithDeps([]).
     OnMount -> {
-      EffectResult(effect_fn(), Some([]))
+      case prev {
+        Some(prev_effect_result) -> {
+          prev_effect_result
+        }
+
+        None -> EffectResult(effect_fn(), Some([]))
+
+        _ -> {
+          // this should never occur and means that a hook was dynamically added
+          throw_on_unexpected_hook_result(#("handle_effect", prev))
+        }
+      }
     }
 
     // trigger effect on every update

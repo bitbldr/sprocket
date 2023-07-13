@@ -106,10 +106,10 @@ fn handle_message(message: Message, state: State) -> actor.Next(State) {
     }
 
     GetSprocket(reply_with, ws) -> {
-      let skt =
+      let spkt =
         list.find(state.sprockets, fn(s) { sprocket.has_websocket(s, ws) })
 
-      process.send(reply_with, skt)
+      process.send(reply_with, spkt)
 
       actor.Continue(state)
     }
@@ -290,8 +290,8 @@ fn handle_ws_message(
               logger.info("Event: " <> event.kind <> " " <> event.id)
 
               case get_sprocket(ca, ws) {
-                Ok(socket) -> {
-                  case sprocket.get_handler(socket, event.id) {
+                Ok(sprocket) -> {
+                  case sprocket.get_handler(sprocket, event.id) {
                     Ok(socket.EventHandler(_, handler)) -> {
                       // call the event handler
                       case handler {

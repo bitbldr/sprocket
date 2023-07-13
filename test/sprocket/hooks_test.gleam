@@ -1,91 +1,228 @@
-// import gleam/io
-// import gleam/int
-// import gleam/option.{None, Some}
-// import gleeunit/should
-// import sprocket
-// import sprocket/cassette
-// import sprocket/socket.{Socket, Updater}
-// import sprocket/patch.{Change, NoOp, Update}
-// import sprocket/component.{component, render}
-// import sprocket/html.{text}
-// import sprocket/hooks.{WithDeps}
-// import sprocket/hooks/reducer.{State, reducer}
-// import sprocket/hooks/effect.{effect}
+import gleam/int
+import gleam/string
+import gleam/option.{None}
+import gleeunit/should
+import sprocket/socket.{Socket}
+import sprocket/component.{component}
+import sprocket/html.{button, text}
+import sprocket/html/attribute.{id, on_click}
+import sprocket/hooks.{OnMount, OnUpdate, WithDeps, dep}
+import sprocket/hooks/reducer.{State, reducer}
+import sprocket/hooks/effect.{effect}
+import sprocket/hooks/callback.{callback}
+import sprocket/identifiable_callback.{CallbackFn}
+import test_helpers.{ClickEvent, live, render_event, render_html}
 
-// type Model {
-//   Model(count: Int)
-// }
+type Model {
+  Model(count: Int)
+}
 
-// type Msg {
-//   UpdateCount(Int)
-// }
+type Msg {
+  UpdateCount(Int)
+  ResetCount
+}
 
-// fn update(_model: Model, msg: Msg) -> Model {
-//   case msg {
-//     UpdateCount(count) -> {
-//       Model(count: count)
-//     }
-//   }
-// }
+fn update(_model: Model, msg: Msg) -> Model {
+  case msg {
+    UpdateCount(count) -> {
+      Model(count: count)
+    }
+    ResetCount -> {
+      Model(count: 0)
+    }
+  }
+}
 
-// fn initial() -> Model {
-//   Model(0)
-// }
+fn initial() -> Model {
+  Model(0)
+}
 
-// pub type CounterProps {
-//   CounterProps
-// }
+type TestCounterProps {
+  TestCounterProps
+}
 
-// pub fn counter(socket: Socket, _props) {
-//   // Define a reducer to handle events and update the state
-//   use socket, State(Model(count: count), dispatch) <- reducer(
-//     socket,
-//     initial(),
-//     update,
-//   )
+fn inc_initial_render_counter(socket: Socket, _props) {
+  // Define a reducer to handle events and update the state
+  use socket, State(Model(count: count), dispatch) <- reducer(
+    socket,
+    initial(),
+    update,
+  )
 
-//   // Example effect with an empty list of dependencies, runs once on mount
-//   use socket <- effect(
-//     socket,
-//     fn() {
-//       dispatch(UpdateCount(count + 1))
-//       None
-//     },
-//     WithDeps([]),
-//   )
+  // Example effect with an empty list of dependencies, runs once on mount
+  use socket <- effect(
+    socket,
+    fn() {
+      dispatch(UpdateCount(count + 1))
+      None
+    },
+    OnMount,
+  )
 
-//   let current_count = int.to_string(count)
+  let current_count = int.to_string(count)
 
-//   render(socket, [text(current_count)])
-// }
+  component.render(socket, [text("current count is: "), text(current_count)])
+}
 
-// // TODO: figure out how to test components
-// // gleeunit test functions end in `_test`
-// pub fn effect_should_only_run_on_initial_render_test() {
-//   let ca = cassette.start()
+pub fn effect_should_only_run_on_initial_render_test() {
+  let view = component(inc_initial_render_counter, TestCounterProps)
+  let spkt = live(view)
 
-//   let view = component(counter, CounterProps)
+  let #(spkt, rendered) = render_html(spkt)
 
-//   let updater =
-//     Updater(send: fn(update) {
-//       io.debug(update)
+  rendered
+  |> should.equal("current count is: 0")
 
-//       // first call
-//       update
-//       |> should.equal(Update(None, Some([#(0, Change("1"))])))
+  let #(spkt, rendered) = render_html(spkt)
 
-//       // second call
-//       update
-//       |> should.equal(NoOp)
+  rendered
+  |> should.equal("current count is: 1")
 
-//       Ok(Nil)
-//     })
+  let #(_spkt, rendered) = render_html(spkt)
 
-//   let spkt = sprocket.start(None, Some(view), None)
-//   cassette.push_sprocket(ca, spkt)
+  rendered
+  |> should.equal("current count is: 1")
+}
 
-//   // intitial live render
-//   let _rendered = sprocket.render(spkt)
+fn inc_on_every_update_counter(socket: Socket, _props) {
+  // Define a reducer to handle events and update the state
+  use socket, State(Model(count: count), dispatch) <- reducer(
+    socket,
+    initial(),
+    update,
+  )
 
-//   sprocket.render_update(spkt)
-// }
+  // Example effect with an empty list of dependencies, runs once on mount
+  use socket <- effect(
+    socket,
+    fn() {
+      dispatch(UpdateCount(count + 1))
+      None
+    },
+    OnUpdate,
+  )
+
+  let current_count = int.to_string(count)
+
+  component.render(socket, [text("current count is: "), text(current_count)])
+}
+
+pub fn effect_should_run_on_every_update_test() {
+  let view = component(inc_on_every_update_counter, TestCounterProps)
+
+  let spkt = live(view)
+
+  let #(spkt, rendered) = render_html(spkt)
+
+  rendered
+  |> should.equal("current count is: 0")
+
+  let #(spkt, rendered) = render_html(spkt)
+
+  rendered
+  |> should.equal("current count is: 1")
+
+  let #(_spkt, rendered) = render_html(spkt)
+
+  rendered
+  |> should.equal("current count is: 2")
+
+  let #(_spkt, rendered) = render_html(spkt)
+
+  rendered
+  |> should.equal("current count is: 3")
+}
+
+fn inc_reset_on_button_click_counter(socket: Socket, _props) {
+  // Define a reducer to handle events and update the state
+  use socket, State(Model(count: count), dispatch) <- reducer(
+    socket,
+    initial(),
+    update,
+  )
+
+  // Example effect with an empty list of dependencies, runs once on mount
+  use socket <- effect(
+    socket,
+    fn() {
+      dispatch(UpdateCount(count + 1))
+      None
+    },
+    WithDeps([]),
+  )
+
+  // Define event handlers
+  use socket, on_increment <- callback(
+    socket,
+    CallbackFn(fn() { dispatch(UpdateCount(count + 1)) }),
+    WithDeps([dep(count)]),
+  )
+  use socket, on_reset <- callback(
+    socket,
+    CallbackFn(fn() { dispatch(ResetCount) }),
+    WithDeps([dep(count)]),
+  )
+
+  let current_count = int.to_string(count)
+
+  component.render(
+    socket,
+    [
+      text("current count is: "),
+      text(current_count),
+      button([id("increment"), on_click(on_increment)], [text("increment")]),
+      button([id("reset"), on_click(on_reset)], [text("reset")]),
+    ],
+  )
+}
+
+pub fn effect_should_run_with_empty_deps_and_handle_events_test() {
+  let view = component(inc_reset_on_button_click_counter, TestCounterProps)
+
+  let spkt = live(view)
+
+  let #(spkt, rendered) = render_html(spkt)
+
+  let assert True =
+    rendered
+    |> string.starts_with("current count is: 0")
+
+  let #(spkt, rendered) = render_html(spkt)
+
+  let assert True =
+    rendered
+    |> string.starts_with("current count is: 1")
+
+  // verify WithDeps([]) is only run a single time on mount
+  let #(spkt, rendered) = render_html(spkt)
+
+  let assert True =
+    rendered
+    |> string.starts_with("current count is: 1")
+
+  // click increment button
+  let spkt = render_event(spkt, ClickEvent, "increment")
+
+  let #(_spkt, rendered) = render_html(spkt)
+
+  let assert True =
+    rendered
+    |> string.starts_with("current count is: 2")
+
+  let spkt = render_event(spkt, ClickEvent, "increment")
+
+  let #(_spkt, rendered) = render_html(spkt)
+
+  let assert True =
+    rendered
+    |> string.starts_with("current count is: 3")
+
+  // click reset button
+  let spkt = render_event(spkt, ClickEvent, "reset")
+
+  let #(_spkt, rendered) = render_html(spkt)
+
+  let assert True =
+    rendered
+    |> string.starts_with("current count is: 0")
+}
