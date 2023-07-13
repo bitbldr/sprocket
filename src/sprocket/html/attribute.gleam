@@ -31,6 +31,22 @@ pub fn lang(value: String) -> Attribute {
   attribute("lang", value)
 }
 
+pub fn charset(value: String) -> Attribute {
+  attribute("charset", value)
+}
+
+pub fn http_equiv(value: String) -> Attribute {
+  attribute("http-equiv", value)
+}
+
+pub fn name(value: String) -> Attribute {
+  attribute("name", value)
+}
+
+pub fn content(value: String) -> Attribute {
+  attribute("content", value)
+}
+
 pub fn id(value: String) -> Attribute {
   attribute("id", value)
 }
@@ -81,4 +97,8 @@ pub fn value(value: String) -> Attribute {
 
 pub fn target(value: String) -> Attribute {
   attribute("target", value)
+}
+
+pub fn data(name: String, value: String) -> Attribute {
+  attribute("data-" <> name, value)
 }

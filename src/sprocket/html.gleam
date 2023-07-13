@@ -62,6 +62,10 @@ pub fn head(attrs: List(Attribute), children: Children) {
   el("head", attrs, children)
 }
 
+pub fn meta(attrs: List(Attribute)) {
+  el("meta", attrs, [])
+}
+
 pub fn link(attrs: List(Attribute)) {
   el("link", attrs, [])
 }
@@ -104,4 +108,8 @@ pub fn a(attrs: List(Attribute), children: Children) {
 
 pub fn input(attrs: List(Attribute)) {
   el("input", attrs, [])
+}
+
+pub fn aside(attrs: List(Attribute), children: Children) {
+  el("aside", attrs, children)
 }

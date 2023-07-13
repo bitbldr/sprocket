@@ -4,8 +4,8 @@ import gleam/option.{None, Option, Some}
 import sprocket/socket.{Socket}
 import sprocket/component.{component, render}
 import sprocket/hooks/reducer.{State, reducer}
-import sprocket/html.{a, div, keyed, span, text}
-import sprocket/html/attribute.{class, classes}
+import sprocket/html.{a, aside, div, keyed, span, text}
+import sprocket/html/attribute.{class, classes, id}
 import docs/components/search_bar.{SearchBarProps, search_bar}
 
 pub type Page {
@@ -50,46 +50,63 @@ pub fn sidebar(socket: Socket, props) {
     socket,
     case show {
       True -> [
-        div(
-          [class("border-r border-gray-200 p-2 w-[20rem]")],
+        aside(
           [
-            component(
-              search_bar,
-              SearchBarProps(on_search: fn(query) {
-                case query {
-                  "" -> dispatch(SetSearchFilter(None))
-                  _ -> dispatch(SetSearchFilter(Some(query)))
-                }
-              }),
+            id("default-sidebar"),
+            class(
+              "absolute top-0 left-0 z-40 w-64 h-screen transition-transform -translate-x-full sm:translate-x-0",
             ),
-            ..case search_filter {
-              Some(query) -> [
-                div(
-                  [],
-                  [
-                    span([class("bold italic")], [text("No results for: ")]),
-                    span([], [text(query)]),
-                  ],
+          ],
+          [
+            div(
+              [
+                class(
+                  "h-full px-3 py-4 overflow-y-auto bg-gray-50 dark:bg-gray-800",
                 ),
-              ]
-              None ->
-                list.index_map(
-                  pages,
-                  fn(i, page) {
-                    keyed(
-                      page.title,
-                      component(
-                        link,
-                        LinkProps(
-                          int.to_string(i + 1) <> ". " <> page.title,
-                          page.href,
-                          page.href == active,
+              ],
+              [
+                component(
+                  search_bar,
+                  SearchBarProps(on_search: fn(query) {
+                    case query {
+                      "" -> dispatch(SetSearchFilter(None))
+                      _ -> dispatch(SetSearchFilter(Some(query)))
+                    }
+                  }),
+                ),
+                ..case search_filter {
+                  Some(query) -> [
+                    div(
+                      [],
+                      [
+                        div(
+                          [class("font-bold italic my-1")],
+                          [text("No results for: ")],
                         ),
-                      ),
+                        div([], [text(query)]),
+                      ],
+                    ),
+                  ]
+                  None ->
+                    list.index_map(
+                      pages,
+                      fn(i, page) {
+                        keyed(
+                          page.title,
+                          component(
+                            link,
+                            LinkProps(
+                              int.to_string(i + 1) <> ". " <> page.title,
+                              page.href,
+                              page.href == active,
+                            ),
+                          ),
+                        )
+                      },
                     )
-                  },
-                )
-            }
+                }
+              ],
+            ),
           ],
         ),
       ]

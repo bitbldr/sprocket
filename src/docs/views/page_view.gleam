@@ -1,8 +1,11 @@
 import sprocket/socket.{Socket}
 import sprocket/component.{component, render}
-import sprocket/html.{body, div, head, html, link, script}
+import sprocket/html.{
+  body, button, div, head, html, i, keyed, link, meta, script,
+}
 import sprocket/html/attribute.{
-  class, crossorigin, href, integrity, lang, referrerpolicy, rel, src,
+  charset, class, content, crossorigin, data, href, integrity, lang, name,
+  referrerpolicy, rel, src,
 }
 import docs/components/header.{HeaderProps, MenuItem, header}
 import docs/components/sidebar.{Page, SidebarProps, sidebar}
@@ -35,6 +38,17 @@ pub fn page_view(socket: Socket, props: PageViewProps) {
           head(
             [],
             [
+              meta([charset("utf-8")]),
+              meta([
+                name("viewport"),
+                content("width=device-width, initial-scale=1"),
+              ]),
+              meta([
+                name("description"),
+                content(
+                  "Sprocket is a framework for building real-time applications in Gleam.",
+                ),
+              ]),
               link([rel("stylesheet"), href("/app.css")]),
               link([
                 rel("stylesheet"),
@@ -46,6 +60,12 @@ pub fn page_view(socket: Socket, props: PageViewProps) {
                 ),
                 crossorigin("anonymous"),
                 referrerpolicy("no-referrer"),
+              ]),
+              link([
+                rel("stylesheet"),
+                href(
+                  "https://cdnjs.cloudflare.com/ajax/libs/flowbite/1.7.0/flowbite.min.css",
+                ),
               ]),
             ],
           ),
@@ -71,20 +91,58 @@ pub fn page_view(socket: Socket, props: PageViewProps) {
                 ],
               ),
               div(
-                [class("flex-1 flex flex-row")],
+                [class("relative flex-1 flex flex-row")],
                 [
                   component(sidebar, SidebarProps(pages, route)),
-                  ..case route {
-                    "/" -> [component(introduction_page, IntroductionPageProps)]
-                    "/components" -> [
-                      component(components_page, ComponentsPageProps),
-                    ]
-                    "/misc" -> [component(misc_page, MiscPageProps)]
-                    _ -> [component(not_found_page, NotFoundPageProps)]
-                  }
+                  div(
+                    [class("sm:ml-64")],
+                    [
+                      button(
+                        [
+                          data("drawer-target", "default-sidebar"),
+                          data("drawer-toggle", "default-sidebar"),
+                          class(
+                            "inline-flex sm:hidden items-center p-2 mt-2 ml-3 text-sm text-gray-500 rounded-lg hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-200 dark:text-gray-400 dark:hover:bg-gray-700 dark:focus:ring-gray-600",
+                          ),
+                        ],
+                        [i([class("fa-solid fa-bars")], [])],
+                      ),
+                      ..case route {
+                        "/" -> [
+                          keyed(
+                            "page",
+                            component(introduction_page, IntroductionPageProps),
+                          ),
+                        ]
+                        "/components" -> [
+                          keyed(
+                            "page",
+                            component(components_page, ComponentsPageProps),
+                          ),
+                        ]
+                        "/misc" -> [
+                          keyed("page", component(misc_page, MiscPageProps)),
+                        ]
+                        _ -> [
+                          keyed(
+                            "page",
+                            component(not_found_page, NotFoundPageProps),
+                          ),
+                        ]
+                      }
+                    ],
+                  ),
                 ],
               ),
               script([src("/client.js")], []),
+              script(
+                [
+                  src(
+                    "https://cdnjs.cloudflare.com/ajax/libs/flowbite/1.7.0/flowbite.min.js",
+                  ),
+                ],
+                [],
+              ),
             ],
           ),
         ],
