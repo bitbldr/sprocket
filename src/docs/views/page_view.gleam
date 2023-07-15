@@ -1,9 +1,9 @@
 import sprocket/socket.{Socket}
 import sprocket/component.{component, render}
-import sprocket/html.{body, button, div, head, html, i, link, meta, script}
+import sprocket/html.{body, button, div, head, html, i, link, meta}
 import sprocket/html/attribute.{
   charset, class, content, crossorigin, data, href, integrity, lang, name,
-  referrerpolicy, rel, src,
+  referrerpolicy, rel,
 }
 import docs/components/header.{HeaderProps, MenuItem, header}
 import docs/components/sidebar.{Page, SidebarProps, sidebar}
@@ -121,15 +121,6 @@ pub fn page_view(socket: Socket, props: PageViewProps) {
                     ],
                   ),
                 ],
-              ),
-              script([src("/client.js")], []),
-              script(
-                [
-                  src(
-                    "https://cdnjs.cloudflare.com/ajax/libs/flowbite/1.7.0/flowbite.min.js",
-                  ),
-                ],
-                [],
               ),
             ],
           ),

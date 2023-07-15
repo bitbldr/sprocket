@@ -1,5 +1,5 @@
 import gleam/list
-import gleam/option.{Option}
+import gleam/option.{None, Option, Some}
 import gleam/dynamic.{Dynamic}
 import gleam/string
 import gleam/string_builder
@@ -70,8 +70,11 @@ pub fn link(attrs: List(Attribute)) {
   el("link", attrs, [])
 }
 
-pub fn script(attrs: List(Attribute), children: Children) {
-  el("script", attrs, children)
+pub fn script(attrs: List(Attribute), body: Option(String)) {
+  case body {
+    Some(body) -> el("script", attrs, [text(body)])
+    None -> el("script", attrs, [])
+  }
 }
 
 pub fn body(attrs: List(Attribute), children: Children) {

@@ -77,6 +77,14 @@ pub fn live_render(
   }
 }
 
+/// Renders the given element into a stateless RenderedElement tree.
+pub fn render_element(el: Element) {
+  let RenderResult(rendered: rendered, ..) =
+    live_render(socket.new(None), el, None, None)
+
+  rendered
+}
+
 fn element(
   socket: Socket,
   tag: String,
