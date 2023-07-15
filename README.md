@@ -4,6 +4,8 @@ Persistent Reactive Sockets
 [![Package Version](https://img.shields.io/hexpm/v/sprocket)](https://hex.pm/packages/sprocket)
 [![Hex Docs](https://img.shields.io/badge/hex-docs-ffaff3)](https://hexdocs.pm/sprocket/)
 
+[Live Demo Documentation](https://sprocket.live)
+
 A framework for building real-time server components in [Gleam ✨](https://gleam.run/). Heavily
 inspired by [Phoenix LiveView](https://github.com/phoenixframework/phoenix_live_view),
 [React](https://github.com/facebook/react) and [Elm](https://github.com/elm). The name "sprocket"
