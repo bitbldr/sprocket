@@ -185,6 +185,7 @@ Documentation for Sprocket can be found in the [docs](/docs) directory of this r
 Sprocket is still in its early stages and has a roadmap for future development. Here are some of the planned improvements:
 
 - Build out full set of base HTML functions for components (or investigate using an [existing library](https://github.com/nakaixo/nakai))
+- Explore [other http and websocket server options](https://hexdocs.pm/espresso/)
 - Add support for additional event types to handle various user interactions
 - Expand the available hooks to enable more flexible component behavior
 - Convert client TypeScript to gleam
