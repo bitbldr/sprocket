@@ -337,7 +337,7 @@ pub fn find(
     True -> Ok(el)
     False -> {
       case el {
-        RenderedComponent(fc, key, props, hooks, children) -> {
+        RenderedComponent(_fc, _key, _props, _hooks, children) -> {
           list.find(
             children,
             fn(child) {
@@ -348,7 +348,7 @@ pub fn find(
             },
           )
         }
-        RenderedElement(tag, key, attrs, children) -> {
+        RenderedElement(_tag, _key, _attrs, children) -> {
           list.find(
             children,
             fn(child) {

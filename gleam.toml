@@ -1,13 +1,28 @@
 name = "sprocket"
 version = "0.1.0"
-description = "A Gleam project"
+description = "A framework for building real-time server components in Gleam"
 
 # Fill out these fields if you intend to generate HTML documentation or publish
 # your project to the Hex package manager.
 #
-# licences = ["Apache-2.0"]
-# repository = { type = "github", user = "username", repo = "project" }
-# links = [{ title = "Website", href = "https://gleam.run" }]
+licences = ["MIT"]
+repository = { type = "github", user = "eliknebel", repo = "sprocket" }
+links = [{ title = "Website", href = "https://sprocket.live" }]
+
+# Modules that should be considered "internal" and will not be included in
+# generated documentation. Note this currently only affects documentation;
+# public types and functions defined in these modules are still public.
+#
+# Items in this list are "globs" that are matched against module names. See:
+# https://docs.rs/glob/latest/glob/struct.Pattern.html
+#
+# The default value is as below, with the `name` of your project substituted in
+# place of "my_app".
+internal_modules = [
+  "docs",
+  "docs/*",
+  "sprocket/utils/*",
+]
 
 [dependencies]
 gleam_stdlib = "~> 0.28"

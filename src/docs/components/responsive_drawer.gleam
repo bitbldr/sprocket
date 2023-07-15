@@ -8,7 +8,6 @@ import sprocket/identifiable_callback.{CallbackFn}
 import sprocket/element.{Element}
 import sprocket/html.{aside, button, div, i}
 import sprocket/html/attribute.{class, classes, on_click}
-import docs/utils/common.{maybe}
 
 type Model {
   Model(show: Bool)

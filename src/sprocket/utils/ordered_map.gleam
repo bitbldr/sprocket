@@ -41,7 +41,7 @@ pub fn update(m: OrderedMap(k, a), key: k, value: a) -> OrderedMap(k, a) {
         ordered: list.map(
           m.ordered,
           fn(keyed_item) {
-            let KeyedItem(k, v) = keyed_item
+            let KeyedItem(k, _v) = keyed_item
             case k == key {
               True -> KeyedItem(key, value)
               False -> keyed_item

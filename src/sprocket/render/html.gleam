@@ -119,40 +119,6 @@ fn text(t: String) -> StringBuilder {
   string_builder.from_string(t)
 }
 
-type Meta {
-  Meta(name: String, content: String)
-}
-
-fn inject_meta(root: RenderedElement, meta: Meta) -> RenderedElement {
-  traverse(
-    root,
-    fn(el) {
-      case el {
-        RenderedElement(tag: "head", key: key, attrs: attrs, children: children) -> {
-          let meta =
-            RenderedElement(
-              tag: "meta",
-              key: None,
-              attrs: [
-                RenderedAttribute("name", meta.name),
-                RenderedAttribute("content", meta.content),
-              ],
-              children: [],
-            )
-
-          RenderedElement(
-            tag: "head",
-            key: key,
-            attrs: attrs,
-            children: list.append(children, [meta]),
-          )
-        }
-        _ -> el
-      }
-    },
-  )
-}
-
 type InjectElementOperation {
   Append
   Prepend
