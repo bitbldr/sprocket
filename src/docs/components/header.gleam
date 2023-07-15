@@ -22,14 +22,14 @@ pub fn header(socket: Socket, props) {
       div(
         [
           class(
-            "flex flex-row justify-between border-b border-gray-200 min-h-[60px]",
+            "flex flex-row justify-between border-b border-gray-200 dark:border-gray-600 min-h-[60px]",
           ),
         ],
         [
           div(
             [class("p-2 mx-2")],
             [
-              div([class("italic bold text-2xl")], [text("Sprocket")]),
+              div([class("italic bold text-2xl")], [text("⚙️ Sprocket")]),
               div(
                 [class("text-gray-500 text-sm")],
                 [text("Real-time server components in Gleam ✨")],

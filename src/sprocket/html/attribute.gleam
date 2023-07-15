@@ -1,4 +1,6 @@
-import gleam/string
+import gleam/list
+import gleam/string_builder
+import gleam/option.{None, Option, Some}
 import gleam/dynamic.{Dynamic}
 import sprocket/identifiable_callback.{IdentifiableCallback}
 
@@ -55,8 +57,25 @@ pub fn class(value: String) -> Attribute {
   attribute("class", value)
 }
 
-pub fn classes(value: List(String)) -> Attribute {
-  attribute("class", string.join(value, " "))
+pub fn classes(value: List(Option(String))) -> Attribute {
+  attribute(
+    "class",
+    list.fold(
+      value,
+      string_builder.new(),
+      fn(sb, v) {
+        case v {
+          None -> sb
+          Some(v) ->
+            case string_builder.is_empty(sb) {
+              True -> string_builder.append(sb, v)
+              False -> string_builder.append(sb, " " <> v)
+            }
+        }
+      },
+    )
+    |> string_builder.to_string(),
+  )
 }
 
 pub fn href(value: String) -> Attribute {

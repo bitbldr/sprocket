@@ -72,20 +72,24 @@ pub fn counter(socket: Socket, props: CounterProps) {
           button(
             [
               class(
-                "p-1 px-2 border rounded-l bg-gray-100 hover:bg-gray-200 active:bg-gray-300",
+                "p-1 px-2 border dark:border-gray-500 rounded-l bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 active:bg-gray-300 dark:active:bg-gray-600",
               ),
               on_click(on_decrement),
             ],
             [text("-")],
           ),
           span(
-            [class("p-1 px-2 w-10 border-t border-b align-center text-center")],
+            [
+              class(
+                "p-1 px-2 w-10 border-t border-b dark:border-gray-500 align-center text-center",
+              ),
+            ],
             [text(int.to_string(count))],
           ),
           button(
             [
               class(
-                "p-1 px-2 border rounded-r bg-gray-100 hover:bg-gray-200 active:bg-gray-300",
+                "p-1 px-2 border dark:border-gray-500 rounded-r bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 active:bg-gray-300 dark:active:bg-gray-600",
               ),
               on_click(on_increment),
             ],

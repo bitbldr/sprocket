@@ -1,5 +1,5 @@
 import gleam/dynamic
-import gleam/option.{None}
+import gleam/option.{None, Some}
 import gleeunit/should
 import sprocket/socket.{Socket}
 import sprocket/component.{component, render}
@@ -33,10 +33,10 @@ fn test_component(socket: Socket, props: TestProps) {
       a(
         [
           classes([
-            "block p-2 text-blue-500 hover:text-blue-700",
+            Some("block p-2 text-blue-500 hover:text-blue-700"),
             case is_active {
-              True -> "font-bold"
-              False -> ""
+              True -> Some("font-bold")
+              False -> None
             },
           ]),
           attribute.href("#"),

@@ -6,6 +6,7 @@ import sprocket/component.{component, render}
 import sprocket/hooks/reducer.{State, reducer}
 import sprocket/html.{a, aside, div, keyed, text}
 import sprocket/html/attribute.{class, classes, id}
+import docs/utils/common.{maybe}
 import docs/components/search_bar.{SearchBarProps, search_bar}
 import docs/page_route.{PageRoute}
 
@@ -49,70 +50,45 @@ pub fn sidebar(socket: Socket, props) {
 
   render(
     socket,
-    case show {
-      True -> [
-        aside(
-          [
-            id("default-sidebar"),
-            class(
-              "absolute top-0 left-0 z-40 w-64 h-screen transition-transform -translate-x-full sm:translate-x-0",
-            ),
-          ],
-          [
-            div(
-              [
-                class(
-                  "h-full px-3 py-4 overflow-y-auto bg-gray-50 dark:bg-gray-800",
-                ),
-              ],
-              [
+    [
+      component(
+        search_bar,
+        SearchBarProps(on_search: fn(query) {
+          case query {
+            "" -> dispatch(SetSearchFilter(None))
+            _ -> dispatch(SetSearchFilter(Some(query)))
+          }
+        }),
+      ),
+      ..case search_filter {
+        Some(query) -> [
+          div(
+            [],
+            [
+              div([class("font-bold italic my-1")], [text("No results for: ")]),
+              div([], [text(query)]),
+            ],
+          ),
+        ]
+        None ->
+          list.index_map(
+            pages,
+            fn(i, page) {
+              keyed(
+                page.title,
                 component(
-                  search_bar,
-                  SearchBarProps(on_search: fn(query) {
-                    case query {
-                      "" -> dispatch(SetSearchFilter(None))
-                      _ -> dispatch(SetSearchFilter(Some(query)))
-                    }
-                  }),
+                  link,
+                  LinkProps(
+                    int.to_string(i + 1) <> ". " <> page.title,
+                    page_route.href(page.route),
+                    page.route == active,
+                  ),
                 ),
-                ..case search_filter {
-                  Some(query) -> [
-                    div(
-                      [],
-                      [
-                        div(
-                          [class("font-bold italic my-1")],
-                          [text("No results for: ")],
-                        ),
-                        div([], [text(query)]),
-                      ],
-                    ),
-                  ]
-                  None ->
-                    list.index_map(
-                      pages,
-                      fn(i, page) {
-                        keyed(
-                          page.title,
-                          component(
-                            link,
-                            LinkProps(
-                              int.to_string(i + 1) <> ". " <> page.title,
-                              page_route.href(page.route),
-                              page.route == active,
-                            ),
-                          ),
-                        )
-                      },
-                    )
-                }
-              ],
-            ),
-          ],
-        ),
-      ]
-      False -> []
-    },
+              )
+            },
+          )
+      }
+    ],
   )
 }
 
@@ -129,11 +105,8 @@ fn link(socket: Socket, props: LinkProps) {
       a(
         [
           classes([
-            "block p-2 text-blue-500 hover:text-blue-700",
-            case is_active {
-              True -> "font-bold"
-              False -> ""
-            },
+            Some("block p-2 text-blue-500 hover:text-blue-700"),
+            maybe(is_active, "font-bold"),
           ]),
           attribute.href(href),
         ],

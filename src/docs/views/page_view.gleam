@@ -1,11 +1,14 @@
 import sprocket/socket.{Socket}
 import sprocket/component.{component, render}
-import sprocket/html.{body, button, div, head, html, i, link, meta}
+import sprocket/html.{body, div, head, html, link, meta}
 import sprocket/html/attribute.{
-  charset, class, content, crossorigin, data, href, integrity, lang, name,
+  charset, class, content, crossorigin, href, integrity, lang, name,
   referrerpolicy, rel,
 }
 import docs/components/header.{HeaderProps, MenuItem, header}
+import docs/components/responsive_drawer.{
+  ResponsiveDrawerProps, responsive_drawer,
+}
 import docs/components/sidebar.{Page, SidebarProps, sidebar}
 import docs/components/pages/introduction.{
   IntroductionPageProps, introduction_page,
@@ -60,12 +63,6 @@ pub fn page_view(socket: Socket, props: PageViewProps) {
                 crossorigin("anonymous"),
                 referrerpolicy("no-referrer"),
               ]),
-              link([
-                rel("stylesheet"),
-                href(
-                  "https://cdnjs.cloudflare.com/ajax/libs/flowbite/1.7.0/flowbite.min.css",
-                ),
-              ]),
             ],
           ),
           body(
@@ -89,38 +86,24 @@ pub fn page_view(socket: Socket, props: PageViewProps) {
                   ),
                 ],
               ),
-              div(
-                [class("relative flex-1 flex flex-row")],
-                [
-                  component(sidebar, SidebarProps(pages, route)),
-                  div(
-                    [class("sm:ml-64")],
+              component(
+                responsive_drawer,
+                ResponsiveDrawerProps(
+                  drawer: component(sidebar, SidebarProps(pages, route)),
+                  content: div(
+                    [class("container mx-auto px-6")],
                     [
-                      button(
-                        [
-                          data("drawer-target", "default-sidebar"),
-                          data("drawer-toggle", "default-sidebar"),
-                          class(
-                            "inline-flex sm:hidden items-center p-2 mt-2 ml-3 text-sm text-gray-500 rounded-lg hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-200 dark:text-gray-400 dark:hover:bg-gray-700 dark:focus:ring-gray-600",
-                          ),
-                        ],
-                        [i([class("fa-solid fa-bars")], [])],
-                      ),
-                      ..case route {
-                        Introduction -> [
-                          component(introduction_page, IntroductionPageProps),
-                        ]
-                        Components -> [
-                          component(components_page, ComponentsPageProps),
-                        ]
-                        Misc -> [component(misc_page, MiscPageProps)]
-                        Unknown -> [
-                          component(not_found_page, NotFoundPageProps),
-                        ]
-                      }
+                      case route {
+                        Introduction ->
+                          component(introduction_page, IntroductionPageProps)
+                        Components ->
+                          component(components_page, ComponentsPageProps)
+                        Misc -> component(misc_page, MiscPageProps)
+                        Unknown -> component(not_found_page, NotFoundPageProps)
+                      },
                     ],
                   ),
-                ],
+                ),
               ),
             ],
           ),
