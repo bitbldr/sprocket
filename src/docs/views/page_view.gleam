@@ -1,8 +1,6 @@
 import sprocket/socket.{Socket}
 import sprocket/component.{component, render}
-import sprocket/html.{
-  body, button, div, head, html, i, keyed, link, meta, script,
-}
+import sprocket/html.{body, button, div, head, html, i, link, meta, script}
 import sprocket/html/attribute.{
   charset, class, content, crossorigin, data, href, integrity, lang, name,
   referrerpolicy, rel, src,
@@ -15,18 +13,19 @@ import docs/components/pages/introduction.{
 import docs/components/pages/components.{ComponentsPageProps, components_page}
 import docs/components/pages/misc.{MiscPageProps, misc_page}
 import docs/components/pages/not_found.{NotFoundPageProps, not_found_page}
+import docs/page_route.{Components, Introduction, Misc, PageRoute, Unknown}
 
 pub type PageViewProps {
-  PageViewProps(route: String, path_segments: List(String))
+  PageViewProps(route: PageRoute, path_segments: List(String))
 }
 
 pub fn page_view(socket: Socket, props: PageViewProps) {
   let PageViewProps(route: route, ..) = props
 
   let pages = [
-    Page("Introduction", "/"),
-    Page("Components", "/components"),
-    Page("Misc.", "/misc"),
+    Page("Introduction", Introduction),
+    Page("Components", Components),
+    Page("Misc.", Misc),
   ]
 
   render(
@@ -108,26 +107,15 @@ pub fn page_view(socket: Socket, props: PageViewProps) {
                         [i([class("fa-solid fa-bars")], [])],
                       ),
                       ..case route {
-                        "/" -> [
-                          keyed(
-                            "page",
-                            component(introduction_page, IntroductionPageProps),
-                          ),
+                        Introduction -> [
+                          component(introduction_page, IntroductionPageProps),
                         ]
-                        "/components" -> [
-                          keyed(
-                            "page",
-                            component(components_page, ComponentsPageProps),
-                          ),
+                        Components -> [
+                          component(components_page, ComponentsPageProps),
                         ]
-                        "/misc" -> [
-                          keyed("page", component(misc_page, MiscPageProps)),
-                        ]
-                        _ -> [
-                          keyed(
-                            "page",
-                            component(not_found_page, NotFoundPageProps),
-                          ),
+                        Misc -> [component(misc_page, MiscPageProps)]
+                        Unknown -> [
+                          component(not_found_page, NotFoundPageProps),
                         ]
                       }
                     ],

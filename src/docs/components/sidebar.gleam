@@ -4,12 +4,13 @@ import gleam/option.{None, Option, Some}
 import sprocket/socket.{Socket}
 import sprocket/component.{component, render}
 import sprocket/hooks/reducer.{State, reducer}
-import sprocket/html.{a, aside, div, keyed, span, text}
+import sprocket/html.{a, aside, div, keyed, text}
 import sprocket/html/attribute.{class, classes, id}
 import docs/components/search_bar.{SearchBarProps, search_bar}
+import docs/page_route.{PageRoute}
 
 pub type Page {
-  Page(title: String, href: String)
+  Page(title: String, route: PageRoute)
 }
 
 type Model {
@@ -34,7 +35,7 @@ fn initial() -> Model {
 }
 
 pub type SidebarProps {
-  SidebarProps(pages: List(Page), active: String)
+  SidebarProps(pages: List(Page), active: PageRoute)
 }
 
 pub fn sidebar(socket: Socket, props) {
@@ -97,8 +98,8 @@ pub fn sidebar(socket: Socket, props) {
                             link,
                             LinkProps(
                               int.to_string(i + 1) <> ". " <> page.title,
-                              page.href,
-                              page.href == active,
+                              page_route.href(page.route),
+                              page.route == active,
                             ),
                           ),
                         )
