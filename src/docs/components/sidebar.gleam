@@ -4,8 +4,8 @@ import gleam/option.{None, Option, Some}
 import sprocket/socket.{Socket}
 import sprocket/component.{component, render}
 import sprocket/hooks/reducer.{State, reducer}
-import sprocket/html.{a, aside, div, keyed, text}
-import sprocket/html/attribute.{class, classes, id}
+import sprocket/html.{a, div, keyed, text}
+import sprocket/html/attribute.{class, classes}
 import docs/utils/common.{maybe}
 import docs/components/search_bar.{SearchBarProps, search_bar}
 import docs/page_route.{PageRoute}
@@ -15,7 +15,7 @@ pub type Page {
 }
 
 type Model {
-  Model(show: Bool, search_filter: Option(String))
+  Model(search_filter: Option(String))
 }
 
 type Msg {
@@ -26,13 +26,12 @@ type Msg {
 fn update(model: Model, msg: Msg) -> Model {
   case msg {
     NoOp -> model
-    SetSearchFilter(search_filter) ->
-      Model(..model, search_filter: search_filter)
+    SetSearchFilter(search_filter) -> Model(search_filter: search_filter)
   }
 }
 
 fn initial() -> Model {
-  Model(show: True, search_filter: None)
+  Model(search_filter: None)
 }
 
 pub type SidebarProps {
@@ -42,7 +41,7 @@ pub type SidebarProps {
 pub fn sidebar(socket: Socket, props) {
   let SidebarProps(pages: pages, active: active) = props
 
-  use socket, State(Model(show: show, search_filter: search_filter), dispatch) <- reducer(
+  use socket, State(Model(search_filter: search_filter), dispatch) <- reducer(
     socket,
     initial(),
     update,
