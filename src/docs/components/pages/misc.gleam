@@ -15,7 +15,7 @@ pub fn misc_page(socket: Socket, _props: MiscPageProps) {
         [class("flex flex-col p-10")],
         [
           article(
-            [class("prose")],
+            [class("prose dark:prose-invert max-w-[1000px] mx-auto")],
             [h1([class("text-xl mb-2")], [text("Miscellaneous")])],
           ),
         ],

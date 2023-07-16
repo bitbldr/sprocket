@@ -19,7 +19,7 @@ pub fn components_page(socket: Socket, _props: ComponentsPageProps) {
         [class("flex flex-col p-10")],
         [
           article(
-            [class("prose")],
+            [class("prose dark:prose-invert max-w-[1000px] mx-auto")],
             [
               h1([class("text-xl mb-2")], [text("Components")]),
               div(
