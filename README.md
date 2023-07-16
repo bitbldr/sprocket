@@ -1,13 +1,12 @@
 # Sprocket
-Persistent Reactive Sockets
+A framework for building real-time server components in [Gleam ✨](https://gleam.run/)
 
 [![Package Version](https://img.shields.io/hexpm/v/sprocket)](https://hex.pm/packages/sprocket)
 [![Hex Docs](https://img.shields.io/badge/hex-docs-ffaff3)](https://hexdocs.pm/sprocket/)
 
 [Demo Documentation](https://sprocket.live)
 
-A framework for building real-time server components in [Gleam ✨](https://gleam.run/). Heavily
-inspired by [Phoenix LiveView](https://github.com/phoenixframework/phoenix_live_view),
+Heavily inspired [Phoenix LiveView](https://github.com/phoenixframework/phoenix_live_view),
 [React](https://github.com/facebook/react) and [Elm](https://github.com/elm). The name "sprocket"
 is loosely derived from the metaphor of a bicycle's sprocket, cassette and chain.
 
@@ -26,12 +25,10 @@ Under the hood, a reducer is a lightweight [Gleam
 Actor](https://hexdocs.pm/gleam_otp/0.1.3/gleam/otp/actor/) OTP process (i.e. gen_server) and
 changes to the state (via dispatch) result in a re-render of the view.
 
-This library is a collection of patterns and common functions that facilitate building declarative
-views from composable functional components. Component interfaces snap together and are used to
-create higher-level views. Data flows down into components in the form of props
-and out of components in the form of events. It's useful to think of the data flow as "uni-directional" in
-that **State** always flows down via props while **Events** bubble up using handler functions
-(passed in as props, e.g. `on_some_event("Something happened")`).
+Component interfaces snap together and are used to create higher-level views. Data flows down into
+components in as props and out of components as events. Data flow as "uni-directional" in that
+**State** always flows down via props while **Events** bubble up via handler functions (passed in
+as props, e.g. `on_some_event("Something happened")`).
 
 This library is currently in a **proof of concept** state and should be considered highly unstable.
 There is still a lot of work to be done, including building out all HTML
@@ -40,12 +37,11 @@ coverage, providing extensive documentation of modules and API, and optimizing p
 
 ## Key Features
 
-- Real-time, scalable, server-side component framework
-- Renders initial HTML and efficiently patches update diffs using a WebSocket connection
-- Declarative views using functional components that re-render on prop changes
-- Strongly-typed functional reducers for state management
-- Built on lightweight OTP processes for composable & scalable state management
-- Encourages declarative and composable views
+- Real-time, scalable server-side component framework
+- Renders initial HTML and efficiently patches update diffs using a persistent WebSocket connection
+- Declarative and composable functional components that re-render when props change
+- Strongly-typed language means less runtime bugs and better peace of mind
+- Lightweight OTP processes used for composable & scalable state management
 
 ## Example
 

@@ -2,10 +2,11 @@ import gleam/list
 import gleam/option.{Option}
 import gleam/erlang/process.{Subject}
 import glisten/handler.{HandlerMessage}
-import sprocket/identifiable_callback.{CallbackFn, IdentifiableCallback}
-import sprocket/hooks.{Hook}
-import sprocket/utils/ordered_map.{OrderedMap}
-import sprocket/utils/unique.{Unique}
+import sprocket/internal/identifiable_callback.{CallbackFn,
+  IdentifiableCallback}
+import sprocket/internal/hooks.{Hook}
+import sprocket/internal/utils/ordered_map.{OrderedMap}
+import sprocket/internal/utils/unique.{Unique}
 
 pub type EventHandler {
   EventHandler(id: Unique, handler: CallbackFn)

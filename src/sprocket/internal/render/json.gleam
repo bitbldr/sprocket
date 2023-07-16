@@ -7,7 +7,7 @@ import sprocket/render.{
   RenderedAttribute, RenderedComponent, RenderedElement, RenderedEventHandler,
   RenderedText, Renderer,
 }
-import sprocket/constants.{EventAttrPrefix, KeyAttr, constant}
+import sprocket/internal/constants.{EventAttrPrefix, KeyAttr, constant}
 
 pub fn renderer() -> Renderer(Json) {
   Renderer(render: fn(el) { render(el) })

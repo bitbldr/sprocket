@@ -10,16 +10,16 @@ import gleam/http/request.{Request}
 import mist
 import mist/websocket
 import mist/internal/websocket.{TextMessage} as internal_websocket
-import sprocket/sprocket.{Sprocket}
-import sprocket/socket.{Updater, WebSocket}
+import sprocket/internal/sprocket.{Sprocket}
+import sprocket/internal/socket.{Updater, WebSocket}
 import sprocket/render.{RenderedElement}
-import sprocket/render/json as json_renderer
-import sprocket/element.{Element}
-import sprocket/patch.{Patch}
-import sprocket/identifiable_callback.{CallbackFn, CallbackWithValueFn}
-import sprocket/logger
-import sprocket/utils/uuid
-import sprocket/constants.{call_timeout}
+import sprocket/internal/render/json as json_renderer
+import sprocket/internal/element.{Element}
+import sprocket/internal/patch.{Patch}
+import sprocket/internal/identifiable_callback.{CallbackFn, CallbackWithValueFn}
+import sprocket/internal/logger
+import sprocket/internal/utils/uuid
+import sprocket/internal/constants.{call_timeout}
 import docs/utils/timer.{interval}
 
 pub type Time =

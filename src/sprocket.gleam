@@ -6,3 +6,7 @@ pub fn main() {
   // a specific module to run, but for now, we'll just call the main function
   docs.main()
 }
+
+pub fn start() {
+  todo
+}

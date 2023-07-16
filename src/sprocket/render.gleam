@@ -3,13 +3,13 @@ import gleam/list.{Continue, Stop}
 import gleam/option.{None, Option, Some}
 import gleam/dynamic.{Dynamic}
 import sprocket/html/attribute.{Attribute, Event}
-import sprocket/element.{
+import sprocket/internal/element.{
   AbstractFunctionalComponent, Component, Debug, Element, Keyed, Raw, SafeHtml,
 }
-import sprocket/socket.{ComponentHooks, ComponentWip, Socket}
-import sprocket/utils/unique
-import sprocket/utils/ordered_map
-import sprocket/logger
+import sprocket/internal/socket.{ComponentHooks, ComponentWip, Socket}
+import sprocket/internal/utils/unique
+import sprocket/internal/utils/ordered_map
+import sprocket/internal/logger
 
 pub type RenderedAttribute {
   RenderedAttribute(name: String, value: String)

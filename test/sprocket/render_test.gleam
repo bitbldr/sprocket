@@ -1,18 +1,18 @@
 import gleam/dynamic
 import gleam/option.{None, Some}
 import gleeunit/should
-import sprocket/socket.{Socket}
+import sprocket/internal/socket.{Socket}
 import sprocket/component.{component, render}
 import sprocket/html.{a, text}
 import sprocket/html/attribute.{attribute, classes}
-import sprocket/hooks.{WithDeps}
-import sprocket/hooks/callback.{callback}
-import sprocket/identifiable_callback.{CallbackFn}
+import sprocket/internal/hooks.{WithDeps}
+import sprocket/internal/hooks/callback.{callback}
+import sprocket/internal/identifiable_callback.{CallbackFn}
 import sprocket/render.{
   RenderedAttribute, RenderedComponent, RenderedElement, RenderedEventHandler,
   RenderedText,
 }
-import sprocket/render/identity
+import sprocket/internal/render/identity
 
 type TestProps {
   TestProps(title: String, href: String, is_active: Bool)

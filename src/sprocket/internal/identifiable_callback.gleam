@@ -1,4 +1,4 @@
-import sprocket/utils/unique.{Unique}
+import sprocket/internal/utils/unique.{Unique}
 
 pub type CallbackFn {
   CallbackFn(cb: fn() -> Nil)

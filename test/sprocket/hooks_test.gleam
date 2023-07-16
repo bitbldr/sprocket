@@ -2,15 +2,15 @@ import gleam/int
 import gleam/string
 import gleam/option.{None}
 import gleeunit/should
-import sprocket/socket.{Socket}
+import sprocket/internal/socket.{Socket}
 import sprocket/component.{component}
 import sprocket/html.{button, text}
 import sprocket/html/attribute.{id, on_click}
-import sprocket/hooks.{OnMount, OnUpdate, WithDeps, dep}
-import sprocket/hooks/reducer.{State, reducer}
-import sprocket/hooks/effect.{effect}
-import sprocket/hooks/callback.{callback}
-import sprocket/identifiable_callback.{CallbackFn}
+import sprocket/internal/hooks.{OnMount, OnUpdate, WithDeps, dep}
+import sprocket/internal/hooks/reducer.{State, reducer}
+import sprocket/internal/hooks/effect.{effect}
+import sprocket/internal/hooks/callback.{callback}
+import sprocket/internal/identifiable_callback.{CallbackFn}
 import test_helpers.{ClickEvent, live, render_event, render_html}
 
 type Model {

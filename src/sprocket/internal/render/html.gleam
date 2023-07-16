@@ -5,10 +5,10 @@ import sprocket/render.{
   RenderedAttribute, RenderedComponent, RenderedElement, RenderedEventHandler,
   RenderedText, Renderer, render_element, traverse,
 }
-import sprocket/constants.{
+import sprocket/internal/constants.{
   ClientScript, EventAttrPrefix, KeyAttr, MetaPreflightId, constant,
 }
-import sprocket/cassette.{Preflight}
+import sprocket/internal/cassette.{Preflight}
 import sprocket/html.{meta, script}
 import sprocket/html/attribute.{content, name, src}
 

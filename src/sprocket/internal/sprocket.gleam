@@ -3,21 +3,22 @@ import gleam/map.{Map}
 import gleam/otp/actor
 import gleam/erlang/process.{Subject}
 import gleam/option.{None, Option, Some}
-import sprocket/logger
-import sprocket/element.{Element}
-import sprocket/socket.{ComponentHooks,
-  EventHandler, Socket, Updater, WebSocket}
-import sprocket/hooks.{
+import sprocket/internal/logger
+import sprocket/internal/element.{Element}
+import sprocket/internal/socket.{
+  ComponentHooks, EventHandler, Socket, Updater, WebSocket,
+}
+import sprocket/internal/hooks.{
   Callback, Changed, Effect, EffectCleanup, EffectResult, Hook, HookDependencies,
   HookTrigger, OnMount, OnUpdate, Reducer, Unchanged, WithDeps, compare_deps,
 }
 import sprocket/render.{
   RenderResult, RenderedComponent, RenderedElement, live_render,
 }
-import sprocket/patch.{Patch}
-import sprocket/utils/ordered_map.{KeyedItem, OrderedMapIter}
-import sprocket/utils/unique.{Unique}
-import sprocket/exception.{throw_on_unexpected_hook_result}
+import sprocket/internal/patch.{Patch}
+import sprocket/internal/utils/ordered_map.{KeyedItem, OrderedMapIter}
+import sprocket/internal/utils/unique.{Unique}
+import sprocket/internal/exception.{throw_on_unexpected_hook_result}
 
 pub type Sprocket =
   Subject(Message)

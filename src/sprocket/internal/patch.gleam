@@ -8,8 +8,8 @@ import sprocket/render.{
   RenderedText,
 }
 import gleam/json.{Json}
-import sprocket/render/json as json_renderer
-import sprocket/constants.{EventAttrPrefix, constant}
+import sprocket/internal/render/json as json_renderer
+import sprocket/internal/constants.{EventAttrPrefix, constant}
 
 pub type Patch {
   NoOp

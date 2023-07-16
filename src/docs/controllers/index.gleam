@@ -2,8 +2,8 @@ import gleam/http/request.{Request}
 import gleam/http/response.{Response}
 import sprocket/render.{render}
 import sprocket/component.{component}
-import sprocket/render/html
-import sprocket/cassette
+import sprocket/internal/render/html
+import sprocket/internal/cassette
 import docs/views/page_view.{PageViewProps, page_view}
 import docs/app_context.{AppContext}
 import docs/page_route

@@ -6,8 +6,8 @@ import gleam/option.{None, Some}
 import sprocket/render.{
   RenderedAttribute, RenderedComponent, RenderedElement, RenderedText,
 }
-import sprocket/patch.{Change, Insert, Move, NoOp, Replace, Update}
-import sprocket/utils/ordered_map
+import sprocket/internal/patch.{Change, Insert, Move, NoOp, Replace, Update}
+import sprocket/internal/utils/ordered_map
 
 // gleeunit test functions end in `_test`
 pub fn text_change_test() {

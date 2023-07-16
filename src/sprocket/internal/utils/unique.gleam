@@ -1,4 +1,4 @@
-import sprocket/utils/uuid
+import sprocket/internal/utils/uuid
 
 pub opaque type Unique {
   Unique(id: String)

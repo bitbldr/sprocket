@@ -1,9 +1,9 @@
 import gleam/list
 import gleam/option.{Option}
 import gleam/dynamic.{Dynamic}
-import sprocket/exception.{throw_on_unexpected_deps_mismatch}
-import sprocket/identifiable_callback.{CallbackFn}
-import sprocket/utils/unique.{Unique}
+import sprocket/internal/exception.{throw_on_unexpected_deps_mismatch}
+import sprocket/internal/identifiable_callback.{CallbackFn}
+import sprocket/internal/utils/unique.{Unique}
 
 pub type HookDependencies =
   List(Dynamic)

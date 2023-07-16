@@ -1,13 +1,14 @@
 import gleam/option.{None, Option, Some}
-import sprocket/element.{Element}
-import sprocket/identifiable_callback.{CallbackFn, IdentifiableCallback}
-import sprocket/socket.{Socket}
-import sprocket/hooks.{
+import sprocket/internal/element.{Element}
+import sprocket/internal/identifiable_callback.{CallbackFn,
+  IdentifiableCallback}
+import sprocket/internal/socket.{Socket}
+import sprocket/internal/hooks.{
   Callback, CallbackResult, Changed, HookDependencies, HookTrigger, OnMount,
   OnUpdate, Unchanged, WithDeps, compare_deps,
 }
-import sprocket/exception.{throw_on_unexpected_hook_result}
-import sprocket/utils/unique
+import sprocket/internal/exception.{throw_on_unexpected_hook_result}
+import sprocket/internal/utils/unique
 
 pub fn callback(
   socket: Socket,

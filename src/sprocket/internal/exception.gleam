@@ -1,5 +1,5 @@
 import gleam/io
-import sprocket/logger
+import sprocket/internal/logger
 
 pub fn throw_on_unexpected_deps_mismatch(meta: any) {
   logger.error(

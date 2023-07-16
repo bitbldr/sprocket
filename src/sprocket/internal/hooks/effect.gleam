@@ -1,8 +1,8 @@
 import gleam/option.{None}
-import sprocket/socket.{Socket}
-import sprocket/element.{Element}
-import sprocket/hooks.{Effect, EffectCleanup, HookTrigger}
-import sprocket/utils/unique
+import sprocket/internal/socket.{Socket}
+import sprocket/internal/element.{Element}
+import sprocket/internal/hooks.{Effect, EffectCleanup, HookTrigger}
+import sprocket/internal/utils/unique
 
 pub fn effect(
   socket: Socket,

@@ -2,7 +2,7 @@ import gleam/list
 import gleam/string_builder
 import gleam/option.{None, Option, Some}
 import gleam/dynamic.{Dynamic}
-import sprocket/identifiable_callback.{IdentifiableCallback}
+import sprocket/internal/identifiable_callback.{IdentifiableCallback}
 
 pub type Attribute {
   Attribute(name: String, value: Dynamic)

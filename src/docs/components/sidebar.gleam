@@ -1,9 +1,9 @@
 import gleam/int
 import gleam/list
 import gleam/option.{None, Option, Some}
-import sprocket/socket.{Socket}
+import sprocket/internal/socket.{Socket}
 import sprocket/component.{component, render}
-import sprocket/hooks/reducer.{State, reducer}
+import sprocket/internal/hooks/reducer.{State, reducer}
 import sprocket/html.{a, div, keyed, text}
 import sprocket/html/attribute.{class, classes}
 import docs/utils/common.{maybe}

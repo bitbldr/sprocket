@@ -1,12 +1,12 @@
 import gleam/io
 import gleam/list
 import gleam/option.{None, Some}
-import sprocket/sprocket.{Sprocket}
-import sprocket/socket
-import sprocket/identifiable_callback.{CallbackFn}
+import sprocket/internal/sprocket.{Sprocket}
+import sprocket/internal/socket
+import sprocket/internal/identifiable_callback.{CallbackFn}
 import sprocket/render.{RenderedAttribute,
   RenderedElement, RenderedEventHandler}
-import sprocket/render/html as sprocket_render_html
+import sprocket/internal/render/html as sprocket_render_html
 
 pub fn live(view) {
   sprocket.start(None, Some(view), None)
