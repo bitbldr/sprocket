@@ -1,9 +1,9 @@
 import gleam/option.{Some}
-import sprocket/internal/socket.{Socket}
+import sprocket/socket.{Socket}
 import sprocket/component.{render}
-import sprocket/internal/hooks.{OnMount}
-import sprocket/internal/hooks/reducer.{State, reducer}
-import sprocket/internal/hooks/callback.{callback}
+import sprocket/hooks.{OnMount}
+import sprocket/hooks/reducer.{State, reducer}
+import sprocket/hooks/callback.{callback}
 import sprocket/internal/identifiable_callback.{CallbackFn}
 import sprocket/element.{Element}
 import sprocket/html.{aside, button, div, i}

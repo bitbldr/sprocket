@@ -1,6 +1,6 @@
 import gleam/list
 import gleam/string
-import sprocket/internal/socket.{Socket}
+import sprocket/socket.{Socket}
 import sprocket/component.{component, render}
 import sprocket/html.{a, div, i, span, text}
 import sprocket/html/attribute.{class}

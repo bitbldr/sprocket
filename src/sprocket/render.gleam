@@ -6,7 +6,7 @@ import sprocket/html/attribute.{Attribute, Event}
 import sprocket/element.{
   AbstractFunctionalComponent, Component, Debug, Element, Keyed, Raw, SafeHtml,
 }
-import sprocket/internal/socket.{ComponentHooks, ComponentWip, Socket}
+import sprocket/socket.{ComponentHooks, ComponentWip, Socket}
 import sprocket/internal/utils/unique
 import sprocket/internal/utils/ordered_map
 import sprocket/internal/logger

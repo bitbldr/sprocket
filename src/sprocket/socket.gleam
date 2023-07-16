@@ -4,7 +4,7 @@ import gleam/erlang/process.{Subject}
 import glisten/handler.{HandlerMessage}
 import sprocket/internal/identifiable_callback.{CallbackFn,
   IdentifiableCallback}
-import sprocket/internal/hooks.{Hook}
+import sprocket/hooks.{Hook}
 import sprocket/internal/utils/ordered_map.{OrderedMap}
 import sprocket/internal/utils/unique.{Unique}
 

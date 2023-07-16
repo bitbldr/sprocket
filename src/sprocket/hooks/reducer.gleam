@@ -2,8 +2,8 @@ import gleam/dynamic
 import gleam/otp/actor
 import gleam/erlang/process.{Subject}
 import sprocket/element.{Element}
-import sprocket/internal/socket.{Socket}
-import sprocket/internal/hooks
+import sprocket/socket.{Socket}
+import sprocket/hooks
 import sprocket/internal/utils/unique
 import sprocket/internal/constants.{call_timeout}
 

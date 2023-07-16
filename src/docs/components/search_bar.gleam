@@ -1,9 +1,9 @@
-import sprocket/internal/socket.{Socket}
+import sprocket/socket.{Socket}
 import sprocket/component.{render}
-import sprocket/internal/hooks.{WithDeps, dep}
-import sprocket/internal/hooks/callback.{callback}
+import sprocket/hooks.{WithDeps, dep}
+import sprocket/hooks/callback.{callback}
 import sprocket/internal/identifiable_callback.{CallbackWithValueFn}
-import sprocket/internal/hooks/reducer.{State, reducer}
+import sprocket/hooks/reducer.{State, reducer}
 import sprocket/html.{input}
 import sprocket/html/attribute.{class, input_type, on_input, placeholder, value}
 

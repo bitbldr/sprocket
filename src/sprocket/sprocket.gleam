@@ -5,10 +5,9 @@ import gleam/erlang/process.{Subject}
 import gleam/option.{None, Option, Some}
 import sprocket/internal/logger
 import sprocket/element.{Element}
-import sprocket/internal/socket.{
-  ComponentHooks, EventHandler, Socket, Updater, WebSocket,
-}
-import sprocket/internal/hooks.{
+import sprocket/socket.{ComponentHooks,
+  EventHandler, Socket, Updater, WebSocket}
+import sprocket/hooks.{
   Callback, Changed, Effect, EffectCleanup, EffectResult, Hook, HookDependencies,
   HookTrigger, OnMount, OnUpdate, Reducer, Unchanged, WithDeps, compare_deps,
 }

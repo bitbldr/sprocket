@@ -11,7 +11,7 @@ import mist
 import mist/websocket
 import mist/internal/websocket.{TextMessage} as internal_websocket
 import sprocket/sprocket.{Sprocket}
-import sprocket/internal/socket.{Updater, WebSocket}
+import sprocket/socket.{Updater, WebSocket}
 import sprocket/render.{RenderedElement}
 import sprocket/internal/render/json as json_renderer
 import sprocket/element.{Element}

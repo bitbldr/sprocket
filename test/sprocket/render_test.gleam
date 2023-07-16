@@ -1,12 +1,12 @@
 import gleam/dynamic
 import gleam/option.{None, Some}
 import gleeunit/should
-import sprocket/internal/socket.{Socket}
+import sprocket/socket.{Socket}
 import sprocket/component.{component, render}
 import sprocket/html.{a, text}
 import sprocket/html/attribute.{attribute, classes}
-import sprocket/internal/hooks.{WithDeps}
-import sprocket/internal/hooks/callback.{callback}
+import sprocket/hooks.{WithDeps}
+import sprocket/hooks/callback.{callback}
 import sprocket/internal/identifiable_callback.{CallbackFn}
 import sprocket/render.{
   RenderedAttribute, RenderedComponent, RenderedElement, RenderedEventHandler,

@@ -1,5 +1,5 @@
 import gleam/option.{Some}
-import sprocket/internal/socket.{Socket}
+import sprocket/socket.{Socket}
 import sprocket/component.{component, render}
 import docs/components/clock.{ClockProps, clock}
 import docs/components/counter.{CounterProps, counter}

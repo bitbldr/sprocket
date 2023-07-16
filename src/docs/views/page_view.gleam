@@ -1,4 +1,4 @@
-import sprocket/internal/socket.{Socket}
+import sprocket/socket.{Socket}
 import sprocket/component.{component, render}
 import sprocket/html.{body, div, head, html, link, meta}
 import sprocket/html/attribute.{

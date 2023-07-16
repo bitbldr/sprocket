@@ -1,4 +1,4 @@
-import sprocket/internal/socket.{Socket}
+import sprocket/socket.{Socket}
 import sprocket/component.{render}
 import sprocket/html.{div, h1, text}
 import sprocket/html/attribute.{class}

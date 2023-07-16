@@ -2,11 +2,11 @@ import gleam/io
 import gleam/erlang
 import gleam/int
 import gleam/option.{None, Option, Some}
-import sprocket/internal/socket.{Socket}
+import sprocket/socket.{Socket}
 import sprocket/component.{render}
-import sprocket/internal/hooks.{WithDeps, dep}
-import sprocket/internal/hooks/reducer.{State, reducer}
-import sprocket/internal/hooks/effect.{effect}
+import sprocket/hooks.{WithDeps, dep}
+import sprocket/hooks/reducer.{State, reducer}
+import sprocket/hooks/effect.{effect}
 import sprocket/html.{span, text}
 import docs/utils/timer.{interval}
 

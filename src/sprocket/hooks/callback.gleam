@@ -2,8 +2,8 @@ import gleam/option.{None, Option, Some}
 import sprocket/element.{Element}
 import sprocket/internal/identifiable_callback.{CallbackFn,
   IdentifiableCallback}
-import sprocket/internal/socket.{Socket}
-import sprocket/internal/hooks.{
+import sprocket/socket.{Socket}
+import sprocket/hooks.{
   Callback, CallbackResult, Changed, HookDependencies, HookTrigger, OnMount,
   OnUpdate, Unchanged, WithDeps, compare_deps,
 }
