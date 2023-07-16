@@ -97,7 +97,7 @@ fn hello_strings() -> List(HelloOption) {
     #("German", "Hallo"),
     #("Italian", "Ciao"),
     #("Portuguese", "Olá"),
-    #("Russian", "Приве, (Privet)"),
+    #("Hawaiian", "Aloha"),
     #("Chinese (Mandarin)", "你好,(Nǐ hǎo)"),
     #("Japanese", "こんにち, (Konnichiwa)"),
     #("Korean", "안녕하세, (Annyeonghaseyo)"),
