@@ -1,5 +1,5 @@
 import gleam/option.{None, Option, Some}
-import sprocket/internal/element.{Element}
+import sprocket/element.{Element}
 import sprocket/internal/identifiable_callback.{CallbackFn,
   IdentifiableCallback}
 import sprocket/internal/socket.{Socket}

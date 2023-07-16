@@ -4,7 +4,7 @@ import gleam/otp/actor
 import gleam/erlang/process.{Subject}
 import gleam/option.{None, Option, Some}
 import sprocket/internal/logger
-import sprocket/internal/element.{Element}
+import sprocket/element.{Element}
 import sprocket/internal/socket.{
   ComponentHooks, EventHandler, Socket, Updater, WebSocket,
 }

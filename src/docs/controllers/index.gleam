@@ -3,7 +3,6 @@ import gleam/http/response.{Response}
 import sprocket/render.{render}
 import sprocket/component.{component}
 import sprocket/internal/render/html
-import sprocket/internal/cassette
 import docs/views/page_view.{PageViewProps, page_view}
 import docs/app_context.{AppContext}
 import docs/page_route
@@ -18,9 +17,7 @@ pub fn index(req: Request(String), ctx: AppContext) -> Response(String) {
       ),
     )
 
-  let preflight = cassette.preflight(ctx.ca, view)
-
-  let body = render(view, html.renderer_with_preflight(preflight))
+  let body = render(view, html.preflight_renderer(ctx.ca, view))
 
   response.new(200)
   |> response.set_body(body)

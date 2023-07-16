@@ -1,4 +1,5 @@
 import gleam/list
+import gleam/erlang
 import gleam/option.{None, Option, Some}
 import gleam/string_builder.{StringBuilder}
 import sprocket/render.{
@@ -8,17 +9,30 @@ import sprocket/render.{
 import sprocket/internal/constants.{
   ClientScript, EventAttrPrefix, KeyAttr, MetaPreflightId, constant,
 }
-import sprocket/internal/cassette.{Preflight}
+import sprocket/element.{Element}
+import sprocket/cassette.{Cassette, Preflight}
 import sprocket/html.{meta, script}
 import sprocket/html/attribute.{content, name, src}
+import sprocket/internal/utils/uuid
 
 pub fn renderer() -> Renderer(String) {
   Renderer(render: fn(el) { string_builder.to_string(render(el)) })
 }
 
-pub fn renderer_with_preflight(preflight: Preflight) -> Renderer(String) {
+pub fn preflight_renderer(ca: Cassette, view: Element) -> Renderer(String) {
+  let assert Ok(preflight_id) = uuid.v4()
+
+  cassette.push_preflight(
+    ca,
+    Preflight(
+      id: preflight_id,
+      view: view,
+      created_at: erlang.system_time(erlang.Millisecond),
+    ),
+  )
+
   let preflight_meta =
-    meta([name(constant(MetaPreflightId)), content(preflight.id)])
+    meta([name(constant(MetaPreflightId)), content(preflight_id)])
     |> render_element()
 
   let sprocket_client =

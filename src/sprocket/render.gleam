@@ -3,7 +3,7 @@ import gleam/list.{Continue, Stop}
 import gleam/option.{None, Option, Some}
 import gleam/dynamic.{Dynamic}
 import sprocket/html/attribute.{Attribute, Event}
-import sprocket/internal/element.{
+import sprocket/element.{
   AbstractFunctionalComponent, Component, Debug, Element, Keyed, Raw, SafeHtml,
 }
 import sprocket/internal/socket.{ComponentHooks, ComponentWip, Socket}

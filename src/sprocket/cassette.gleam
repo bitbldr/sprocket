@@ -10,11 +10,11 @@ import gleam/http/request.{Request}
 import mist
 import mist/websocket
 import mist/internal/websocket.{TextMessage} as internal_websocket
-import sprocket/internal/sprocket.{Sprocket}
+import sprocket/sprocket.{Sprocket}
 import sprocket/internal/socket.{Updater, WebSocket}
 import sprocket/render.{RenderedElement}
 import sprocket/internal/render/json as json_renderer
-import sprocket/internal/element.{Element}
+import sprocket/element.{Element}
 import sprocket/internal/patch.{Patch}
 import sprocket/internal/identifiable_callback.{CallbackFn, CallbackWithValueFn}
 import sprocket/internal/logger
@@ -169,20 +169,10 @@ fn start_preflight_cleanup_job(
   process.send(ca, StartPreflightCleanupJob(fn() { cleanup_preflights(ca) }))
 }
 
-fn push_preflight(ca: Cassette, preflight: Preflight) -> Preflight {
+pub fn push_preflight(ca: Cassette, preflight: Preflight) -> Preflight {
   process.send(ca, PushPreflight(preflight))
 
   preflight
-}
-
-pub fn preflight(ca: Cassette, view: Element) {
-  let assert Ok(id) = uuid.v4()
-  Preflight(
-    id: id,
-    view: view,
-    created_at: erlang.system_time(erlang.Millisecond),
-  )
-  |> push_preflight(ca, _)
 }
 
 pub fn pop_preflight(ca: Cassette, id: String) -> Result(Preflight, Nil) {

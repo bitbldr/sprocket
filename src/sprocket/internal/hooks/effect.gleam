@@ -1,6 +1,6 @@
 import gleam/option.{None}
 import sprocket/internal/socket.{Socket}
-import sprocket/internal/element.{Element}
+import sprocket/element.{Element}
 import sprocket/internal/hooks.{Effect, EffectCleanup, HookTrigger}
 import sprocket/internal/utils/unique
 

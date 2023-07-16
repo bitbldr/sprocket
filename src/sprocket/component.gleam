@@ -1,5 +1,5 @@
 import gleam/dynamic
-import sprocket/internal/element.{Component, Element, FunctionalComponent}
+import sprocket/element.{Component, Element, FunctionalComponent}
 import sprocket/internal/socket.{Socket}
 
 pub fn component(c: FunctionalComponent(p), props: p) -> Element {

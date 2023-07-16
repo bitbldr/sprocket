@@ -3,7 +3,7 @@ import gleam/option.{None, Option, Some}
 import gleam/dynamic.{Dynamic}
 import gleam/string
 import gleam/string_builder
-import sprocket/internal/element.{Debug, Element, Keyed, Raw, SafeHtml}
+import sprocket/element.{Debug, Element, Keyed, Raw, SafeHtml}
 import sprocket/html/attribute.{Attribute}
 
 pub type Children =

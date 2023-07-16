@@ -1,7 +1,7 @@
 import gleam/io
 import gleam/list
 import gleam/option.{None, Some}
-import sprocket/internal/sprocket.{Sprocket}
+import sprocket/sprocket.{Sprocket}
 import sprocket/internal/socket
 import sprocket/internal/identifiable_callback.{CallbackFn}
 import sprocket/render.{RenderedAttribute,
