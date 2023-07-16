@@ -164,6 +164,15 @@ pub fn introduction_page(socket: Socket, _props: IntroductionPageProps) {
                           ),
                         ],
                       ),
+                      li(
+                        [],
+                        [
+                          span([class("font-bold")], [text("Open Source: ")]),
+                          text(
+                            "Sprocket is completely open-source and free to use. Contributions are welcome and encouraged!",
+                          ),
+                        ],
+                      ),
                     ],
                   ),
                 ],
