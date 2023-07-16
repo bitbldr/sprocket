@@ -18,15 +18,11 @@ import sprocket/element.{Element}
 import sprocket/internal/patch.{Patch}
 import sprocket/internal/identifiable_callback.{CallbackFn, CallbackWithValueFn}
 import sprocket/internal/logger
-import sprocket/internal/utils/uuid
 import sprocket/internal/constants.{call_timeout}
 import docs/utils/timer.{interval}
 
-pub type Time =
-  Int
-
 pub type Preflight {
-  Preflight(id: String, view: Element, created_at: Time)
+  Preflight(id: String, view: Element, created_at: Int)
 }
 
 pub type Cassette =
