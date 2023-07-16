@@ -101,6 +101,10 @@ pub fn h1(attrs: List(Attribute), children: Children) {
   el("h1", attrs, children)
 }
 
+pub fn h2(attrs: List(Attribute), children: Children) {
+  el("h2", attrs, children)
+}
+
 pub fn p(attrs: List(Attribute), children: Children) {
   el("p", attrs, children)
 }
@@ -115,4 +119,20 @@ pub fn input(attrs: List(Attribute)) {
 
 pub fn aside(attrs: List(Attribute), children: Children) {
   el("aside", attrs, children)
+}
+
+pub fn article(attrs: List(Attribute), children: Children) {
+  el("article", attrs, children)
+}
+
+pub fn ul(attrs: List(Attribute), children: Children) {
+  el("ul", attrs, children)
+}
+
+pub fn ol(attrs: List(Attribute), children: Children) {
+  el("ol", attrs, children)
+}
+
+pub fn li(attrs: List(Attribute), children: Children) {
+  el("li", attrs, children)
 }
