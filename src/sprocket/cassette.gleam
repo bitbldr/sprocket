@@ -19,10 +19,11 @@ import sprocket/internal/patch.{Patch}
 import sprocket/internal/identifiable_callback.{CallbackFn, CallbackWithValueFn}
 import sprocket/internal/logger
 import sprocket/internal/constants.{call_timeout}
+import sprocket/internal/csrf
 import docs/utils/timer.{interval}
 
 pub type Preflight {
-  Preflight(id: String, view: Element, created_at: Int)
+  Preflight(id: String, view: Element, csrf_token: String, created_at: Int)
 }
 
 pub type Cassette =
@@ -202,7 +203,12 @@ fn pop_sprocket(ca: Cassette, ws: WebSocket) {
   process.call(ca, PopSprocket(_, ws), call_timeout())
 }
 
-fn connect(ca: Cassette, ws: WebSocket, preflight_id: String) {
+fn connect(
+  ca: Cassette,
+  ws: WebSocket,
+  preflight_id: String,
+  preflight_csrf: String,
+) {
   let updater =
     Updater(send: fn(update) {
       let _ = websocket.send(ws, TextMessage(update_to_json(update)))
@@ -210,17 +216,25 @@ fn connect(ca: Cassette, ws: WebSocket, preflight_id: String) {
     })
 
   case pop_preflight(ca, preflight_id) {
-    Ok(Preflight(view: view, ..)) -> {
-      let sprocket = sprocket.start(Some(ws), Some(view), Some(updater))
-      push_sprocket(ca, sprocket)
+    Ok(Preflight(view: view, csrf_token: csrf_token, ..)) -> {
+      case csrf.validate(preflight_csrf, csrf_token) {
+        Ok(_) -> {
+          let sprocket = sprocket.start(Some(ws), Some(view), Some(updater))
+          push_sprocket(ca, sprocket)
 
-      // intitial live render
-      let rendered = sprocket.render(sprocket)
-      websocket.send(ws, TextMessage(rendered_to_json(rendered)))
+          // intitial live render
+          let rendered = sprocket.render(sprocket)
+          websocket.send(ws, TextMessage(rendered_to_json(rendered)))
 
-      logger.info("Sprocket connected!")
+          logger.info("Sprocket connected!")
 
-      Nil
+          Nil
+        }
+        Error(_) -> {
+          logger.error("CSRF token mismatch for preflight id:" <> preflight_id)
+          websocket.send(ws, TextMessage("Error: CSRF token invalid"))
+        }
+      }
     }
     Error(Nil) -> {
       logger.error("Error no sprocket found for preflight id:" <> preflight_id)
@@ -230,17 +244,33 @@ fn connect(ca: Cassette, ws: WebSocket, preflight_id: String) {
   }
 }
 
-type Event {
-  Event(kind: String, id: String, value: Option(String))
+type Payload {
+  JoinPayload(preflight_id: String, csrf_token: String)
+  EventPayload(kind: String, id: String, value: Option(String))
 }
 
-fn decode_event(event: Dynamic) {
-  event
-  |> dynamic.decode3(
-    Event,
-    field("kind", dynamic.string),
-    field("id", dynamic.string),
-    optional_field("value", dynamic.string),
+fn decode_join(data: Dynamic) {
+  data
+  |> dynamic.tuple2(
+    dynamic.string,
+    dynamic.decode2(
+      JoinPayload,
+      field("id", dynamic.string),
+      field("csrf", dynamic.string),
+    ),
+  )
+}
+
+fn decode_event(data: Dynamic) {
+  data
+  |> dynamic.tuple2(
+    dynamic.string,
+    dynamic.decode3(
+      EventPayload,
+      field("kind", dynamic.string),
+      field("id", dynamic.string),
+      optional_field("value", dynamic.string),
+    ),
   )
 }
 
@@ -251,63 +281,40 @@ fn handle_ws_message(
 ) {
   case msg {
     TextMessage(msg) -> {
-      case json.decode(msg, dynamic.tuple2(dynamic.string, dynamic.dynamic)) {
-        Ok(#("join", id)) -> {
-          case
-            id
-            |> dynamic.string
-          {
-            Ok(id) -> {
-              logger.info("New client joined with preflight id: " <> id)
+      case json.decode(msg, dynamic.any([decode_join, decode_event])) {
+        Ok(#("join", JoinPayload(id, csrf))) -> {
+          logger.info("New client joined with preflight id: " <> id)
 
-              connect(ca, ws, id)
-            }
-            Error(e) -> {
-              logger.error("Error decoding join id")
-              io.debug(e)
-
-              Nil
-            }
-          }
+          connect(ca, ws, id, csrf)
         }
-        Ok(#("event", event)) -> {
-          case decode_event(event) {
-            Ok(event) -> {
-              logger.info("Event: " <> event.kind <> " " <> event.id)
+        Ok(#("event", EventPayload(kind, id, value))) -> {
+          logger.info("Event: " <> kind <> " " <> id)
 
-              case get_sprocket(ca, ws) {
-                Ok(sprocket) -> {
-                  case sprocket.get_handler(sprocket, event.id) {
-                    Ok(socket.EventHandler(_, handler)) -> {
-                      // call the event handler
-                      case handler {
-                        CallbackFn(cb) -> {
-                          cb()
-                        }
-                        CallbackWithValueFn(cb) -> {
-                          case event.value {
-                            Some(value) -> cb(value)
-                            _ -> {
-                              logger.error("Error decoding event value:")
-                              io.debug(event)
-                              panic
-                            }
-                          }
+          case get_sprocket(ca, ws) {
+            Ok(sprocket) -> {
+              case sprocket.get_handler(sprocket, id) {
+                Ok(socket.EventHandler(_, handler)) -> {
+                  // call the event handler
+                  case handler {
+                    CallbackFn(cb) -> {
+                      cb()
+                    }
+                    CallbackWithValueFn(cb) -> {
+                      case value {
+                        Some(value) -> cb(value)
+                        _ -> {
+                          logger.error("Error: expected a value but got None")
+                          io.debug(value)
+                          panic
                         }
                       }
                     }
-                    _ -> Nil
                   }
                 }
                 _ -> Nil
               }
             }
-            Error(e) -> {
-              logger.error("Error decoding event")
-              io.debug(e)
-
-              Nil
-            }
+            _ -> Nil
           }
         }
         Error(e) -> {

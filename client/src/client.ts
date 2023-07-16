@@ -12,8 +12,14 @@ window.addEventListener("DOMContentLoaded", () => {
     .querySelector("meta[name=spkt-preflight-id]")
     ?.getAttribute("content");
 
+  const spktCsrfToken = document
+    .querySelector("meta[name=spkt-csrf-token]")
+    ?.getAttribute("content");
+
   socket.addEventListener("open", function (event) {
-    socket.send(JSON.stringify(["join", spktPreflightId]));
+    socket.send(
+      JSON.stringify(["join", { id: spktPreflightId, csrf: spktCsrfToken }])
+    );
   });
 
   socket.addEventListener("message", function (event) {

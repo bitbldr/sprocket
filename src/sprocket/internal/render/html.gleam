@@ -7,13 +7,15 @@ import sprocket/render.{
   RenderedText, Renderer, render_element, traverse,
 }
 import sprocket/internal/constants.{
-  ClientScript, EventAttrPrefix, KeyAttr, MetaPreflightId, constant,
+  ClientScript, EventAttrPrefix, KeyAttr, MetaCrsfToken, MetaPreflightId,
+  constant,
 }
 import sprocket/element.{Element}
 import sprocket/cassette.{Cassette, Preflight}
 import sprocket/html.{meta, script}
 import sprocket/html/attribute.{content, name, src}
 import sprocket/internal/utils/uuid
+import sprocket/internal/csrf
 
 pub fn renderer() -> Renderer(String) {
   Renderer(render: fn(el) { string_builder.to_string(render(el)) })
@@ -21,18 +23,24 @@ pub fn renderer() -> Renderer(String) {
 
 pub fn preflight_renderer(ca: Cassette, view: Element) -> Renderer(String) {
   let assert Ok(preflight_id) = uuid.v4()
+  let csrf_token = csrf.generate()
 
   cassette.push_preflight(
     ca,
     Preflight(
       id: preflight_id,
       view: view,
+      csrf_token: csrf_token,
       created_at: erlang.system_time(erlang.Millisecond),
     ),
   )
 
   let preflight_meta =
     meta([name(constant(MetaPreflightId)), content(preflight_id)])
+    |> render_element()
+
+  let csrf_meta =
+    meta([name(constant(MetaCrsfToken)), content(csrf_token)])
     |> render_element()
 
   let sprocket_client =
@@ -42,6 +50,7 @@ pub fn preflight_renderer(ca: Cassette, view: Element) -> Renderer(String) {
   Renderer(render: fn(el) {
     el
     |> inject_element("head", preflight_meta, Append)
+    |> inject_element("head", csrf_meta, Append)
     |> inject_element("body", sprocket_client, Append)
     |> render()
     |> string_builder.to_string()
