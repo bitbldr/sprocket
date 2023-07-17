@@ -19,7 +19,13 @@ import docs/components/pages/introduction.{
 import docs/components/pages/components.{ComponentsPageProps, components_page}
 import docs/components/pages/misc.{MiscPageProps, misc_page}
 import docs/components/pages/not_found.{NotFoundPageProps, not_found_page}
-import docs/page_route.{Components, Introduction, Misc, PageRoute, Unknown}
+import docs/components/pages/hooks.{HooksPageProps, hooks_page}
+import docs/components/pages/state_management.{
+  StateManagementPageProps, state_management_page,
+}
+import docs/page_route.{
+  Components, Hooks, Introduction, Misc, PageRoute, StateManagement, Unknown,
+}
 
 pub type PageViewProps {
   PageViewProps(route: PageRoute, path_segments: List(String))
@@ -31,6 +37,8 @@ pub fn page_view(socket: Socket, props: PageViewProps) {
   let pages = [
     Page("Introduction", Introduction),
     Page("Components", Components),
+    Page("State Management", StateManagement),
+    Page("Hooks", Hooks),
     Page("Misc.", Misc),
   ]
 
@@ -122,7 +130,7 @@ pub fn page_view(socket: Socket, props: PageViewProps) {
                   content: div(
                     [
                       class(
-                        "prose dark:prose-invert container mx-auto px-6 max-w-[1000px]",
+                        "prose dark:prose-invert container mx-auto p-10 max-w-[1000px]",
                       ),
                     ],
                     [
@@ -131,6 +139,12 @@ pub fn page_view(socket: Socket, props: PageViewProps) {
                           component(introduction_page, IntroductionPageProps)
                         Components ->
                           component(components_page, ComponentsPageProps)
+                        StateManagement ->
+                          component(
+                            state_management_page,
+                            StateManagementPageProps,
+                          )
+                        Hooks -> component(hooks_page, HooksPageProps)
                         Misc -> component(misc_page, MiscPageProps)
                         Unknown -> component(not_found_page, NotFoundPageProps)
                       },

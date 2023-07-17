@@ -14,51 +14,48 @@ pub fn components_page(socket: Socket, _props: ComponentsPageProps) {
   render(
     socket,
     [
-      div(
-        [class("flex flex-col p-10")],
+      article(
+        [],
         [
-          article(
+          h1([], [text("Components")]),
+          p(
             [],
             [
-              h1([], [text("Components")]),
-              p(
-                [],
-                [
-                  text(
-                    "Components let you encapsulate markup and functionality into independent and composable pieces. This page demonstrates how to use components to build a UI.",
-                  ),
-                ],
+              text(
+                "Components let you encapsulate markup and functionality into independent and composable pieces. This page demonstrates how to use components to build a UI.",
               ),
-              h2([], [text("Components as Building Blocks")]),
-              p(
-                [],
-                [
-                  text(
-                    "Components are the fundamental building blocks of your app, allowing you to create modular, reusable, and easy-to-maintain code.",
-                  ),
-                ],
+            ],
+          ),
+          h2([], [text("Components as Building Blocks")]),
+          p(
+            [],
+            [
+              text(
+                "Components are the fundamental building blocks of your app, allowing you to create modular, reusable, and easy-to-maintain code.",
               ),
-              p(
-                [],
-                [
-                  text(
-                    "A component is a function that takes a socket and props as arguments, and it may utilize hooks (we will cover hooks more in depth a bit later) to manage state and effects.",
-                  ),
-                ],
+            ],
+          ),
+          p(
+            [],
+            [
+              text(
+                "A component is a function that takes a socket and props as arguments, and it may utilize hooks (we will cover hooks more in depth a bit later) to manage state and effects.",
               ),
-              p(
-                [],
-                [
-                  text("Here is a simple example component we'll call "),
-                  code([], "hello_button"),
-                  text(
-                    " that renders a button. We'll also make use of some Tailwind CSS classes here to style our button, but you can use whichever style framework you prefer.",
-                  ),
-                ],
+            ],
+          ),
+          p(
+            [],
+            [
+              text("Here is a simple example component we'll call "),
+              code([], "hello_button"),
+              text(
+                " that renders a button. We'll also make use of some Tailwind CSS classes here to style our button, but you can use whichever style framework you prefer.",
               ),
-              code_snippet(
-                "gleam",
-                "
+            ],
+          ),
+          code_snippet(
+            "gleam",
+            "
                 import gleam/option.{None, Option, Some}
                 import sprocket/socket.{Socket}
                 import sprocket/component.{render}
@@ -88,44 +85,44 @@ pub fn components_page(socket: Socket, _props: ComponentsPageProps) {
                   )
                 }
                 ",
+          ),
+          p(
+            [],
+            [
+              text(
+                "As you can see, we've defined our component and it's props. The component takes a socket and props as arguments, and then renders a button with the label passed in as a prop. If no label is passed in, the button will render with the default label of \"Click me!\".",
               ),
-              p(
-                [],
-                [
-                  text(
-                    "As you can see, we've defined our component and it's props. The component takes a socket and props as arguments, and then renders a button with the label passed in as a prop. If no label is passed in, the button will render with the default label of \"Click me!\".",
-                  ),
-                ],
+            ],
+          ),
+          p(
+            [],
+            [
+              text(
+                "Because of Gleam's type system guarantees, components can be type checked at compile time, and the compiler will ensure that the component is given the correct props and that the component returns a valid view.",
               ),
-              p(
-                [],
-                [
-                  text(
-                    "Because of Gleam's type system guarantees, components can be type checked at compile time, and the compiler will ensure that the component is given the correct props and that the component returns a valid view.",
-                  ),
-                ],
+            ],
+          ),
+          p(
+            [],
+            [
+              text(
+                "To use this new component in a parent view, we can simply pass it into the ",
               ),
-              p(
-                [],
-                [
-                  text(
-                    "To use this new component in a parent view, we can simply pass it into the ",
-                  ),
-                  code([], "component"),
-                  text(" function along with the props we want to pass in."),
-                ],
+              code([], "component"),
+              text(" function along with the props we want to pass in."),
+            ],
+          ),
+          p(
+            [],
+            [
+              text(
+                "Let's take a look at an example of a page view component that uses the button component we defined above.",
               ),
-              p(
-                [],
-                [
-                  text(
-                    "Let's take a look at an example of a page view component that uses the button component we defined above.",
-                  ),
-                ],
-              ),
-              code_snippet(
-                "gleam",
-                "
+            ],
+          ),
+          code_snippet(
+            "gleam",
+            "
                 pub type PageViewProps {
                   PageViewProps
                 }
@@ -147,44 +144,42 @@ pub fn components_page(socket: Socket, _props: ComponentsPageProps) {
                   )
                 }
                 ",
+          ),
+          p([], [text("Here is our component in action:")]),
+          div([], [component(hello_button, HelloButtonProps(label: None))]),
+          p(
+            [],
+            [
+              text(
+                "That's looking pretty good, but let's add a label to our button. We can do that by passing in a label prop to our component.",
               ),
-              p([], [text("Here is our component in action:")]),
-              div([], [component(hello_button, HelloButtonProps(label: None))]),
-              p(
-                [],
-                [
-                  text(
-                    "That's looking pretty good, but let's add a label to our button. We can do that by passing in a label prop to our component.",
-                  ),
-                ],
-              ),
-              code_snippet(
-                "gleam",
-                "
+            ],
+          ),
+          code_snippet(
+            "gleam",
+            "
                 component(
                   button,
                   ButtonProps(label: Some(\"Say Hello!\")),
                 ),
                 ",
+          ),
+          div(
+            [class("my-4")],
+            [
+              component(
+                hello_button,
+                HelloButtonProps(label: Some("Say Hello!")),
               ),
-              div(
-                [class("my-4")],
-                [
-                  component(
-                    hello_button,
-                    HelloButtonProps(label: Some("Say Hello!")),
-                  ),
-                ],
-              ),
-              p([], [text("Excellent! Now our button has a proper label.")]),
-              p(
-                [],
-                [
-                  text(
-                    "But our humble button isn't very interesting yet. Let's say we want to add some functionality to our button. We can do that by
+            ],
+          ),
+          p([], [text("Excellent! Now our button has a proper label.")]),
+          p(
+            [],
+            [
+              text(
+                "But our humble button isn't very interesting yet. Let's say we want to add some functionality to our button. We can do that by
                     adding some state management via hooks, which we'll cover next.",
-                  ),
-                ],
               ),
             ],
           ),
