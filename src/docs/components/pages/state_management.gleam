@@ -282,7 +282,7 @@ pub fn state_management_page(socket: Socket, _props: StateManagementPageProps) {
             [],
             [
               text(
-                "Remember, all of these state and render updates are happening on the server. Events are being passed from the client to the server, the latest view is rendered and a minimal diff update is sent back to the client a which is then patched into the DOM. Very cool!",
+                "Remember, all of these state changes are happening on the server. Events are being passed from the client to the server, the latest view is rendered and a minimal diff update is sent back to the client a which is then patched into the DOM. Very cool!",
               ),
             ],
           ),
