@@ -4,12 +4,14 @@ import gleam/option.{None, Option, Some}
 import gleam/dynamic.{Dynamic}
 import sprocket/html/attribute.{Attribute, Event}
 import sprocket/element.{
-  AbstractFunctionalComponent, Component, Debug, Element, Keyed, Raw, SafeHtml,
+  AbstractFunctionalComponent, Component, Debug, Element, IgnoreUpdate, Keyed,
+  Raw, SafeHtml,
 }
 import sprocket/socket.{ComponentHooks, ComponentWip, Socket}
 import sprocket/internal/utils/unique
 import sprocket/internal/utils/ordered_map
 import sprocket/internal/logger
+import sprocket/internal/constants.{IgnoreUpdateAttr, constant}
 
 pub type RenderedAttribute {
   RenderedAttribute(name: String, value: String)
@@ -72,6 +74,32 @@ pub fn live_render(
       io.debug(live_render(socket, el, key, prev))
     }
     Keyed(key, el) -> live_render(socket, el, Some(key), prev)
+    IgnoreUpdate(el) -> {
+      case prev {
+        Some(prev) -> {
+          // since we're ignoring updates, no need to rerender children
+          // just return the previous rendered element with the ignore attribute
+          prev
+          |> append_attribute(RenderedAttribute(
+            constant(IgnoreUpdateAttr),
+            "true",
+          ))
+          |> RenderResult(socket, _)
+        }
+        None -> {
+          // render the element and add the ignore attribute
+          let RenderResult(socket, rendered) =
+            live_render(socket, el, key, prev)
+
+          rendered
+          |> append_attribute(RenderedAttribute(
+            constant(IgnoreUpdateAttr),
+            "true",
+          ))
+          |> RenderResult(socket, _)
+        }
+      }
+    }
     SafeHtml(html) -> safe_html(socket, html)
     Raw(text) -> raw(socket, text)
   }
@@ -362,5 +390,28 @@ pub fn find(
         _ -> Error(Nil)
       }
     }
+  }
+}
+
+pub fn append_attribute(
+  el: RenderedElement,
+  attr: RenderedAttribute,
+) -> RenderedElement {
+  case el {
+    RenderedElement(tag, key, attrs, children) -> {
+      RenderedElement(tag, key, list.append(attrs, [attr]), children)
+    }
+    RenderedComponent(fc, key, props, hooks, children) -> {
+      // since components are rendered as list of elements, we need to append the attribute to the
+      // element's children
+      RenderedComponent(
+        fc,
+        key,
+        props,
+        hooks,
+        list.map(children, fn(child) { append_attribute(child, attr) }),
+      )
+    }
+    _ -> el
   }
 }

@@ -2,6 +2,7 @@ import sprocket/socket.{Socket}
 import sprocket/component.{render}
 import sprocket/html.{article, div, h1, h2, li, p, span, text, ul}
 import sprocket/html/attribute.{class}
+import docs/utils/code.{code_snippet}
 
 pub type IntroductionPageProps {
   IntroductionPageProps
@@ -15,9 +16,9 @@ pub fn introduction_page(socket: Socket, _props: IntroductionPageProps) {
         [class("flex flex-col p-10")],
         [
           article(
-            [class("prose dark:prose-invert max-w-[1000px] mx-auto")],
+            [],
             [
-              h1([class("text-xl mb-2")], [text("Introduction")]),
+              h1([], [text("Introduction")]),
               p(
                 [],
                 [
@@ -39,7 +40,7 @@ pub fn introduction_page(socket: Socket, _props: IntroductionPageProps) {
                 ],
                 [
                   div(
-                    [class("mx-4")],
+                    [class("mr-2")],
                     [span([class("text-xl")], [text("🚧")])],
                   ),
                   div(
@@ -52,12 +53,12 @@ pub fn introduction_page(socket: Socket, _props: IntroductionPageProps) {
                     ],
                   ),
                   div(
-                    [class("mx-4")],
+                    [class("ml-2")],
                     [span([class("text-xl")], [text("🚧")])],
                   ),
                 ],
               ),
-              h2([class("text-lg mb-2")], [text("What is Sprocket?")]),
+              h2([], [text("What is Sprocket?")]),
               p(
                 [],
                 [
@@ -79,7 +80,7 @@ pub fn introduction_page(socket: Socket, _props: IntroductionPageProps) {
                   ),
                 ],
               ),
-              h2([class("text-lg mb-2")], [text("Why Sprocket?")]),
+              h2([], [text("Why Sprocket?")]),
               p(
                 [],
                 [
@@ -93,7 +94,7 @@ pub fn introduction_page(socket: Socket, _props: IntroductionPageProps) {
                   ),
                 ],
               ),
-              h2([class("text-lg mb-2")], [text("Key Features")]),
+              h2([], [text("Key Features")]),
               p(
                 [],
                 [
@@ -177,29 +178,53 @@ pub fn introduction_page(socket: Socket, _props: IntroductionPageProps) {
                   ),
                 ],
               ),
-              h2(
-                [class("text-lg mb-2")],
-                [text("Who Should Read This Documentation?")],
-              ),
+              h2([], [text("Who Should Read This Documentation?")]),
               p(
                 [],
                 [
                   text(
                     "
-                    This documentation is tailored to developers, architects, and enthusiasts who are eager to explore the world of Sprocket and functional programming with Gleam. Whether you are a seasoned Erlang/Elixir developer looking to venture into Gleam or a newcomer to the Erlang ecosystem, this documentation will guide you through the process of building real-time server-side components with confidence and proficiency.
+                    This documentation is tailored to developers, architects, and enthusiasts who are eager to explore the world of UI functional programming with Gleam. Whether you are a seasoned Erlang/Elixir developer looking to venture into Gleam or a newcomer to the Erlang ecosystem, this documentation will guide you through the process of building real-time server-side components with Sprocket.
                   ",
                   ),
                 ],
               ),
-              h2([class("text-lg mb-2")], [text("Getting Started")]),
               p(
                 [],
                 [
                   text(
                     "
-                    Before diving into the depths of Sprocket, make sure you have Gleam and the necessary dependencies installed on your system. Familiarity with functional programming concepts and the Erlang ecosystem will be beneficial, but not mandatory, as this documentation aims to be accessible to developers from various backgrounds.
+                    Familiarity with functional programming concepts and the Erlang ecosystem will be beneficial, but not mandatory, as this documentation aims to be accessible to developers from various backgrounds.
+                  ",
+                  ),
+                ],
+              ),
+              h2([], [text("Getting Started")]),
+              p(
+                [],
+                [
+                  text(
+                    "
+                    Before diving in, lets make sure you have Gleam and the necessary dependencies installed on your system. If you haven't already, head over to the Gleam installation guide and follow the instructions for your operating system.
 
                     Let's embark on this journey together and unlock the true potential of real-time server-side components with Sprocket and Gleam! Happy coding!
+                    ",
+                  ),
+                  text(
+                    "
+                     Once you have Gleam installed, you can create a new project with the following command:
+                    ",
+                  ),
+                  code_snippet("sh", "gleam new sprocket-demo"),
+                  text(
+                    "
+                    Then add sprocket as a dependency:
+                    ",
+                  ),
+                  code_snippet("sh", "gleam add sprocket"),
+                  text(
+                    "
+                    That's it! Now we can begin our journey and unlock the true potential of real-time server-side components with Sprocket and Gleam!
                     ",
                   ),
                 ],

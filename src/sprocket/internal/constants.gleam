@@ -4,6 +4,7 @@ pub type Const {
   MetaPreflightId
   MetaCrsfToken
   ClientScript
+  IgnoreUpdateAttr
 }
 
 pub fn constant(c: Const) -> String {
@@ -13,6 +14,7 @@ pub fn constant(c: Const) -> String {
     MetaPreflightId -> "spkt-preflight-id"
     MetaCrsfToken -> "spkt-csrf-token"
     ClientScript -> "/client.js"
+    IgnoreUpdateAttr -> "spkt-ignore-update"
   }
 }
 

@@ -3,7 +3,7 @@ import gleam/option.{None, Option, Some}
 import gleam/dynamic.{Dynamic}
 import gleam/string
 import gleam/string_builder
-import sprocket/element.{Debug, Element, Keyed, Raw, SafeHtml}
+import sprocket/element.{Debug, Element, IgnoreUpdate, Keyed, Raw, SafeHtml}
 import sprocket/html/attribute.{Attribute}
 
 pub type Children =
@@ -50,6 +50,10 @@ pub fn keyed(key: String, element: Element) {
   Keyed(key, element)
 }
 
+pub fn ignored(element: Element) {
+  IgnoreUpdate(element)
+}
+
 pub fn debug(id: String, meta: Option(Dynamic), element: Element) {
   Debug(id, meta, element)
 }
@@ -60,6 +64,10 @@ pub fn html(attrs: List(Attribute), children: Children) {
 
 pub fn head(attrs: List(Attribute), children: Children) {
   el("head", attrs, children)
+}
+
+pub fn title(title: String) {
+  el("title", [], [text(title)])
 }
 
 pub fn meta(attrs: List(Attribute)) {
@@ -135,4 +143,12 @@ pub fn ol(attrs: List(Attribute), children: Children) {
 
 pub fn li(attrs: List(Attribute), children: Children) {
   el("li", attrs, children)
+}
+
+pub fn pre(attrs: List(Attribute), children: Children) {
+  el("pre", attrs, children)
+}
+
+pub fn code(attrs: List(Attribute), body: String) {
+  el("code", attrs, [text(body)])
 }

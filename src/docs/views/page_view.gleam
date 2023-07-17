@@ -1,9 +1,12 @@
+import gleam/list
+import gleam/result
+import gleam/option.{None}
 import sprocket/socket.{Socket}
 import sprocket/component.{component, render}
-import sprocket/html.{body, div, head, html, link, meta}
+import sprocket/html.{body, div, head, html, link, meta, script, title}
 import sprocket/html/attribute.{
-  charset, class, content, crossorigin, href, integrity, lang, name,
-  referrerpolicy, rel,
+  charset, class, content, crossorigin, href, id, integrity, lang, name,
+  referrerpolicy, rel, src,
 }
 import docs/components/header.{HeaderProps, MenuItem, header}
 import docs/components/responsive_drawer.{
@@ -31,6 +34,12 @@ pub fn page_view(socket: Socket, props: PageViewProps) {
     Page("Misc.", Misc),
   ]
 
+  let page_title =
+    pages
+    |> find_page(route)
+    |> result.map(fn(page) { page.title <> " - Sprocket" })
+    |> result.unwrap("Sprocket")
+
   render(
     socket,
     [
@@ -40,6 +49,7 @@ pub fn page_view(socket: Socket, props: PageViewProps) {
           head(
             [],
             [
+              title(page_title),
               meta([charset("utf-8")]),
               meta([
                 name("viewport"),
@@ -63,6 +73,25 @@ pub fn page_view(socket: Socket, props: PageViewProps) {
                 crossorigin("anonymous"),
                 referrerpolicy("no-referrer"),
               ]),
+              link([
+                id("syntax-theme"),
+                rel("stylesheet"),
+                href(
+                  "https://unpkg.com/@highlightjs/cdn-assets@10.5.0/styles/atom-one-light.min.css",
+                ),
+              ]),
+              script(
+                [
+                  src(
+                    "//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.0.1/highlight.min.js",
+                  ),
+                ],
+                None,
+              ),
+              script(
+                [src("https://gleam.run/javascript/highlightjs-gleam.js")],
+                None,
+              ),
             ],
           ),
           body(
@@ -91,7 +120,11 @@ pub fn page_view(socket: Socket, props: PageViewProps) {
                 ResponsiveDrawerProps(
                   drawer: component(sidebar, SidebarProps(pages, route)),
                   content: div(
-                    [class("container mx-auto px-6")],
+                    [
+                      class(
+                        "prose dark:prose-invert container mx-auto px-6 max-w-[1000px]",
+                      ),
+                    ],
                     [
                       case route {
                         Introduction ->
@@ -111,4 +144,8 @@ pub fn page_view(socket: Socket, props: PageViewProps) {
       ),
     ],
   )
+}
+
+fn find_page(pages: List(Page), route: PageRoute) {
+  list.find(pages, fn(page) { page.route == route })
 }

@@ -14,6 +14,7 @@ pub type Element {
   Component(component: FunctionalComponent(Dynamic), props: Dynamic)
   Debug(id: String, meta: Option(Dynamic), element: Element)
   Keyed(key: String, element: Element)
+  IgnoreUpdate(element: Element)
   SafeHtml(html: String)
   Raw(text: String)
 }

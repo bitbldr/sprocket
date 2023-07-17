@@ -2,6 +2,7 @@ import morphdom from "morphdom";
 import { renderDom } from "./render";
 import { applyPatch } from "./patch";
 import { initEventHandlers } from "./events";
+import { constant } from "./constants";
 
 window.addEventListener("DOMContentLoaded", () => {
   let ws_protocol = location.protocol === "https:" ? "wss:" : "ws:";
@@ -36,7 +37,13 @@ window.addEventListener("DOMContentLoaded", () => {
           break;
       }
 
-      morphdom(document.documentElement, renderDom(dom));
+      morphdom(document.documentElement, renderDom(dom), {
+        onBeforeElUpdated: function (fromEl, toEl) {
+          if (toEl.hasAttribute(constant.IgnoreUpdate)) return false;
+
+          return true;
+        },
+      });
     }
   });
 
