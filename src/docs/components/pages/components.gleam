@@ -39,7 +39,8 @@ pub fn components_page(socket: Socket, _props: ComponentsPageProps) {
             [],
             [
               text(
-                "A component is a function that takes a socket and props as arguments, and it may utilize hooks (we will cover hooks more in depth a bit later) to manage state and effects.",
+                "A component is a function that takes a socket and props as arguments, and it may utilize hooks (we will cover hooks more in depth a
+                bit later) to manage state and effects, and returns a list of child elements.",
               ),
             ],
           ),
