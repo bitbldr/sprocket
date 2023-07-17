@@ -184,9 +184,16 @@ pub fn live_service(_req: Request(mist.Body), ca: Cassette) {
   })
   |> websocket.on_init(fn(_ws) { Nil })
   |> websocket.on_close(fn(ws) {
-    let assert Ok(_) = pop_sprocket(ca, ws)
+    let spkt = pop_sprocket(ca, ws)
 
-    Nil
+    case spkt {
+      Ok(sprocket) -> sprocket.stop(sprocket)
+      Error(_) -> {
+        logger.error("failed to pop sprocket for websoket:")
+        io.debug(ws)
+        Nil
+      }
+    }
   })
   |> mist.upgrade
 }
