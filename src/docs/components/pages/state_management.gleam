@@ -62,7 +62,7 @@ pub fn state_management_page(socket: Socket, _props: StateManagementPageProps) {
               ),
             ],
           ),
-          p([], [text("Next we define our reducer function:")]),
+          p([], [text("Next we define our update function:")]),
           codeblock(
             "gleam",
             "
