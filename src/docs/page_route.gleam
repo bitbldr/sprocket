@@ -3,8 +3,9 @@ import docs/utils/logger
 pub type PageRoute {
   Introduction
   Components
-  Hooks
   StateManagement
+  Hooks
+  Events
   Misc
   Unknown
 }
@@ -15,6 +16,7 @@ pub fn from_string(route: String) -> PageRoute {
     "/components" -> Components
     "/state" -> StateManagement
     "/hooks" -> Hooks
+    "/events" -> Events
     "/misc" -> Misc
     _ -> Unknown
   }
@@ -26,6 +28,7 @@ pub fn href(route: PageRoute) -> String {
     Components -> "/components"
     StateManagement -> "/state"
     Hooks -> "/hooks"
+    Events -> "/events"
     Misc -> "/misc"
     Unknown -> {
       logger.error("Unknown page route")

@@ -25,10 +25,10 @@ Under the hood, a reducer is a lightweight [Gleam
 Actor](https://hexdocs.pm/gleam_otp/0.1.3/gleam/otp/actor/) OTP process (i.e. gen_server) and
 changes to the state (via dispatch) result in a re-render of the view.
 
-Component interfaces snap together and are used to create higher-level views. Data flows down into
-components in as props and out of components as events. Data flow as "uni-directional" in that
-**State** always flows down via props while **Events** bubble up via handler functions (passed in
-as props, e.g. `on_some_event("Something happened")`).
+Component interfaces snap together and are used to create higher-level views. Data flow is
+"uni-directional" in that **State** always flows down into components as props while **Events**
+flow up out of components through event handlers (which are also passed in as props, e.g.
+`on_some_event("Something happened")`). 
 
 This library is currently in a **proof of concept** state and should be considered highly unstable.
 There is still a lot of work to be done, including building out all HTML

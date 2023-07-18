@@ -20,11 +20,13 @@ import docs/components/pages/components.{ComponentsPageProps, components_page}
 import docs/components/pages/misc.{MiscPageProps, misc_page}
 import docs/components/pages/not_found.{NotFoundPageProps, not_found_page}
 import docs/components/pages/hooks.{HooksPageProps, hooks_page}
+import docs/components/pages/events.{EventsPageProps, events_page}
 import docs/components/pages/state_management.{
   StateManagementPageProps, state_management_page,
 }
 import docs/page_route.{
-  Components, Hooks, Introduction, Misc, PageRoute, StateManagement, Unknown,
+  Components, Events, Hooks, Introduction, Misc, PageRoute, StateManagement,
+  Unknown,
 }
 
 pub type PageViewProps {
@@ -39,6 +41,7 @@ pub fn page_view(socket: Socket, props: PageViewProps) {
     Page("Components", Components),
     Page("State Management", StateManagement),
     Page("Hooks", Hooks),
+    Page("Events", Events),
     Page("Misc.", Misc),
   ]
 
@@ -130,7 +133,7 @@ pub fn page_view(socket: Socket, props: PageViewProps) {
                   content: div(
                     [
                       class(
-                        "prose dark:prose-invert container mx-auto p-10 max-w-[1000px]",
+                        "prose dark:prose-invert prose-sm md:prose-base container mx-auto p-12",
                       ),
                     ],
                     [
@@ -145,6 +148,7 @@ pub fn page_view(socket: Socket, props: PageViewProps) {
                             StateManagementPageProps,
                           )
                         Hooks -> component(hooks_page, HooksPageProps)
+                        Events -> component(events_page, EventsPageProps)
                         Misc -> component(misc_page, MiscPageProps)
                         Unknown -> component(not_found_page, NotFoundPageProps)
                       },

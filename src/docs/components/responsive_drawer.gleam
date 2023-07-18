@@ -79,7 +79,7 @@ pub fn responsive_drawer(socket: Socket, props) {
             [
               classes([
                 case show {
-                  True -> Some("block absolute top-0 left-0 bottom-0")
+                  True -> Some("block fixed top-0 left-0 bottom-0")
                   False -> Some("hidden")
                 },
                 Some(
@@ -99,19 +99,20 @@ pub fn responsive_drawer(socket: Socket, props) {
             ],
           ),
           div(
-            [class("flex-1")],
+            [class("relative flex-1")],
             [
               button(
                 [
                   on_click(toggle_drawer),
                   class(
                     "
+                    sticky
+                    top-2
                     inline-flex
                     sm:hidden
                     items-center
                     p-2
-                    mt-2
-                    ml-3
+                    m-2
                     text-sm
                     text-gray-500
                     rounded-lg

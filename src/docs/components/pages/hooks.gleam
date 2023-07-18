@@ -19,7 +19,7 @@ pub fn hooks_page(socket: Socket, _props: HooksPageProps) {
             [
               text(
                 "Hooks are a core concept in Sprocket. They are a way to implement stateful logic, produce and consume side-effects,
-                and much more. They also make it easy to share logic across many components or with the community.",
+                and much more. They also make it easy to isolate and share logic across components.",
               ),
             ],
           ),

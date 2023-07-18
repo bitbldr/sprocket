@@ -6,7 +6,7 @@ import sprocket/html/attribute.{class}
 
 pub fn code_snippet(language: String, body: String) {
   div(
-    [class("not-prose")],
+    [class("not-prose overflow-x-auto")],
     [
       ignored(pre(
         [],

@@ -9,6 +9,13 @@ module.exports = {
         ...tailwindColors,
         gray: tailwindColors.neutral,
       },
+      typography: {
+        DEFAULT: {
+          css: {
+            maxWidth: "100ch",
+          },
+        },
+      },
     },
   },
   plugins: [require("@tailwindcss/typography")],
