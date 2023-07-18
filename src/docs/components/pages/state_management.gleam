@@ -1,9 +1,9 @@
 import sprocket/socket.{Socket}
 import sprocket/component.{component, render}
-import sprocket/html.{article, code_text, div, h1, h2, p, text}
-import sprocket/html/attributes.{class}
+import sprocket/html.{article, code_text, h1, h2, p, text}
 import docs/components/say_hello.{SayHelloProps, say_hello}
-import docs/utils/code.{code_snippet}
+import docs/utils/common.{example}
+import docs/utils/code.{codeblock}
 
 pub type StateManagementPageProps {
   StateManagementPageProps
@@ -41,7 +41,7 @@ pub fn state_management_page(socket: Socket, _props: StateManagementPageProps) {
             ],
           ),
           p([], [text("First we define our state struct and message types:")]),
-          code_snippet(
+          codeblock(
             "gleam",
             "
             type Model {
@@ -63,7 +63,7 @@ pub fn state_management_page(socket: Socket, _props: StateManagementPageProps) {
             ],
           ),
           p([], [text("Next we define our reducer function:")]),
-          code_snippet(
+          codeblock(
             "gleam",
             "
             fn update(model: Model, msg: Msg) -> Model {
@@ -84,12 +84,12 @@ pub fn state_management_page(socket: Socket, _props: StateManagementPageProps) {
               text(" hook in our component that uses our update function:"),
             ],
           ),
-          code_snippet(
+          codeblock(
             "gleam",
             "
             use socket, State(Model(selection: selection, options: options), dispatch) <- reducer(
               socket,
-              initial(hello_strings()),
+              initial(hello_options()),
               update,
             )
             ",
@@ -130,7 +130,7 @@ pub fn state_management_page(socket: Socket, _props: StateManagementPageProps) {
               ),
             ],
           ),
-          code_snippet(
+          codeblock(
             "gleam",
             "
             use socket, on_say_hello <- callback(
@@ -149,7 +149,7 @@ pub fn state_management_page(socket: Socket, _props: StateManagementPageProps) {
               ),
             ],
           ),
-          code_snippet(
+          codeblock(
             "gleam",
             "
             import gleam/int
@@ -164,6 +164,34 @@ pub fn state_management_page(socket: Socket, _props: StateManagementPageProps) {
             import sprocket/internal/identifiable_callback.{CallbackFn}
             import sprocket/html.{button, div, span, text}
             import sprocket/html/attributes.{class, on_click}
+
+            type HelloOption =
+              #(String, String)
+
+            fn hello_options() -> List(HelloOption) {
+              [
+                #(\"English\", \"Hello\"),
+                #(\"Spanish\", \"Hola\"),
+                #(\"French\", \"Bonjour\"),
+                #(\"German\", \"Hallo\"),
+                #(\"Italian\", \"Ciao\"),
+                #(\"Portuguese\", \"Olá\"),
+                #(\"Hawaiian\", \"Aloha\"),
+                #(\"Chinese (Mandarin)\", \"你好,(Nǐ hǎo)\"),
+                #(\"Japanese\", \"こんにち, (Konnichiwa)\"),
+                #(\"Korean\", \"안녕하세, (Annyeonghaseyo)\"),
+                #(\"Arabic\", \"مرحب, (Marhaba)\"),
+                #(\"Hindi\", \"नमस्त, (Namaste)\"),
+                #(\"Turkish\", \"Merhaba\"),
+                #(\"Dutch\", \"Hallo\"),
+                #(\"Swedish\", \"Hej\"),
+                #(\"Norwegian\", \"Hei\"),
+                #(\"Danish\", \"Hej\"),
+                #(\"Greek\", \"Γεια σας,(Yia sas)\"),
+                #(\"Polish\", \"Cześć\"),
+                #(\"Swahili\", \"Hujambo\"),
+              ]
+            }
 
             type Model {
               Model(selection: Option(Int), options: List(HelloOption))
@@ -193,7 +221,7 @@ pub fn state_management_page(socket: Socket, _props: StateManagementPageProps) {
             pub fn say_hello(socket: Socket, _props: SayHelloProps) {
               use socket, State(Model(selection: selection, options: options), dispatch) <- reducer(
                 socket,
-                initial(hello_strings()),
+                initial(hello_options()),
                 update,
               )
 
@@ -240,37 +268,9 @@ pub fn state_management_page(socket: Socket, _props: StateManagementPageProps) {
                 ],
               )
             }
-
-            type HelloOption =
-              #(String, String)
-
-            fn hello_strings() -> List(HelloOption) {
-              [
-                #(\"English\", \"Hello\"),
-                #(\"Spanish\", \"Hola\"),
-                #(\"French\", \"Bonjour\"),
-                #(\"German\", \"Hallo\"),
-                #(\"Italian\", \"Ciao\"),
-                #(\"Portuguese\", \"Olá\"),
-                #(\"Hawaiian\", \"Aloha\"),
-                #(\"Chinese (Mandarin)\", \"你好,(Nǐ hǎo)\"),
-                #(\"Japanese\", \"こんにち, (Konnichiwa)\"),
-                #(\"Korean\", \"안녕하세, (Annyeonghaseyo)\"),
-                #(\"Arabic\", \"مرحب, (Marhaba)\"),
-                #(\"Hindi\", \"नमस्त, (Namaste)\"),
-                #(\"Turkish\", \"Merhaba\"),
-                #(\"Dutch\", \"Hallo\"),
-                #(\"Swedish\", \"Hej\"),
-                #(\"Norwegian\", \"Hei\"),
-                #(\"Danish\", \"Hej\"),
-                #(\"Greek\", \"Γεια σας,(Yia sas)\"),
-                #(\"Polish\", \"Cześć\"),
-                #(\"Swahili\", \"Hujambo\"),
-              ]
-            }
             ",
           ),
-          div([class("my-4")], [component(say_hello, SayHelloProps)]),
+          example([component(say_hello, SayHelloProps)]),
           p(
             [],
             [
@@ -291,7 +291,7 @@ pub fn state_management_page(socket: Socket, _props: StateManagementPageProps) {
             [],
             [
               text(
-                "These are just two of the hooks that are available in Sprocket. There are many more to explore! We'll cover more about hooks in-depth in the next section.",
+                "These are just two of the hooks that are available in Sprocket. There are many more to explore! We'll cover hooks more in-depth in the next section.",
               ),
             ],
           ),

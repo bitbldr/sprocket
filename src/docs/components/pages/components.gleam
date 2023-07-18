@@ -3,8 +3,9 @@ import sprocket/socket.{Socket}
 import sprocket/component.{component, render}
 import sprocket/html.{article, code_text, div, h1, h2, p, text}
 import sprocket/html/attributes.{class}
-import docs/utils/code.{code_snippet}
+import docs/utils/code.{codeblock}
 import docs/components/hello_button.{HelloButtonProps, hello_button}
+import docs/utils/common.{example}
 
 pub type ComponentsPageProps {
   ComponentsPageProps
@@ -54,7 +55,7 @@ pub fn components_page(socket: Socket, _props: ComponentsPageProps) {
               ),
             ],
           ),
-          code_snippet(
+          codeblock(
             "gleam",
             "
                 import gleam/option.{None, Option, Some}
@@ -121,7 +122,7 @@ pub fn components_page(socket: Socket, _props: ComponentsPageProps) {
               ),
             ],
           ),
-          code_snippet(
+          codeblock(
             "gleam",
             "
                 pub type PageViewProps {
@@ -147,7 +148,7 @@ pub fn components_page(socket: Socket, _props: ComponentsPageProps) {
                 ",
           ),
           p([], [text("Here is our component in action:")]),
-          div([], [component(hello_button, HelloButtonProps(label: None))]),
+          example([component(hello_button, HelloButtonProps(label: None))]),
           p(
             [],
             [
@@ -156,7 +157,7 @@ pub fn components_page(socket: Socket, _props: ComponentsPageProps) {
               ),
             ],
           ),
-          code_snippet(
+          codeblock(
             "gleam",
             "
                 component(
@@ -165,15 +166,9 @@ pub fn components_page(socket: Socket, _props: ComponentsPageProps) {
                 ),
                 ",
           ),
-          div(
-            [class("my-4")],
-            [
-              component(
-                hello_button,
-                HelloButtonProps(label: Some("Say Hello!")),
-              ),
-            ],
-          ),
+          example([
+            component(hello_button, HelloButtonProps(label: Some("Say Hello!"))),
+          ]),
           p([], [text("Excellent! Now our button has a proper label.")]),
           p(
             [],

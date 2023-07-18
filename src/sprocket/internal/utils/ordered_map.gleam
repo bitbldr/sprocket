@@ -25,6 +25,30 @@ pub fn from(
   OrderedMap(ordered, map, size)
 }
 
+pub fn from_list(ordered: List(KeyedItem(k, a))) -> OrderedMap(k, a) {
+  let #(r_ordered, map, size) =
+    ordered
+    |> list.fold(
+      #([], map.new(), 0),
+      fn(acc, keyed_item) {
+        let #(ordered, map, size) = acc
+        let KeyedItem(key, value) = keyed_item
+
+        let keyed_item = KeyedItem(key, value)
+        case map.has_key(map, key) {
+          True -> #(ordered, map, size)
+          False -> #(
+            [keyed_item, ..ordered],
+            map.insert(map, key, value),
+            size + 1,
+          )
+        }
+      },
+    )
+
+  OrderedMap(list.reverse(r_ordered), map, size)
+}
+
 pub fn insert(m: OrderedMap(k, a), key: k, value: a) -> OrderedMap(k, a) {
   // TODO: This insertion could probably be more efficient than 2n
   OrderedMap(
@@ -93,7 +117,69 @@ pub fn next(
   }
 }
 
+/// Folds over the map, passing each item to the given function.
 pub fn fold(m: OrderedMap(k, a), acc: b, func: fn(b, KeyedItem(k, a)) -> b) -> b {
   m.ordered
   |> list.fold(acc, func)
+}
+
+/// Maps over the map, passing each item to the given function.
+pub fn map(m: OrderedMap(k, a), func: fn(KeyedItem(k, a)) -> c) -> List(c) {
+  m.ordered
+  |> list.map(func)
+}
+
+/// Maps over the map, passing the index of each item to the given function.
+pub fn index_map(
+  m: OrderedMap(k, a),
+  func: fn(Int, KeyedItem(k, a)) -> c,
+) -> List(c) {
+  m.ordered
+  |> list.index_map(func)
+}
+
+/// Returns the next item from key in the ordered map, if it exists.
+pub fn find_next(m: OrderedMap(k, a), key: k) -> Result(a, Nil) {
+  case m.ordered {
+    [] -> Error(Nil)
+    [item, ..rest] ->
+      case item {
+        KeyedItem(k, v) ->
+          case k == key {
+            True -> find_next_helper(rest)
+            False -> find_next(OrderedMap(rest, m.map, m.size), key)
+          }
+      }
+  }
+}
+
+fn find_next_helper(ordered: List(KeyedItem(k, a))) -> Result(a, Nil) {
+  case ordered {
+    [item, ..] -> Ok(item.value)
+    _ -> Error(Nil)
+  }
+}
+
+/// Returns the previous item from key in the ordered map, if it exists.
+pub fn find_previous(m: OrderedMap(k, a), key: k) -> Result(a, Nil) {
+  find_previous_helper(m, key, Error(Nil))
+}
+
+fn find_previous_helper(
+  m: OrderedMap(k, a),
+  key: k,
+  prev: Result(a, Nil),
+) -> Result(a, Nil) {
+  case m.ordered {
+    [] -> Error(Nil)
+    [item, ..rest] ->
+      case item {
+        KeyedItem(k, v) ->
+          case k == key {
+            True -> prev
+            False ->
+              find_previous_helper(OrderedMap(rest, m.map, m.size), key, Ok(v))
+          }
+      }
+  }
 }

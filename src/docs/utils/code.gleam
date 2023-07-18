@@ -4,7 +4,7 @@ import gleam/int
 import sprocket/html.{code_text, div, ignored, pre}
 import sprocket/html/attributes.{class}
 
-pub fn code_snippet(language: String, body: String) {
+pub fn codeblock(language: String, body: String) {
   div(
     [class("not-prose overflow-x-auto")],
     [

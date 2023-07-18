@@ -1,5 +1,9 @@
 import docs/utils/logger
 
+pub type Page {
+  Page(title: String, route: PageRoute)
+}
+
 pub type PageRoute {
   Introduction
   Components

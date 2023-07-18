@@ -8,11 +8,13 @@ import sprocket/html/attributes.{
   charset, class, content, crossorigin, href, id, integrity, lang, name,
   referrerpolicy, rel, src,
 }
+import sprocket/internal/utils/ordered_map.{KeyedItem}
 import docs/components/header.{HeaderProps, MenuItem, header}
 import docs/components/responsive_drawer.{
   ResponsiveDrawerProps, responsive_drawer,
 }
-import docs/components/sidebar.{Page, SidebarProps, sidebar}
+import docs/components/sidebar.{SidebarProps, sidebar}
+import docs/components/prev_next_nav.{PrevNextNavProps, prev_next_nav}
 import docs/components/pages/introduction.{
   IntroductionPageProps, introduction_page,
 }
@@ -25,8 +27,8 @@ import docs/components/pages/state_management.{
   StateManagementPageProps, state_management_page,
 }
 import docs/page_route.{
-  Components, Events, Hooks, Introduction, Misc, PageRoute, StateManagement,
-  Unknown,
+  Components, Events, Hooks, Introduction, Misc, Page, PageRoute,
+  StateManagement, Unknown,
 }
 
 pub type PageViewProps {
@@ -36,18 +38,22 @@ pub type PageViewProps {
 pub fn page_view(socket: Socket, props: PageViewProps) {
   let PageViewProps(route: route, ..) = props
 
-  let pages = [
-    Page("Introduction", Introduction),
-    Page("Components", Components),
-    Page("State Management", StateManagement),
-    Page("Hooks", Hooks),
-    Page("Events", Events),
-    Page("Misc.", Misc),
-  ]
+  // TODO: use memoization hook to avoid re-computing this on every render
+  let pages =
+    [
+      Page("Introduction", Introduction),
+      Page("Components", Components),
+      Page("State Management", StateManagement),
+      Page("Hooks", Hooks),
+      Page("Events", Events),
+      Page("Misc.", Misc),
+    ]
+    |> list.map(fn(page) { KeyedItem(page.route, page) })
+    |> ordered_map.from_list()
 
   let page_title =
     pages
-    |> find_page(route)
+    |> ordered_map.get(route)
     |> result.map(fn(page) { page.title <> " - Sprocket" })
     |> result.unwrap("Sprocket")
 
@@ -152,6 +158,7 @@ pub fn page_view(socket: Socket, props: PageViewProps) {
                         Misc -> component(misc_page, MiscPageProps)
                         Unknown -> component(not_found_page, NotFoundPageProps)
                       },
+                      component(prev_next_nav, PrevNextNavProps(pages, route)),
                     ],
                   ),
                 ),
@@ -162,8 +169,4 @@ pub fn page_view(socket: Socket, props: PageViewProps) {
       ),
     ],
   )
-}
-
-fn find_page(pages: List(Page), route: PageRoute) {
-  list.find(pages, fn(page) { page.route == route })
 }

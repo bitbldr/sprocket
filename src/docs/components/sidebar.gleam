@@ -1,18 +1,14 @@
 import gleam/int
-import gleam/list
 import gleam/option.{None, Option, Some}
 import sprocket/socket.{Socket}
 import sprocket/component.{component, render}
 import sprocket/hooks/reducer.{State, reducer}
 import sprocket/html.{a, div, keyed, text}
 import sprocket/html/attributes.{class, classes}
+import sprocket/internal/utils/ordered_map.{KeyedItem, OrderedMap}
 import docs/utils/common.{maybe}
 import docs/components/search_bar.{SearchBarProps, search_bar}
-import docs/page_route.{PageRoute}
-
-pub type Page {
-  Page(title: String, route: PageRoute)
-}
+import docs/page_route.{Page, PageRoute}
 
 type Model {
   Model(search_filter: Option(String))
@@ -35,7 +31,7 @@ fn initial() -> Model {
 }
 
 pub type SidebarProps {
-  SidebarProps(pages: List(Page), active: PageRoute)
+  SidebarProps(pages: OrderedMap(PageRoute, Page), active: PageRoute)
 }
 
 pub fn sidebar(socket: Socket, props) {
@@ -70,9 +66,11 @@ pub fn sidebar(socket: Socket, props) {
           ),
         ]
         None ->
-          list.index_map(
+          ordered_map.index_map(
             pages,
-            fn(i, page) {
+            fn(i, item) {
+              let KeyedItem(_, page) = item
+
               keyed(
                 page.title,
                 component(
