@@ -1,6 +1,6 @@
 import gleam/option.{Option}
 import gleam/dynamic.{Dynamic}
-import sprocket/html/attribute.{Attribute}
+import sprocket/html/attributes.{Attribute}
 import sprocket/socket.{Socket}
 
 pub type AbstractFunctionalComponent =

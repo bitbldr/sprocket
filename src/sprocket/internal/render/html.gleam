@@ -13,7 +13,7 @@ import sprocket/internal/constants.{
 import sprocket/element.{Element}
 import sprocket/cassette.{Cassette, Preflight}
 import sprocket/html.{meta, script}
-import sprocket/html/attribute.{content, name, src}
+import sprocket/html/attributes.{content, name, src}
 import sprocket/internal/utils/uuid
 import sprocket/internal/csrf
 

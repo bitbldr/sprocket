@@ -1,6 +1,6 @@
 import sprocket/socket.{Socket}
 import sprocket/component.{render}
-import sprocket/html.{article, h1, h2, p, text}
+import sprocket/html.{article, h1, p, text}
 
 pub type EventsPageProps {
   EventsPageProps

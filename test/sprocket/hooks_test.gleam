@@ -5,7 +5,7 @@ import gleeunit/should
 import sprocket/socket.{Socket}
 import sprocket/component.{component}
 import sprocket/html.{button, text}
-import sprocket/html/attribute.{id, on_click}
+import sprocket/html/attributes.{id, on_click}
 import sprocket/hooks.{OnMount, OnUpdate, WithDeps, dep}
 import sprocket/hooks/reducer.{State, reducer}
 import sprocket/hooks/effect.{effect}

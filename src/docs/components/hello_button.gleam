@@ -2,7 +2,7 @@ import gleam/option.{None, Option, Some}
 import sprocket/socket.{Socket}
 import sprocket/component.{render}
 import sprocket/html.{button, text}
-import sprocket/html/attribute.{class}
+import sprocket/html/attributes.{class}
 
 pub type HelloButtonProps {
   HelloButtonProps(label: Option(String))

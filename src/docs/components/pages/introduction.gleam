@@ -1,7 +1,7 @@
 import sprocket/socket.{Socket}
 import sprocket/component.{render}
 import sprocket/html.{article, div, h1, h2, li, p, span, text, ul}
-import sprocket/html/attribute.{class}
+import sprocket/html/attributes.{class}
 import docs/utils/code.{code_snippet}
 
 pub type IntroductionPageProps {

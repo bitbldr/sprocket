@@ -5,7 +5,8 @@ import sprocket/hooks/callback.{callback}
 import sprocket/internal/identifiable_callback.{CallbackWithValueFn}
 import sprocket/hooks/reducer.{State, reducer}
 import sprocket/html.{input}
-import sprocket/html/attribute.{class, input_type, on_input, placeholder, value}
+import sprocket/html/attributes.{class,
+  input_type, on_input, placeholder, value}
 
 type Model {
   Model(query: String)

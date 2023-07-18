@@ -10,7 +10,7 @@ import sprocket/hooks/effect.{effect}
 import sprocket/hooks/callback.{callback}
 import sprocket/internal/identifiable_callback.{CallbackFn}
 import sprocket/html.{button, div, span, text}
-import sprocket/html/attribute.{class, on_click}
+import sprocket/html/attributes.{class, on_click}
 
 type Model =
   Int

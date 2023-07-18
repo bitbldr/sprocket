@@ -5,7 +5,7 @@ import sprocket/socket.{Socket}
 import sprocket/component.{component, render}
 import sprocket/hooks/reducer.{State, reducer}
 import sprocket/html.{a, div, keyed, text}
-import sprocket/html/attribute.{class, classes}
+import sprocket/html/attributes.{class, classes}
 import docs/utils/common.{maybe}
 import docs/components/search_bar.{SearchBarProps, search_bar}
 import docs/page_route.{PageRoute}
@@ -107,7 +107,7 @@ fn link(socket: Socket, props: LinkProps) {
             Some("block p-2 text-blue-500 hover:text-blue-700"),
             maybe(is_active, "font-bold"),
           ]),
-          attribute.href(href),
+          attributes.href(href),
         ],
         [text(title)],
       ),

@@ -1,7 +1,7 @@
 import sprocket/socket.{Socket}
 import sprocket/component.{component, render}
-import sprocket/html.{article, code, div, h1, h2, p, text}
-import sprocket/html/attribute.{class}
+import sprocket/html.{article, code_text, div, h1, h2, p, text}
+import sprocket/html/attributes.{class}
 import docs/components/say_hello.{SayHelloProps, say_hello}
 import docs/utils/code.{code_snippet}
 
@@ -21,9 +21,9 @@ pub fn state_management_page(socket: Socket, _props: StateManagementPageProps) {
             [],
             [
               text("State is managed using reducer fuctions and the "),
-              code([], "reducer"),
+              code_text([], "reducer"),
               text(" hook. We'll also utilize the "),
-              code([], "callback"),
+              code_text([], "callback"),
               text(" hook to help us dispatch events to the reducer."),
             ],
           ),
@@ -34,7 +34,7 @@ pub fn state_management_page(socket: Socket, _props: StateManagementPageProps) {
               text(
                 "Reducer functions are functions that take a state and message and return a new state. They are used to update state in response to events. Using our ",
               ),
-              code([], "hello_button"),
+              code_text([], "hello_button"),
               text(
                 " component as an example, we can define a function that updates the state when the button is clicked.",
               ),
@@ -80,7 +80,7 @@ pub fn state_management_page(socket: Socket, _props: StateManagementPageProps) {
             [],
             [
               text("Let's declare a "),
-              code([], "reducer"),
+              code_text([], "reducer"),
               text(" hook in our component that uses our update function:"),
             ],
           ),
@@ -101,7 +101,7 @@ pub fn state_management_page(socket: Socket, _props: StateManagementPageProps) {
                 "You can see here we got back the current state of the reducer, which we can use in our component. ",
               ),
               text("Notice, we also got back a "),
-              code([], "dispatch"),
+              code_text([], "dispatch"),
               text(
                 " function from the reducer. The dispatch function is used to send messages to the reducer which will update the state and trigger a re-render.",
               ),
@@ -111,7 +111,7 @@ pub fn state_management_page(socket: Socket, _props: StateManagementPageProps) {
             [],
             [
               text("The use of the "),
-              code([], "initial"),
+              code_text([], "initial"),
               text(
                 " function is used to intiialize the state of the reducer. This will only be applied when the component is first rendered.",
               ),
@@ -124,7 +124,7 @@ pub fn state_management_page(socket: Socket, _props: StateManagementPageProps) {
               text(
                 "We need one more thing to complete our component. We need to define a function that will be called when the button is clicked. It's important that we define this as a callback function using the ",
               ),
-              code([], "callback"),
+              code_text([], "callback"),
               text(
                 " hook so that we can ensure the id of the callback function is maintained between renders, preventing a new id being created and sent to the client on every update.",
               ),
@@ -140,11 +140,12 @@ pub fn state_management_page(socket: Socket, _props: StateManagementPageProps) {
             )
             ",
           ),
+          h2([], [text("Putting it all together")]),
           p(
             [],
             [
               text(
-                "Putting it all together, we now have a more interesting button that updates whenever it is clicked. Again, we are using Tailwind CSS to style our button but you can use whichever styling framework you prefer.",
+                "We now have all the pieces we need to create a more interesting button that updates whenever it is clicked. Again, we are using Tailwind CSS to style our button but you can use whichever styling framework you prefer.",
               ),
             ],
           ),
@@ -162,7 +163,7 @@ pub fn state_management_page(socket: Socket, _props: StateManagementPageProps) {
             import sprocket/hooks/callback.{callback}
             import sprocket/internal/identifiable_callback.{CallbackFn}
             import sprocket/html.{button, div, span, text}
-            import sprocket/html/attribute.{class, on_click}
+            import sprocket/html/attributes.{class, on_click}
 
             type Model {
               Model(selection: Option(Int), options: List(HelloOption))

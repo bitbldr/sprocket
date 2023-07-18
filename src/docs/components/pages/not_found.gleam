@@ -1,7 +1,7 @@
 import sprocket/socket.{Socket}
 import sprocket/component.{render}
 import sprocket/html.{div, h1, text}
-import sprocket/html/attribute.{class}
+import sprocket/html/attributes.{class}
 
 pub type NotFoundPageProps {
   NotFoundPageProps

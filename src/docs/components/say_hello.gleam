@@ -9,7 +9,7 @@ import sprocket/hooks/reducer.{State, reducer}
 import sprocket/hooks/callback.{callback}
 import sprocket/internal/identifiable_callback.{CallbackFn}
 import sprocket/html.{button, div, span, text}
-import sprocket/html/attribute.{class, on_click}
+import sprocket/html/attributes.{class, on_click}
 
 type Model {
   Model(selection: Option(Int), options: List(HelloOption))

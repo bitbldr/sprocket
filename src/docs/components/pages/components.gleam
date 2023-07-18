@@ -1,8 +1,8 @@
 import gleam/option.{None, Some}
 import sprocket/socket.{Socket}
 import sprocket/component.{component, render}
-import sprocket/html.{article, code, div, h1, h2, p, text}
-import sprocket/html/attribute.{class}
+import sprocket/html.{article, code_text, div, h1, h2, p, text}
+import sprocket/html/attributes.{class}
 import docs/utils/code.{code_snippet}
 import docs/components/hello_button.{HelloButtonProps, hello_button}
 
@@ -48,7 +48,7 @@ pub fn components_page(socket: Socket, _props: ComponentsPageProps) {
             [],
             [
               text("Here is a simple example component we'll call "),
-              code([], "hello_button"),
+              code_text([], "hello_button"),
               text(
                 " that renders a button. We'll also make use of some Tailwind CSS classes here to style our button, but you can use whichever style framework you prefer.",
               ),
@@ -61,7 +61,7 @@ pub fn components_page(socket: Socket, _props: ComponentsPageProps) {
                 import sprocket/socket.{Socket}
                 import sprocket/component.{render}
                 import sprocket/html.{button, text}
-                import sprocket/html/attribute.{class}
+                import sprocket/html/attributes.{class}
 
                 pub type HelloButtonProps {
                   HelloButtonProps(label: Option(String))
@@ -109,7 +109,7 @@ pub fn components_page(socket: Socket, _props: ComponentsPageProps) {
               text(
                 "To use this new component in a parent view, we can simply pass it into the ",
               ),
-              code([], "component"),
+              code_text([], "component"),
               text(" function along with the props we want to pass in."),
             ],
           ),

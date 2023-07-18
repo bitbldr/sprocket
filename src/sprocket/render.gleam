@@ -2,7 +2,7 @@ import gleam/io
 import gleam/list.{Continue, Stop}
 import gleam/option.{None, Option, Some}
 import gleam/dynamic.{Dynamic}
-import sprocket/html/attribute.{Attribute, Event}
+import sprocket/html/attributes.{Attribute, Event}
 import sprocket/element.{
   AbstractFunctionalComponent, Component, Debug, Element, IgnoreUpdate, Keyed,
   Raw, SafeHtml,

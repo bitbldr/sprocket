@@ -7,7 +7,7 @@ import sprocket/hooks/callback.{callback}
 import sprocket/internal/identifiable_callback.{CallbackFn}
 import sprocket/element.{Element}
 import sprocket/html.{aside, button, div, i}
-import sprocket/html/attribute.{class, classes, on_click}
+import sprocket/html/attributes.{class, classes, on_click}
 
 type Model {
   Model(show: Bool)

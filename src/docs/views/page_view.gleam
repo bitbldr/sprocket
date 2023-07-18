@@ -4,7 +4,7 @@ import gleam/option.{None}
 import sprocket/socket.{Socket}
 import sprocket/component.{component, render}
 import sprocket/html.{body, div, head, html, link, meta, script, title}
-import sprocket/html/attribute.{
+import sprocket/html/attributes.{
   charset, class, content, crossorigin, href, id, integrity, lang, name,
   referrerpolicy, rel, src,
 }

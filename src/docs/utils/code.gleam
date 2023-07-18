@@ -1,8 +1,8 @@
 import gleam/string
 import gleam/list
 import gleam/int
-import sprocket/html.{code, div, ignored, pre}
-import sprocket/html/attribute.{class}
+import sprocket/html.{code_text, div, ignored, pre}
+import sprocket/html/attributes.{class}
 
 pub fn code_snippet(language: String, body: String) {
   div(
@@ -11,7 +11,7 @@ pub fn code_snippet(language: String, body: String) {
       ignored(pre(
         [],
         [
-          code(
+          code_text(
             [class("language-" <> language <> " rounded-lg")],
             process_code(body),
           ),

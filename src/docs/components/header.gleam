@@ -3,7 +3,7 @@ import gleam/string
 import sprocket/socket.{Socket}
 import sprocket/component.{component, render}
 import sprocket/html.{a, div, i, span, text}
-import sprocket/html/attribute.{class}
+import sprocket/html/attributes.{class}
 
 pub type MenuItem {
   MenuItem(label: String, href: String)
@@ -64,9 +64,9 @@ fn menu_item(socket: Socket, props: MenuItemProps) {
       a(
         [
           class("block p-5 border-b-2 border-transparent hover:border-blue-500"),
-          attribute.href(href),
+          attributes.href(href),
           ..case is_external {
-            True -> [attribute.target("_blank")]
+            True -> [attributes.target("_blank")]
             False -> []
           }
         ],

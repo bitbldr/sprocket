@@ -4,7 +4,7 @@ import gleeunit/should
 import sprocket/socket.{Socket}
 import sprocket/component.{component, render}
 import sprocket/html.{a, text}
-import sprocket/html/attribute.{attribute, classes}
+import sprocket/html/attributes.{classes}
 import sprocket/hooks.{WithDeps}
 import sprocket/hooks/callback.{callback}
 import sprocket/internal/identifiable_callback.{CallbackFn}
@@ -39,8 +39,8 @@ fn test_component(socket: Socket, props: TestProps) {
               False -> None
             },
           ]),
-          attribute.href("#"),
-          attribute.on_click(on_click),
+          attributes.href("#"),
+          attributes.on_click(on_click),
         ],
         [text(title)],
       ),
