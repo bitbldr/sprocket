@@ -65,7 +65,9 @@ pub fn say_hello(socket: Socket, _props: SayHelloProps) {
         [
           button(
             [
-              class("p-2 bg-blue-500 hover:bg-blue-700 text-white rounded"),
+              class(
+                "p-2 bg-blue-500 hover:bg-blue-600 active:bg-blue-700 text-white rounded",
+              ),
               on_click(on_say_hello),
             ],
             [text("Say Hello")],

@@ -165,34 +165,6 @@ pub fn state_management_page(socket: Socket, _props: StateManagementPageProps) {
             import sprocket/html.{button, div, span, text}
             import sprocket/html/attributes.{class, on_click}
 
-            type HelloOption =
-              #(String, String)
-
-            fn hello_options() -> List(HelloOption) {
-              [
-                #(\"English\", \"Hello\"),
-                #(\"Spanish\", \"Hola\"),
-                #(\"French\", \"Bonjour\"),
-                #(\"German\", \"Hallo\"),
-                #(\"Italian\", \"Ciao\"),
-                #(\"Portuguese\", \"Olá\"),
-                #(\"Hawaiian\", \"Aloha\"),
-                #(\"Chinese (Mandarin)\", \"你好,(Nǐ hǎo)\"),
-                #(\"Japanese\", \"こんにち, (Konnichiwa)\"),
-                #(\"Korean\", \"안녕하세, (Annyeonghaseyo)\"),
-                #(\"Arabic\", \"مرحب, (Marhaba)\"),
-                #(\"Hindi\", \"नमस्त, (Namaste)\"),
-                #(\"Turkish\", \"Merhaba\"),
-                #(\"Dutch\", \"Hallo\"),
-                #(\"Swedish\", \"Hej\"),
-                #(\"Norwegian\", \"Hei\"),
-                #(\"Danish\", \"Hej\"),
-                #(\"Greek\", \"Γεια σας,(Yia sas)\"),
-                #(\"Polish\", \"Cześć\"),
-                #(\"Swahili\", \"Hujambo\"),
-              ]
-            }
-
             type Model {
               Model(selection: Option(Int), options: List(HelloOption))
             }
@@ -248,7 +220,7 @@ pub fn state_management_page(socket: Socket, _props: StateManagementPageProps) {
                     [
                       button(
                         [
-                          class(\"p-2 bg-blue-500 hover:bg-blue-700 text-white rounded\"),
+                          class(\"p-2 bg-blue-500 hover:bg-blue-600 active:bg-blue-700 text-white rounded\"),
                           on_click(on_say_hello),
                         ],
                         [text(\"Say Hello\")],
@@ -268,6 +240,34 @@ pub fn state_management_page(socket: Socket, _props: StateManagementPageProps) {
                 ],
               )
             }
+
+            type HelloOption =
+              #(String, String)
+
+            fn hello_options() -> List(HelloOption) {
+              [
+                #(\"English\", \"Hello\"),
+                #(\"Spanish\", \"Hola\"),
+                #(\"French\", \"Bonjour\"),
+                #(\"German\", \"Hallo\"),
+                #(\"Italian\", \"Ciao\"),
+                #(\"Portuguese\", \"Olá\"),
+                #(\"Hawaiian\", \"Aloha\"),
+                #(\"Chinese (Mandarin)\", \"你好,(Nǐ hǎo)\"),
+                #(\"Japanese\", \"こんにち, (Konnichiwa)\"),
+                #(\"Korean\", \"안녕하세, (Annyeonghaseyo)\"),
+                #(\"Arabic\", \"مرحب, (Marhaba)\"),
+                #(\"Hindi\", \"नमस्त, (Namaste)\"),
+                #(\"Turkish\", \"Merhaba\"),
+                #(\"Dutch\", \"Hallo\"),
+                #(\"Swedish\", \"Hej\"),
+                #(\"Norwegian\", \"Hei\"),
+                #(\"Danish\", \"Hej\"),
+                #(\"Greek\", \"Γεια σας,(Yia sas)\"),
+                #(\"Polish\", \"Cześć\"),
+                #(\"Swahili\", \"Hujambo\"),
+              ]
+            }
             ",
           ),
           example([component(say_hello, SayHelloProps)]),
@@ -275,7 +275,7 @@ pub fn state_management_page(socket: Socket, _props: StateManagementPageProps) {
             [],
             [
               text(
-                "Now we have a button that says hello in a random language every time it is clicked.",
+                "We now have a functional button that says hello in a different language when it's clicked.",
               ),
             ],
           ),
