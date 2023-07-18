@@ -39,6 +39,7 @@ pub type State {
 
 pub type Message {
   Shutdown
+  GetState(reply_with: Subject(Result(State, Nil)))
   PushPreflight(preflight: Preflight)
   CleanupPreflights
   StartPreflightCleanupJob(cleanup_preflights: fn() -> Nil)
@@ -53,6 +54,11 @@ fn handle_message(message: Message, state: State) -> actor.Next(State) {
     Shutdown -> {
       state.cancel_preflight_cleanup_job()
       actor.Stop(process.Normal)
+    }
+
+    GetState(reply_with) -> {
+      process.send(reply_with, Ok(state))
+      actor.Continue(state)
     }
 
     PushPreflight(preflight) -> {
