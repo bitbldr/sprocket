@@ -6,7 +6,7 @@ import sprocket/html/attributes.{class}
 
 pub fn codeblock(language: String, body: String) {
   div(
-    [class("not-prose overflow-x-auto")],
+    [class("not-prose overflow-x-auto text-sm")],
     [
       ignored(pre(
         [],

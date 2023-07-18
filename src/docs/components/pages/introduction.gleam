@@ -2,7 +2,7 @@ import sprocket/socket.{Socket}
 import sprocket/component.{render}
 import sprocket/html.{article, div, h1, h2, li, p, span, text, ul}
 import sprocket/html/attributes.{class}
-import docs/utils/code.{codeblock}
+import docs/utils/codeblock.{codeblock}
 
 pub type IntroductionPageProps {
   IntroductionPageProps
@@ -203,13 +203,23 @@ pub fn introduction_page(socket: Socket, _props: IntroductionPageProps) {
                      Once you have Gleam installed, you can create a new project with the following command:
                     ",
               ),
-              codeblock("sh", "gleam new sprocket-demo"),
+            ],
+          ),
+          codeblock("bash", "gleam new sprocket-demo"),
+          p(
+            [],
+            [
               text(
                 "
                     Then add sprocket as a dependency:
                     ",
               ),
-              codeblock("sh", "gleam add sprocket"),
+            ],
+          ),
+          codeblock("bash", "gleam add sprocket"),
+          p(
+            [],
+            [
               text(
                 "
                     That's it! Now we can begin our journey and unlock the true potential of real-time server-side components with Sprocket and Gleam!

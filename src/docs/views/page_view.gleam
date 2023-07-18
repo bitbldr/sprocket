@@ -5,7 +5,7 @@ import sprocket/socket.{Socket}
 import sprocket/component.{component, render}
 import sprocket/html.{body, div, head, html, link, meta, script, title}
 import sprocket/html/attributes.{
-  charset, class, content, crossorigin, href, id, integrity, lang, name,
+  charset, class, content, crossorigin, href, id, integrity, lang, media, name,
   referrerpolicy, rel, src,
 }
 import sprocket/internal/utils/ordered_map.{KeyedItem}
@@ -93,8 +93,19 @@ pub fn page_view(socket: Socket, props: PageViewProps) {
               link([
                 id("syntax-theme"),
                 rel("stylesheet"),
+                media("(prefers-color-scheme: dark)"),
                 href(
-                  "https://unpkg.com/@highlightjs/cdn-assets@10.5.0/styles/atom-one-light.min.css",
+                  "https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.8.0/build/styles/atom-one-dark.min.css",
+                ),
+              ]),
+              link([
+                id("syntax-theme"),
+                rel("stylesheet"),
+                media(
+                  "(prefers-color-scheme: light), (prefers-color-scheme: no-preference)",
+                ),
+                href(
+                  "https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.8.0/build/styles/atom-one-light.min.css",
                 ),
               ]),
               script(

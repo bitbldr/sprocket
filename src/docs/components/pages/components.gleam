@@ -3,7 +3,7 @@ import sprocket/socket.{Socket}
 import sprocket/component.{component, render}
 import sprocket/html.{article, code_text, div, h1, h2, p, text}
 import sprocket/html/attributes.{class}
-import docs/utils/code.{codeblock}
+import docs/utils/codeblock.{codeblock}
 import docs/components/hello_button.{HelloButtonProps, hello_button}
 import docs/utils/common.{example}
 

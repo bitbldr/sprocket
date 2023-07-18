@@ -29,6 +29,10 @@ pub fn on_input(identifiable_cb: IdentifiableCallback) -> Attribute {
   event("input", identifiable_cb)
 }
 
+pub fn media(value: String) -> Attribute {
+  attribute("media", value)
+}
+
 // Functions below are based on Nakai https://github.com/nakaixo/nakai
 // If we could use Nakai directly that would be ideal, but it's not generic or compatible with the
 // Sprocket Element type and wrapping in a hiher-level type would be too cumbersome to use.

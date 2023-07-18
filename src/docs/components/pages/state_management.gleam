@@ -3,7 +3,7 @@ import sprocket/component.{component, render}
 import sprocket/html.{article, code_text, h1, h2, p, text}
 import docs/components/say_hello.{SayHelloProps, say_hello}
 import docs/utils/common.{example}
-import docs/utils/code.{codeblock}
+import docs/utils/codeblock.{codeblock}
 
 pub type StateManagementPageProps {
   StateManagementPageProps
