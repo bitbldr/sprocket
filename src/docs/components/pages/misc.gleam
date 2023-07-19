@@ -1,16 +1,50 @@
-import gleam/option.{Some}
+import gleam/option.{None, Option, Some}
+import gleam/erlang
 import sprocket/socket.{Socket}
 import sprocket/component.{component, render}
-import sprocket/html.{article, dangerous_raw_html, div, h1, h2, p, text}
+import sprocket/html.{
+  article, button_text, dangerous_raw_html, div, h1, h2, p, text,
+}
+import sprocket/html/attributes.{classes, on_click}
+import sprocket/internal/identifiable_callback.{CallbackFn}
+import sprocket/hooks.{WithDeps}
+import sprocket/hooks/callback.{callback}
+import sprocket/hooks/reducer.{State, reducer}
 import docs/components/clock.{ClockProps, clock}
 import docs/components/counter.{CounterProps, counter}
 import docs/components/say_hello.{SayHelloProps, say_hello}
+
+type Msg {
+  NoOp
+  SetTimeUnit(erlang.TimeUnit)
+}
+
+type Model {
+  Model(time_unit: erlang.TimeUnit)
+}
+
+fn update(state: Model, msg: Msg) -> Model {
+  case msg {
+    NoOp -> state
+    SetTimeUnit(time_unit) -> Model(time_unit)
+  }
+}
+
+fn initial() -> Model {
+  Model(time_unit: erlang.Second)
+}
 
 pub type MiscPageProps {
   MiscPageProps
 }
 
 pub fn misc_page(socket: Socket, _props: MiscPageProps) {
+  use socket, State(Model(time_unit), dispatch) <- reducer(
+    socket,
+    initial(),
+    update,
+  )
+
   render(
     socket,
     [
@@ -22,7 +56,23 @@ pub fn misc_page(socket: Socket, _props: MiscPageProps) {
           div(
             [],
             [
-              component(clock, ClockProps(label: Some("The current time is: "))),
+              // // disable millisecond selection for now, it could have a negative impact on bandwidth costs and resources
+              // component(
+              //   unit_toggle,
+              //   UnitToggleProps(
+              //     current: time_unit,
+              //     on_select: fn(unit: erlang.TimeUnit) {
+              //       dispatch(SetTimeUnit(unit))
+              //     },
+              //   ),
+              // ),
+              component(
+                clock,
+                ClockProps(
+                  label: Some("The current time is: "),
+                  time_unit: Some(time_unit),
+                ),
+              ),
               p(
                 [],
                 [
@@ -47,4 +97,75 @@ pub fn misc_page(socket: Socket, _props: MiscPageProps) {
       ),
     ],
   )
+}
+
+type UnitToggleProps {
+  UnitToggleProps(
+    current: erlang.TimeUnit,
+    on_select: fn(erlang.TimeUnit) -> Nil,
+  )
+}
+
+fn unit_toggle(socket: Socket, props: UnitToggleProps) {
+  let UnitToggleProps(current, on_select) = props
+
+  use socket, on_select_millisecond <- callback(
+    socket,
+    CallbackFn(fn() { on_select(erlang.Millisecond) }),
+    WithDeps([]),
+  )
+  use socket, on_select_second <- callback(
+    socket,
+    CallbackFn(fn() { on_select(erlang.Second) }),
+    WithDeps([]),
+  )
+  render(
+    socket,
+    [
+      div(
+        [],
+        [
+          p(
+            [],
+            [
+              button_text(
+                [
+                  on_click(on_select_second),
+                  classes([
+                    Some(
+                      "p-1 px-2 border dark:border-gray-500 rounded-l bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 active:bg-gray-300 dark:active:bg-gray-600",
+                    ),
+                    maybe_active(current == erlang.Second),
+                  ]),
+                ],
+                "Second",
+              ),
+              button_text(
+                [
+                  on_click(on_select_millisecond),
+                  classes([
+                    Some(
+                      "p-1 px-2 border dark:border-gray-500 rounded-r bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 active:bg-gray-300 dark:active:bg-gray-600",
+                    ),
+                    maybe_active(current == erlang.Millisecond),
+                  ]),
+                ],
+                "Millisecond",
+              ),
+            ],
+          ),
+        ],
+      ),
+    ],
+  )
+}
+
+fn maybe_active(is_active: Bool) -> Option(String) {
+  case is_active {
+    True ->
+      Some(
+        "text-white bg-gray-500 border-gray-500 hover:bg-gray-500 dark:bg-gray-900",
+      )
+    False -> None
+  }
 }

@@ -1,4 +1,4 @@
-import gleam/option.{Some}
+import gleam/option.{None, Some}
 import sprocket/socket.{Socket}
 import sprocket/component.{component, render}
 import sprocket/html.{article, h1, p, text}
@@ -17,7 +17,10 @@ pub fn effects_page(socket: Socket, _props: EffectsPageProps) {
         [
           h1([], [text("Effects")]),
           p([], [text("")]),
-          component(clock, ClockProps(label: Some("The current time is: "))),
+          component(
+            clock,
+            ClockProps(label: Some("The current time is: "), time_unit: None),
+          ),
         ],
       ),
     ],

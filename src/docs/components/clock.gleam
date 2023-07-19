@@ -31,11 +31,11 @@ fn initial() -> Model {
 }
 
 pub type ClockProps {
-  ClockProps(label: Option(String))
+  ClockProps(label: Option(String), time_unit: Option(erlang.TimeUnit))
 }
 
-pub fn clock(socket: Socket, props) {
-  let ClockProps(label) = props
+pub fn clock(socket: Socket, props: ClockProps) {
+  let ClockProps(label, time_unit) = props
 
   // Define a reducer to handle events and update the state
   use socket, State(Model(time: time, ..), dispatch) <- reducer(
@@ -54,19 +54,31 @@ pub fn clock(socket: Socket, props) {
     WithDeps([]),
   )
 
+  let time_unit =
+    time_unit
+    |> option.unwrap(erlang.Second)
+
   // Example effect that runs whenever the `time` variable changes and has a cleanup function
   use socket <- effect(
     socket,
     fn() {
-      let cancel =
-        interval(
-          1000,
-          fn() { dispatch(UpdateTime(erlang.system_time(erlang.Second))) },
-        )
+      let interval_duration = case time_unit {
+        erlang.Millisecond -> 1
+        erlang.Second -> 1000
+        _ -> 1000
+      }
+
+      let update_time = fn() {
+        dispatch(UpdateTime(erlang.system_time(time_unit)))
+      }
+
+      update_time()
+
+      let cancel = interval(interval_duration, update_time)
 
       Some(fn() { cancel() })
     },
-    WithDeps([dep(time)]),
+    WithDeps([dep(time), dep(time_unit)]),
   )
 
   let current_time = int.to_string(time)
