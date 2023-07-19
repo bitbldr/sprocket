@@ -52,11 +52,13 @@ type Model {
 }
 
 type Msg {
+  NoOp
   UpdateTime(Int)
 }
 
 fn update(model: Model, msg: Msg) -> Model {
   case msg {
+    NoOp -> model
     UpdateTime(time) -> {
       Model(..model, time: time)
     }
