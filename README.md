@@ -1,5 +1,5 @@
 # Sprocket
-A framework for building live views using real-time server components in [Gleam ✨](https://gleam.run/)
+A framework for building live views and real-time server components in [Gleam ✨](https://gleam.run/)
 
 [![Package Version](https://img.shields.io/hexpm/v/sprocket)](https://hex.pm/packages/sprocket)
 [![Hex Docs](https://img.shields.io/badge/hex-docs-ffaff3)](https://hexdocs.pm/sprocket/)
