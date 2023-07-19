@@ -1,5 +1,5 @@
 # Sprocket
-A framework for building real-time server components in [Gleam ✨](https://gleam.run/)
+A framework for building live views using real-time server components in [Gleam ✨](https://gleam.run/)
 
 [![Package Version](https://img.shields.io/hexpm/v/sprocket)](https://hex.pm/packages/sprocket)
 [![Hex Docs](https://img.shields.io/badge/hex-docs-ffaff3)](https://hexdocs.pm/sprocket/)
@@ -183,15 +183,15 @@ references, and examples.
 
 Sprocket is still in its early stages and has a roadmap for future development. Here are some of the planned improvements:
 
-- Build out full set of base HTML functions for components (or investigate using an [existing library](https://github.com/nakaixo/nakai))
-- Explore [other http and websocket server options](https://hexdocs.pm/espresso/)
-- Add support for additional event types to handle various user interactions
-- Expand the available hooks to enable more flexible component behavior
-- Convert client TypeScript to gleam
-- Improve unit test coverage to ensure code quality and reliability
-- Provide extensive documentation of modules and API for easier adoption
-- Optimize performance to enhance responsiveness and scalability
-- Investigate extending to support more than just web views, such as native desktop, iOS, and Android applications.
+- [x] Build out full set of base HTML functions for components
+- [ ] Explore [other http and websocket server options](https://hexdocs.pm/espresso/)
+- [ ] Add support for additional event types to handle various user interactions
+- [ ] Expand the available hooks to enable more flexible component behavior
+- [ ] Convert client TypeScript to gleam
+- [ ] Improve unit test coverage to ensure code quality and reliability
+- [ ] Provide extensive documentation of modules and API for easier adoption
+- [ ] Optimize performance to enhance responsiveness and scalability
+- [ ] Investigate extending to support more than just web views, such as native desktop, iOS, and Android applications.
 
 ## Contributing
 
