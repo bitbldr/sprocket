@@ -1,8 +1,7 @@
 import gleam/option.{None, Some}
 import sprocket/socket.{Socket}
 import sprocket/component.{component, render}
-import sprocket/html.{article, code_text, div, h1, h2, p, text}
-import sprocket/html/attributes.{class}
+import sprocket/html.{article, code_text, h1, h2, p, text}
 import docs/utils/codeblock.{codeblock}
 import docs/components/hello_button.{HelloButtonProps, hello_button}
 import docs/utils/common.{example}
@@ -175,7 +174,7 @@ pub fn components_page(socket: Socket, _props: ComponentsPageProps) {
             [
               text(
                 "But our humble button isn't very interesting yet. Let's say we want to add some functionality to our button. We can do that by
-                    adding some state management via hooks, which we'll cover next.",
+                implementing some events and state management via hooks, which we'll cover in the next couple sections.",
               ),
             ],
           ),
