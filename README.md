@@ -93,7 +93,7 @@ pub fn clock(socket: Socket, props) {
 
       Some(fn() { cancel() })
     },
-    WithDependencies([dynamic.from(time)]),
+    WithDeps([dep(time)]),
   )
 
   let current_time = int.to_string(time)
