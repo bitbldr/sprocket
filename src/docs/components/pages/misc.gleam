@@ -56,16 +56,15 @@ pub fn misc_page(socket: Socket, _props: MiscPageProps) {
           div(
             [],
             [
-              // // disable millisecond selection for now, it could have a negative impact on bandwidth costs and resources
-              // component(
-              //   unit_toggle,
-              //   UnitToggleProps(
-              //     current: time_unit,
-              //     on_select: fn(unit: erlang.TimeUnit) {
-              //       dispatch(SetTimeUnit(unit))
-              //     },
-              //   ),
-              // ),
+              component(
+                unit_toggle,
+                UnitToggleProps(
+                  current: time_unit,
+                  on_select: fn(unit: erlang.TimeUnit) {
+                    dispatch(SetTimeUnit(unit))
+                  },
+                ),
+              ),
               component(
                 clock,
                 ClockProps(
