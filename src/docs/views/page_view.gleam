@@ -22,12 +22,15 @@ import docs/components/pages/components.{ComponentsPageProps, components_page}
 import docs/components/pages/misc.{MiscPageProps, misc_page}
 import docs/components/pages/not_found.{NotFoundPageProps, not_found_page}
 import docs/components/pages/hooks.{HooksPageProps, hooks_page}
-import docs/components/pages/events.{EventsPageProps, events_page}
+import docs/components/pages/props_and_events.{
+  PropsAndEventsPageProps, props_and_events_page,
+}
+import docs/components/pages/effects.{EffectsPageProps, effects_page}
 import docs/components/pages/state_management.{
   StateManagementPageProps, state_management_page,
 }
 import docs/page_route.{
-  Components, Events, Hooks, Introduction, Misc, Page, PageRoute,
+  Components, Effects, Events, Hooks, Introduction, Misc, Page, PageRoute,
   StateManagement, Unknown,
 }
 
@@ -43,9 +46,10 @@ pub fn page_view(socket: Socket, props: PageViewProps) {
     [
       Page("Introduction", Introduction),
       Page("Components", Components),
+      Page("Props and Events", Events),
       Page("State Management", StateManagement),
+      Page("Effects", Effects),
       Page("Hooks", Hooks),
-      Page("Events", Events),
       Page("Misc.", Misc),
     ]
     |> list.map(fn(page) { KeyedItem(page.route, page) })
@@ -159,13 +163,18 @@ pub fn page_view(socket: Socket, props: PageViewProps) {
                           component(introduction_page, IntroductionPageProps)
                         Components ->
                           component(components_page, ComponentsPageProps)
+                        Events ->
+                          component(
+                            props_and_events_page,
+                            PropsAndEventsPageProps,
+                          )
                         StateManagement ->
                           component(
                             state_management_page,
                             StateManagementPageProps,
                           )
+                        Effects -> component(effects_page, EffectsPageProps)
                         Hooks -> component(hooks_page, HooksPageProps)
-                        Events -> component(events_page, EventsPageProps)
                         Misc -> component(misc_page, MiscPageProps)
                         Unknown -> component(not_found_page, NotFoundPageProps)
                       },
