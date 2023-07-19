@@ -6,7 +6,7 @@ A framework for building live views using real-time server components in [Gleam 
 
 [Demo Documentation](https://sprocket.live)
 
-Heavily inspired [Phoenix LiveView](https://github.com/phoenixframework/phoenix_live_view),
+Heavily inspired by [Phoenix LiveView](https://github.com/phoenixframework/phoenix_live_view),
 [React](https://github.com/facebook/react) and [Elm](https://github.com/elm). The name "sprocket"
 is loosely derived from the metaphor of a bicycle's sprocket, cassette and chain.
 
