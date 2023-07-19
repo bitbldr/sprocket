@@ -178,6 +178,7 @@ fn handle_message(message: Message, state: State) -> actor.Next(State) {
   }
 }
 
+/// Start a new sprocket actor
 pub fn start(
   ws: Option(WebSocket),
   view: Option(Element),
@@ -199,26 +200,32 @@ pub fn start(
   actor
 }
 
+/// Stop a sprocket actor
 pub fn stop(actor) {
   actor.send(actor, Shutdown)
 }
 
+/// Returns true if the actor matches a given websocket connection
 pub fn has_websocket(actor, websocket) -> Bool {
   actor.call(actor, HasWebSocket(_, websocket), 100)
 }
 
+/// Get the previously rendered view from the actor
 pub fn get_rendered(actor) {
   actor.call(actor, GetRendered(_), 100)
 }
 
+/// Get the event handler for a given id
 pub fn get_handler(actor, id: String) {
   actor.call(actor, GetEventHandler(_, unique.from_string(id)), 100)
 }
 
+/// Render the view
 pub fn render(actor) -> RenderedElement {
   actor.call(actor, Render(_), 100)
 }
 
+/// Render the view and send an update Patch to the updater
 pub fn render_update(actor) -> Nil {
   actor.send(actor, RenderUpdate)
 }

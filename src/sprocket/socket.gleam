@@ -1,3 +1,4 @@
+import gleam/int
 import gleam/list
 import gleam/option.{Option}
 import gleam/erlang/process.{Subject}
@@ -7,6 +8,7 @@ import sprocket/internal/identifiable_callback.{CallbackFn,
 import sprocket/hooks.{Hook}
 import sprocket/internal/utils/ordered_map.{OrderedMap}
 import sprocket/internal/utils/unique.{Unique}
+import sprocket/internal/logger
 
 pub type EventHandler {
   EventHandler(id: Unique, handler: CallbackFn)
@@ -23,7 +25,7 @@ pub type ComponentHooks =
   OrderedMap(Int, Hook)
 
 pub type ComponentWip {
-  ComponentWip(hooks: ComponentHooks, index: Int)
+  ComponentWip(hooks: ComponentHooks, index: Int, is_first_render: Bool)
 }
 
 pub type Socket {
@@ -37,7 +39,7 @@ pub type Socket {
 
 pub fn new(ws: Option(WebSocket)) -> Socket {
   Socket(
-    wip: ComponentWip(hooks: ordered_map.new(), index: 0),
+    wip: ComponentWip(hooks: ordered_map.new(), index: 0, is_first_render: True),
     handlers: [],
     ws: ws,
     render_update: fn() { Nil },
@@ -65,21 +67,21 @@ pub fn fetch_or_init_hook(
       )
     }
     Error(Nil) -> {
-      // TODO: add a check here for is_first_render and if it isnt, throw an error
-      // case is_first_render {
-      //   True -> {
-      //     logger.error(
-      //       "
-      //       Hook not found for index: " <> int.to_string(index) <> ". This indicates a hook was dynamically
-      //       created since first render which is not allowed.
-      //     ",
-      //     )
+      // check here for is_first_render and if it isnt, throw an error
+      case socket.wip.is_first_render {
+        True -> Nil
+        False -> {
+          logger.error(
+            "
+            Hook not found for index: " <> int.to_string(index) <> ". This indicates a hook was dynamically
+            created since first render which is not allowed.
+          ",
+          )
 
-      //     // TODO: we should handle this error more gracefully in production environments
-      //     panic
-      //   }
-      //   False -> Nil
-      // }
+          // TODO: handle this error more gracefully in production environments
+          panic
+        }
+      }
 
       // first render, return the initialized hook and index
       let hook = init()
@@ -90,6 +92,7 @@ pub fn fetch_or_init_hook(
           wip: ComponentWip(
             hooks: ordered_map.insert(socket.wip.hooks, index, hook),
             index: index + 1,
+            is_first_render: socket.wip.is_first_render,
           ),
         ),
         hook,

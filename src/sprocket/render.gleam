@@ -188,10 +188,10 @@ fn component(
   let socket = case prev {
     None ->
       // There is no previous rendered element, so this is the first render
-      Socket(..socket, wip: ComponentWip(ordered_map.new(), 0))
+      Socket(..socket, wip: ComponentWip(ordered_map.new(), 0, True))
     Some(RenderedComponent(_, _, _, hooks, _)) ->
       // There is a previous rendered element, so use the previously rendered hooks
-      Socket(..socket, wip: ComponentWip(hooks, 0))
+      Socket(..socket, wip: ComponentWip(hooks, 0, False))
     Some(_) -> {
       // This should never happen
       logger.error("Invalid previous element")
