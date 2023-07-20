@@ -81,7 +81,7 @@ pub fn clock(socket: Socket, props: ClockProps) {
     WithDeps([dep(time), dep(time_unit)]),
   )
 
-  let current_time = int.to_string(time)
+  let current_time = format_time(time, "%y-%m-%d %I:%M:%S %p")
 
   render(
     socket,
@@ -91,3 +91,6 @@ pub fn clock(socket: Socket, props: ClockProps) {
     },
   )
 }
+
+pub external fn format_time(a, String) -> String =
+  "Elixir.Sprocket" "format_time"
