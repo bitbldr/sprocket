@@ -16,7 +16,7 @@ language built on the venerable BEAM (Erlang Virtual Machine).
 
 An initial static view is rendered as HTML on the "first paint" which then establishes a connection to the server over a
 WebSocket to facilitate sending browser events and receiving view update diffs. These updates are
-patched into a client-side im-memory representation of the DOM and rendered to the browser using
+patched into a client-side in-memory representation of the DOM and rendered to the browser using
 morphdom. Declarative views are built using functional components that accept props and re-render
 each time those props change and reducers are used for state management using strongly-typed models
 and message structs.
@@ -31,8 +31,7 @@ flow up out of components through event handlers (which are also passed in as pr
 `on_some_event("Something happened")`). 
 
 This library is currently in a **proof of concept** state and should be considered highly unstable.
-There is still a lot of work to be done, including building out all HTML
-functions, adding support for more event types, introducing additional hooks, improving unit test
+There is still a lot of work to be done, including adding support for more event types, introducing additional hooks, improving unit test
 coverage, providing extensive documentation of modules and API, and optimizing performance. 
 
 ## Key Features
