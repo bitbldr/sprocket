@@ -1,6 +1,6 @@
 FROM ghcr.io/gleam-lang/gleam:v0.29.0-erlang-alpine as builder
 
-RUN apk add --update nodejs npm
+RUN apk add --update nodejs npm elixir
 
 RUN npm install -g yarn typescript ts-node
 
