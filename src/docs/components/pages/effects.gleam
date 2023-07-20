@@ -16,7 +16,7 @@ pub fn effects_page(socket: Socket, _props: EffectsPageProps) {
         [],
         [
           h1([], [text("Effects")]),
-          p([], [text("")]),
+          p([], [text("COMING SOON")]),
           component(
             clock,
             ClockProps(label: Some("The current time is: "), time_unit: None),

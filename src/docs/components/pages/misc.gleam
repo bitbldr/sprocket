@@ -39,7 +39,7 @@ pub type MiscPageProps {
 }
 
 pub fn misc_page(socket: Socket, _props: MiscPageProps) {
-  use socket, State(Model(time_unit), dispatch) <- reducer(
+  use socket, State(Model(time_unit), _dispatch) <- reducer(
     socket,
     initial(),
     update,
