@@ -241,7 +241,7 @@ pub fn props_and_events_page(socket: Socket, _props: PropsAndEventsPageProps) {
                 [
                   span(
                     [
-                      attributes.on_double_click(on_reset),
+                      attributes.on_doubleclick(on_reset),
                       class(
                         \"p-1 px-2 w-10 bg-white dark:bg-gray-900 border-t border-b dark:border-gray-500 align-center text-center\",
                       ),

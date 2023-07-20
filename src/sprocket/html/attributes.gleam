@@ -21,6 +21,10 @@ pub fn on_click(identifiable_cb: IdentifiableCallback) -> Attribute {
   event("click", identifiable_cb)
 }
 
+pub fn on_doubleclick(identifiable_cb: IdentifiableCallback) -> Attribute {
+  event("doubleclick", identifiable_cb)
+}
+
 pub fn on_change(identifiable_cb: IdentifiableCallback) -> Attribute {
   event("change", identifiable_cb)
 }

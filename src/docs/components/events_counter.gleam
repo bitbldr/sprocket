@@ -124,9 +124,9 @@ pub fn display(socket: Socket, props: DisplayProps) {
     [
       span(
         [
-          attributes.on_click(on_reset),
+          attributes.on_doubleclick(on_reset),
           class(
-            "p-1 px-2 w-10 bg-white dark:bg-gray-900 border-t border-b dark:border-gray-500 align-center text-center",
+            "p-1 px-2 w-10 bg-white dark:bg-gray-900 border-t border-b dark:border-gray-500 align-center text-center select-none",
           ),
         ],
         [text(int.to_string(count))],

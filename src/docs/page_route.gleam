@@ -19,7 +19,7 @@ pub fn from_string(route: String) -> PageRoute {
   case route {
     "/" -> Introduction
     "/components" -> Components
-    "/events" -> Events
+    "/props_and_events" -> Events
     "/state" -> StateManagement
     "/effects" -> Effects
     "/hooks" -> Hooks
@@ -32,7 +32,7 @@ pub fn href(route: PageRoute) -> String {
   case route {
     Introduction -> "/"
     Components -> "/components"
-    Events -> "/events"
+    Events -> "/props_and_events"
     StateManagement -> "/state"
     Effects -> "/effects"
     Hooks -> "/hooks"
