@@ -1,7 +1,7 @@
 import sprocket/context.{Context}
 import sprocket/component.{render}
-import sprocket/html.{article, div, h1, h2, li, p, span, text, ul}
-import sprocket/html/attributes.{class}
+import sprocket/html.{a_text, article, div, h1, h2, li, p, span, text, ul}
+import sprocket/html/attributes.{class, href}
 import docs/utils/codeblock.{codeblock}
 
 pub type IntroductionPageProps {
@@ -77,10 +77,10 @@ pub fn introduction_page(ctx: Context, _props: IntroductionPageProps) {
             [
               text(
                 "
-                      Sprocket was born out of a vision to bridge the gap between functional programming, type-safety, and the real-time demands of modern
-                      applications. With Sprocket, developers can seamlessly construct concurrent and distributed systems without compromising on the rigor
-                      of Gleam's static typing. By leveraging the Erlang Beam VM, Sprocket enables high-throughput, fault-tolerant, and real-time communication
-                      channels that cater to the needs of modern web applications, IoT devices, and more.
+                      Sprocket was born out of a vision to bridge the gap between functional component views, type-safety, and the real-time server renderd
+                      applications. With Sprocket, developers can quickly construct server-side live views without compromising on type-safety and maintainability.
+                      By leveraging the Erlang Beam VM, Sprocket enables high-throughput, fault-tolerant, and real-time server renderd applications that 
+                      reduce the amount of code required to build rich web applications.
                     ",
               ),
             ],
@@ -92,26 +92,6 @@ pub fn introduction_page(ctx: Context, _props: IntroductionPageProps) {
               ul(
                 [],
                 [
-                  li(
-                    [],
-                    [
-                      span([class("font-bold")], [text("Type-Safety: ")]),
-                      text(
-                        "Gleam's static typing guarantees robustness and correctness in your codebase, reducing the likelihood of runtime errors and
-                      enabling early bug detection during compilation.",
-                      ),
-                    ],
-                  ),
-                  li(
-                    [],
-                    [
-                      span([class("font-bold")], [text("Concurrency: ")]),
-                      text(
-                        "Sprocket harnesses the power of the Erlang Beam VM, providing lightweight processes and easy-to-use abstractions for
-                      concurrent programming.",
-                      ),
-                    ],
-                  ),
                   li(
                     [],
                     [
@@ -128,19 +108,38 @@ pub fn introduction_page(ctx: Context, _props: IntroductionPageProps) {
                   li(
                     [],
                     [
-                      span([class("font-bold")], [text("Fault-Tolerance: ")]),
+                      span([class("font-bold")], [text("Type-Safety: ")]),
                       text(
-                        "The Erlang Beam VM's battle-tested fault-tolerance mechanisms ensure that your applications stay resilient even under
-                      adverse conditions.",
+                        "Gleam's static typing guarantees that your code is free of runtime errors, making it easier to reason about complex systems and
+                        build maintainable codebases.",
                       ),
                     ],
                   ),
                   li(
                     [],
                     [
-                      span([class("font-bold")], [text("Extensibility: ")]),
+                      span([class("font-bold")], [text("Concurrency: ")]),
                       text(
-                        "Sprocket is designed to be extensible, allowing you to integrate seamlessly with existing Erlang or Elixir projects and libraries.",
+                        "Sprocket harnesses the power of the Erlang Beam VM, providing lightweight processes and easy-to-use abstractions for
+                      concurrent programming.",
+                      ),
+                    ],
+                  ),
+                  li(
+                    [],
+                    [
+                      span([class("font-bold")], [text("Fault-Tolerance: ")]),
+                      text(
+                        "Battle-tested fault-tolerance mechanisms ensure that your applications stay resilient even under adverse conditions.",
+                      ),
+                    ],
+                  ),
+                  li(
+                    [],
+                    [
+                      span([class("font-bold")], [text("Interoperability: ")]),
+                      text(
+                        "Seamlessly plug-in existing Erlang/Elixir libraries with Gleam's first class FFI.",
                       ),
                     ],
                   ),
@@ -149,7 +148,7 @@ pub fn introduction_page(ctx: Context, _props: IntroductionPageProps) {
                     [
                       span([class("font-bold")], [text("Scalability: ")]),
                       text(
-                        "With Sprocket, scaling your application is a breeze thanks to the Erlang VM's distributed and fault-tolerant nature.",
+                        "Scaling your application is a breeze thanks to the Erlang Beam VM's distributed nature.",
                       ),
                     ],
                   ),
@@ -172,7 +171,7 @@ pub fn introduction_page(ctx: Context, _props: IntroductionPageProps) {
             [
               text(
                 "
-                    This documentation is tailored to developers, architects, and enthusiasts who are eager to explore the world of UI functional programming with Gleam. Whether you are a seasoned Erlang/Elixir developer looking to venture into Gleam or a newcomer to the Erlang ecosystem, this documentation will guide you through the process of building real-time server-side components with Sprocket.
+                    This documentation is tailored to developers and enthusiasts who are eager to explore the world of UI functional programming with Gleam. Whether you are a seasoned Erlang/Elixir developer looking to venture into Gleam or a newcomer to the Erlang ecosystem, this documentation will guide you through the process of building functional real-time server-side components with Sprocket.
                   ",
               ),
             ],
@@ -194,8 +193,6 @@ pub fn introduction_page(ctx: Context, _props: IntroductionPageProps) {
               text(
                 "
                     Before diving in, lets make sure you have Gleam and the necessary dependencies installed on your system. If you haven't already, head over to the Gleam installation guide and follow the instructions for your operating system.
-
-                    Let's embark on this journey together and unlock the true potential of real-time server-side components with Sprocket and Gleam! Happy coding!
                     ",
               ),
               text(
@@ -221,9 +218,24 @@ pub fn introduction_page(ctx: Context, _props: IntroductionPageProps) {
             [],
             [
               text(
-                "
-                    That's it! Now we can begin our journey and unlock the true potential of real-time server-side components with Sprocket and Gleam!
-                    ",
+                "If you wish to follow along with the same styles as this documentation, you can optionally add Tailwind CSS as well by following the instructions in the ",
+              ),
+              a_text(
+                [href("https://tailwindcss.com/docs/installation")],
+                "Tailwind CSS installation guide",
+              ),
+              text(" and taking a look at the configuration in the "),
+              a_text(
+                [href("https://github.com/eliknebel/sprocket")],
+                "docs repository on GitHub.",
+              ),
+            ],
+          ),
+          p(
+            [],
+            [
+              text(
+                "That's it! Now we can begin our journey to learning how to build real-time server-side components with Sprocket!",
               ),
             ],
           ),

@@ -92,6 +92,11 @@ pub fn a(attrs: List(Attribute), children: List(Element)) -> Element {
   el("a", attrs, children)
 }
 
+/// Shorthand for `html.a(attrs, children: [html.text(text)])`
+pub fn a_text(attrs: List(Attribute), text inner_text: String) -> Element {
+  el("a", attrs, [text(inner_text)])
+}
+
 /// The [HTML `<abbr>` element](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/abbr)
 pub fn abbr(attrs: List(Attribute), children: List(Element)) -> Element {
   el("abbr", attrs, children)
