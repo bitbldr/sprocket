@@ -1,4 +1,4 @@
-import sprocket/socket.{Socket}
+import sprocket/context.{Context}
 import sprocket/component.{component, render}
 import sprocket/html.{article, code_text, h1, p, span_text, text}
 import sprocket/html/attributes.{class}
@@ -10,9 +10,9 @@ pub type PropsAndEventsPageProps {
   PropsAndEventsPageProps
 }
 
-pub fn props_and_events_page(socket: Socket, _props: PropsAndEventsPageProps) {
+pub fn props_and_events_page(ctx: Context, _props: PropsAndEventsPageProps) {
   render(
-    socket,
+    ctx,
     [
       article(
         [],
@@ -114,12 +114,12 @@ pub fn props_and_events_page(socket: Socket, _props: PropsAndEventsPageProps) {
               CounterProps
             }
 
-            pub fn counter(socket: Socket, _props: CounterProps) {
+            pub fn counter(ctx: Context, _props: CounterProps) {
               // Define a reducer to handle events and update the state
-              use socket, State(count, dispatch) <- reducer(socket, 0, update)
+              use ctx, State(count, dispatch) <- reducer(ctx, 0, update)
 
               render(
-                socket,
+                ctx,
                 [
                   div(
                     [class(\"flex flex-row m-4\")],
@@ -151,17 +151,17 @@ pub fn props_and_events_page(socket: Socket, _props: PropsAndEventsPageProps) {
               ButtonProps(class: Option(String), label: String, on_click: fn() -> Nil)
             }
 
-            pub fn button(socket: Socket, props: ButtonProps) {
+            pub fn button(ctx: Context, props: ButtonProps) {
               let ButtonProps(class, label, ..) = props
 
-              use socket, on_click <- callback(
-                socket,
+              use ctx, on_click <- callback(
+                ctx,
                 CallbackFn(props.on_click),
                 WithDeps([dep(props.on_click)]),
               )
 
               render(
-                socket,
+                ctx,
                 [
                   html.button_text(
                     [
@@ -183,11 +183,11 @@ pub fn props_and_events_page(socket: Socket, _props: PropsAndEventsPageProps) {
               DisplayProps(count: Int)
             }
 
-            pub fn display(socket: Socket, props: DisplayProps) {
+            pub fn display(ctx: Context, props: DisplayProps) {
               let DisplayProps(count: count) = props
 
               render(
-                socket,
+                ctx,
                 [
                   span(
                     [
@@ -227,17 +227,17 @@ pub fn props_and_events_page(socket: Socket, _props: PropsAndEventsPageProps) {
               DisplayProps(count: Int, on_reset: Option(fn() -> Nil))
             }
 
-            pub fn display(socket: Socket, props: DisplayProps) {
+            pub fn display(ctx: Context, props: DisplayProps) {
               let DisplayProps(count: count, on_reset: on_reset) = props
 
-              use socket, on_reset <- callback(
-                socket,
+              use ctx, on_reset <- callback(
+                ctx,
                 CallbackFn(option.unwrap(on_reset, fn() { Nil })),
                 WithDeps([]),
               )
 
               render(
-                socket,
+                ctx,
                 [
                   span(
                     [

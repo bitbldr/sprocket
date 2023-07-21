@@ -28,8 +28,8 @@ pub type ComponentWip {
   ComponentWip(hooks: ComponentHooks, index: Int, is_first_render: Bool)
 }
 
-pub type Socket {
-  Socket(
+pub type Context {
+  Context(
     wip: ComponentWip,
     handlers: List(EventHandler),
     ws: Option(WebSocket),
@@ -37,8 +37,8 @@ pub type Socket {
   )
 }
 
-pub fn new(ws: Option(WebSocket)) -> Socket {
-  Socket(
+pub fn new(ws: Option(WebSocket)) -> Context {
+  Context(
     wip: ComponentWip(hooks: ordered_map.new(), index: 0, is_first_render: True),
     handlers: [],
     ws: ws,
@@ -46,29 +46,29 @@ pub fn new(ws: Option(WebSocket)) -> Socket {
   )
 }
 
-pub fn reset_for_render(socket: Socket) {
-  Socket(..socket, handlers: [])
+pub fn reset_for_render(ctx: Context) {
+  Context(..ctx, handlers: [])
 }
 
 pub fn fetch_or_init_hook(
-  socket: Socket,
+  ctx: Context,
   init: fn() -> Hook,
-) -> #(Socket, Hook, Int) {
-  let index = socket.wip.index
-  let hooks = socket.wip.hooks
+) -> #(Context, Hook, Int) {
+  let index = ctx.wip.index
+  let hooks = ctx.wip.hooks
 
   case ordered_map.get(hooks, index) {
     Ok(hook) -> {
       // hook found, return it
       #(
-        Socket(..socket, wip: ComponentWip(..socket.wip, index: index + 1)),
+        Context(..ctx, wip: ComponentWip(..ctx.wip, index: index + 1)),
         hook,
         index,
       )
     }
     Error(Nil) -> {
       // check here for is_first_render and if it isnt, throw an error
-      case socket.wip.is_first_render {
+      case ctx.wip.is_first_render {
         True -> Nil
         False -> {
           logger.error(
@@ -87,12 +87,12 @@ pub fn fetch_or_init_hook(
       let hook = init()
 
       #(
-        Socket(
-          ..socket,
+        Context(
+          ..ctx,
           wip: ComponentWip(
-            hooks: ordered_map.insert(socket.wip.hooks, index, hook),
+            hooks: ordered_map.insert(ctx.wip.hooks, index, hook),
             index: index + 1,
-            is_first_render: socket.wip.is_first_render,
+            is_first_render: ctx.wip.is_first_render,
           ),
         ),
         hook,
@@ -102,37 +102,37 @@ pub fn fetch_or_init_hook(
   }
 }
 
-pub fn update_hook(socket: Socket, hook: Hook, index: Int) -> Socket {
-  Socket(
-    ..socket,
+pub fn update_hook(ctx: Context, hook: Hook, index: Int) -> Context {
+  Context(
+    ..ctx,
     wip: ComponentWip(
-      ..socket.wip,
-      hooks: ordered_map.update(socket.wip.hooks, index, hook),
+      ..ctx.wip,
+      hooks: ordered_map.update(ctx.wip.hooks, index, hook),
     ),
   )
 }
 
 pub fn push_event_handler(
-  socket: Socket,
+  ctx: Context,
   identifiable_cb: IdentifiableCallback,
-) -> #(Socket, Unique) {
+) -> #(Context, Unique) {
   let IdentifiableCallback(id, cb) = identifiable_cb
 
-  #(Socket(..socket, handlers: [EventHandler(id, cb), ..socket.handlers]), id)
+  #(Context(..ctx, handlers: [EventHandler(id, cb), ..ctx.handlers]), id)
 }
 
 pub fn get_event_handler(
-  socket: Socket,
+  ctx: Context,
   id: Unique,
-) -> #(Socket, Result(EventHandler, Nil)) {
+) -> #(Context, Result(EventHandler, Nil)) {
   let handler =
     list.find(
-      socket.handlers,
+      ctx.handlers,
       fn(h) {
         let EventHandler(i, _) = h
         i == id
       },
     )
 
-  #(socket, handler)
+  #(ctx, handler)
 }

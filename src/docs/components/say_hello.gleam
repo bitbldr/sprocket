@@ -2,7 +2,7 @@ import gleam/int
 import gleam/list
 import gleam/pair
 import gleam/option.{None, Option, Some}
-import sprocket/socket.{Socket}
+import sprocket/context.{Context}
 import sprocket/component.{render}
 import sprocket/hooks.{WithDeps}
 import sprocket/hooks/reducer.{State, reducer}
@@ -36,15 +36,15 @@ pub type SayHelloProps {
   SayHelloProps
 }
 
-pub fn say_hello(socket: Socket, _props: SayHelloProps) {
-  use socket, State(Model(selection: selection, options: options), dispatch) <- reducer(
-    socket,
+pub fn say_hello(ctx: Context, _props: SayHelloProps) {
+  use ctx, State(Model(selection: selection, options: options), dispatch) <- reducer(
+    ctx,
     initial(hello_strings()),
     update,
   )
 
-  use socket, on_say_hello <- callback(
-    socket,
+  use ctx, on_say_hello <- callback(
+    ctx,
     CallbackFn(fn() { dispatch(SayHello) }),
     WithDeps([]),
   )
@@ -58,7 +58,7 @@ pub fn say_hello(socket: Socket, _props: SayHelloProps) {
     |> option.flatten()
 
   render(
-    socket,
+    ctx,
     [
       div(
         [],

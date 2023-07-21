@@ -2,7 +2,7 @@ import gleam/int
 import gleam/string
 import gleam/option.{None}
 import gleeunit/should
-import sprocket/socket.{Socket}
+import sprocket/context.{Context}
 import sprocket/component.{component}
 import sprocket/html.{button, text}
 import sprocket/html/attributes.{id, on_click}
@@ -41,17 +41,17 @@ type TestCounterProps {
   TestCounterProps
 }
 
-fn inc_initial_render_counter(socket: Socket, _props) {
+fn inc_initial_render_counter(ctx: Context, _props) {
   // Define a reducer to handle events and update the state
-  use socket, State(Model(count: count), dispatch) <- reducer(
-    socket,
+  use ctx, State(Model(count: count), dispatch) <- reducer(
+    ctx,
     initial(),
     update,
   )
 
   // Example effect with an empty list of dependencies, runs once on mount
-  use socket <- effect(
-    socket,
+  use ctx <- effect(
+    ctx,
     fn() {
       dispatch(UpdateCount(count + 1))
       None
@@ -61,7 +61,7 @@ fn inc_initial_render_counter(socket: Socket, _props) {
 
   let current_count = int.to_string(count)
 
-  component.render(socket, [text("current count is: "), text(current_count)])
+  component.render(ctx, [text("current count is: "), text(current_count)])
 }
 
 pub fn effect_should_only_run_on_initial_render_test() {
@@ -84,17 +84,17 @@ pub fn effect_should_only_run_on_initial_render_test() {
   |> should.equal("current count is: 1")
 }
 
-fn inc_on_every_update_counter(socket: Socket, _props) {
+fn inc_on_every_update_counter(ctx: Context, _props) {
   // Define a reducer to handle events and update the state
-  use socket, State(Model(count: count), dispatch) <- reducer(
-    socket,
+  use ctx, State(Model(count: count), dispatch) <- reducer(
+    ctx,
     initial(),
     update,
   )
 
   // Example effect with an empty list of dependencies, runs once on mount
-  use socket <- effect(
-    socket,
+  use ctx <- effect(
+    ctx,
     fn() {
       dispatch(UpdateCount(count + 1))
       None
@@ -104,7 +104,7 @@ fn inc_on_every_update_counter(socket: Socket, _props) {
 
   let current_count = int.to_string(count)
 
-  component.render(socket, [text("current count is: "), text(current_count)])
+  component.render(ctx, [text("current count is: "), text(current_count)])
 }
 
 pub fn effect_should_run_on_every_update_test() {
@@ -133,17 +133,17 @@ pub fn effect_should_run_on_every_update_test() {
   |> should.equal("current count is: 3")
 }
 
-fn inc_reset_on_button_click_counter(socket: Socket, _props) {
+fn inc_reset_on_button_click_counter(ctx: Context, _props) {
   // Define a reducer to handle events and update the state
-  use socket, State(Model(count: count), dispatch) <- reducer(
-    socket,
+  use ctx, State(Model(count: count), dispatch) <- reducer(
+    ctx,
     initial(),
     update,
   )
 
   // Example effect with an empty list of dependencies, runs once on mount
-  use socket <- effect(
-    socket,
+  use ctx <- effect(
+    ctx,
     fn() {
       dispatch(UpdateCount(count + 1))
       None
@@ -152,13 +152,13 @@ fn inc_reset_on_button_click_counter(socket: Socket, _props) {
   )
 
   // Define event handlers
-  use socket, on_increment <- callback(
-    socket,
+  use ctx, on_increment <- callback(
+    ctx,
     CallbackFn(fn() { dispatch(UpdateCount(count + 1)) }),
     WithDeps([dep(count)]),
   )
-  use socket, on_reset <- callback(
-    socket,
+  use ctx, on_reset <- callback(
+    ctx,
     CallbackFn(fn() { dispatch(ResetCount) }),
     WithDeps([dep(count)]),
   )
@@ -166,7 +166,7 @@ fn inc_reset_on_button_click_counter(socket: Socket, _props) {
   let current_count = int.to_string(count)
 
   component.render(
-    socket,
+    ctx,
     [
       text("current count is: "),
       text(current_count),

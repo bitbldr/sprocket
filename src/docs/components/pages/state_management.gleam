@@ -1,4 +1,4 @@
-import sprocket/socket.{Socket}
+import sprocket/context.{Context}
 import sprocket/component.{component, render}
 import sprocket/html.{article, code_text, h1, h2, p, text}
 import docs/components/say_hello.{SayHelloProps, say_hello}
@@ -9,9 +9,9 @@ pub type StateManagementPageProps {
   StateManagementPageProps
 }
 
-pub fn state_management_page(socket: Socket, _props: StateManagementPageProps) {
+pub fn state_management_page(ctx: Context, _props: StateManagementPageProps) {
   render(
-    socket,
+    ctx,
     [
       article(
         [],
@@ -87,8 +87,8 @@ pub fn state_management_page(socket: Socket, _props: StateManagementPageProps) {
           codeblock(
             "gleam",
             "
-            use socket, State(Model(selection: selection, options: options), dispatch) <- reducer(
-              socket,
+            use ctx, State(Model(selection: selection, options: options), dispatch) <- reducer(
+              ctx,
               initial(hello_options()),
               update,
             )
@@ -133,8 +133,8 @@ pub fn state_management_page(socket: Socket, _props: StateManagementPageProps) {
           codeblock(
             "gleam",
             "
-            use socket, on_say_hello <- callback(
-              socket,
+            use ctx, on_say_hello <- callback(
+              ctx,
               CallbackFn(fn() { dispatch(SayHello) }),
               WithDeps([]),
             )
@@ -156,7 +156,7 @@ pub fn state_management_page(socket: Socket, _props: StateManagementPageProps) {
             import gleam/list
             import gleam/pair
             import gleam/option.{None, Option, Some}
-            import sprocket/socket.{Socket}
+            import sprocket/context.{Context}
             import sprocket/component.{render}
             import sprocket/hooks.{WithDeps}
             import sprocket/hooks/reducer.{State, reducer}
@@ -190,15 +190,15 @@ pub fn state_management_page(socket: Socket, _props: StateManagementPageProps) {
               SayHelloProps
             }
 
-            pub fn say_hello(socket: Socket, _props: SayHelloProps) {
-              use socket, State(Model(selection: selection, options: options), dispatch) <- reducer(
-                socket,
+            pub fn say_hello(ctx: Context, _props: SayHelloProps) {
+              use ctx, State(Model(selection: selection, options: options), dispatch) <- reducer(
+                ctx,
                 initial(hello_options()),
                 update,
               )
 
-              use socket, on_say_hello <- callback(
-                socket,
+              use ctx, on_say_hello <- callback(
+                ctx,
                 CallbackFn(fn() { dispatch(SayHello) }),
                 WithDeps([]),
               )
@@ -213,7 +213,7 @@ pub fn state_management_page(socket: Socket, _props: StateManagementPageProps) {
                 |> option.flatten()
 
               render(
-                socket,
+                ctx,
                 [
                   div(
                     [],

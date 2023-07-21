@@ -5,8 +5,9 @@ import gleam/erlang/process.{Subject}
 import gleam/option.{None, Option, Some}
 import sprocket/internal/logger
 import sprocket/element.{Element}
-import sprocket/socket.{ComponentHooks,
-  EventHandler, Socket, Updater, WebSocket}
+import sprocket/context.{
+  ComponentHooks, Context, EventHandler, Updater, WebSocket,
+}
 import sprocket/hooks.{
   Callback, Changed, Effect, EffectCleanup, EffectResult, Hook, HookDependencies,
   HookTrigger, OnMount, OnUpdate, Reducer, Unchanged, WithDeps, compare_deps,
@@ -24,7 +25,7 @@ pub type Sprocket =
 
 type State {
   State(
-    socket: Socket,
+    ctx: Context,
     view: Option(Element),
     updater: Option(Updater(Patch)),
     rendered: Option(RenderedElement),
@@ -52,8 +53,8 @@ fn handle_message(message: Message, state: State) -> actor.Next(State) {
     }
 
     HasWebSocket(reply_with, websocket) -> {
-      case state.socket {
-        Socket(ws: Some(ws), ..) -> {
+      case state.ctx {
+        Context(ws: Some(ws), ..) -> {
           actor.send(reply_with, ws == websocket)
         }
         _ -> {
@@ -66,19 +67,16 @@ fn handle_message(message: Message, state: State) -> actor.Next(State) {
 
     SetRenderUpdate(render_update) -> {
       actor.Continue(
-        State(
-          ..state,
-          socket: Socket(..state.socket, render_update: render_update),
-        ),
+        State(..state, ctx: Context(..state.ctx, render_update: render_update)),
       )
     }
 
     Render(reply_with) -> {
       let state = case state {
-        State(socket: socket, view: Some(view), rendered: prev_rendered, ..) -> {
-          let RenderResult(socket, rendered) =
-            socket
-            |> socket.reset_for_render
+        State(ctx: ctx, view: Some(view), rendered: prev_rendered, ..) -> {
+          let RenderResult(ctx, rendered) =
+            ctx
+            |> context.reset_for_render
             |> live_render(view, None, prev_rendered)
 
           actor.send(reply_with, rendered)
@@ -89,7 +87,7 @@ fn handle_message(message: Message, state: State) -> actor.Next(State) {
             _ -> Nil
           }
 
-          run_effects(State(..state, socket: socket, rendered: Some(rendered)))
+          run_effects(State(..state, ctx: ctx, rendered: Some(rendered)))
         }
         _ -> {
           logger.error("No renderer found!")
@@ -125,14 +123,14 @@ fn handle_message(message: Message, state: State) -> actor.Next(State) {
         }
 
         State(
-          socket: socket,
+          ctx: ctx,
           view: Some(view),
           updater: Some(updater),
           rendered: Some(prev_rendered),
         ) -> {
-          let RenderResult(socket, rendered) =
-            socket
-            |> socket.reset_for_render
+          let RenderResult(ctx, rendered) =
+            ctx
+            |> context.reset_for_render
             |> live_render(view, None, Some(prev_rendered))
 
           let update = patch.create(prev_rendered, rendered)
@@ -152,9 +150,7 @@ fn handle_message(message: Message, state: State) -> actor.Next(State) {
           // RenderUpdate messages sent during this operation will be placed into this actor's mailbox
           // and will be processed in order after this current render is complete
           let state =
-            run_effects(
-              State(..state, socket: socket, rendered: Some(rendered)),
-            )
+            run_effects(State(..state, ctx: ctx, rendered: Some(rendered)))
 
           actor.Continue(state)
         }
@@ -164,7 +160,7 @@ fn handle_message(message: Message, state: State) -> actor.Next(State) {
     GetEventHandler(reply_with, id) -> {
       let handler =
         list.find(
-          state.socket.handlers,
+          state.ctx.handlers,
           fn(h) {
             let EventHandler(i, _) = h
             i == id
@@ -186,12 +182,7 @@ pub fn start(
 ) {
   let assert Ok(actor) =
     actor.start(
-      State(
-        socket: socket.new(ws),
-        view: view,
-        updater: updater,
-        rendered: None,
-      ),
+      State(ctx: context.new(ws), view: view, updater: updater, rendered: None),
       handle_message,
     )
 

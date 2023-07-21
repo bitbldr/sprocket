@@ -7,7 +7,7 @@ import sprocket/element.{
   AbstractFunctionalComponent, Component, Debug, Element, IgnoreUpdate, Keyed,
   Raw, SafeHtml,
 }
-import sprocket/socket.{ComponentHooks, ComponentWip, Socket}
+import sprocket/context.{ComponentHooks, ComponentWip, Context}
 import sprocket/internal/utils/unique
 import sprocket/internal/utils/ordered_map
 import sprocket/internal/logger
@@ -40,24 +40,24 @@ pub type Renderer(result) {
 }
 
 pub type RenderResult(a) {
-  RenderResult(socket: Socket, rendered: a)
+  RenderResult(ctx: Context, rendered: a)
 }
 
 // Renders the given element using the provided renderer as a stateless element.
 //
-// Internally this function uses live_render with a placeholder socket to render the tree,
-// but then discards the socket and returns the result.
+// Internally this function uses live_render with a placeholder ctx to render the tree,
+// but then discards the ctx and returns the result.
 pub fn render(el: Element, renderer: Renderer(r)) -> r {
   let RenderResult(rendered: rendered, ..) =
-    live_render(socket.new(None), el, None, None)
+    live_render(context.new(None), el, None, None)
 
   renderer.render(rendered)
 }
 
 // Renders the given element into a RenderedElement tree.
-// Returns the socket and a stateful RenderedElement tree using the given socket.
+// Returns the ctx and a stateful RenderedElement tree using the given ctx.
 pub fn live_render(
-  socket: Socket,
+  ctx: Context,
   el: Element,
   key: Option(String),
   prev: Option(RenderedElement),
@@ -66,14 +66,14 @@ pub fn live_render(
 
   case el {
     Element(tag, attrs, children) ->
-      element(socket, tag, key, attrs, children, prev)
-    Component(fc, props) -> component(socket, fc, key, props, prev)
+      element(ctx, tag, key, attrs, children, prev)
+    Component(fc, props) -> component(ctx, fc, key, props, prev)
     Debug(id, meta, el) -> {
       // unwrap debug element, print details and continue with rendering
       io.debug(#(id, meta))
-      io.debug(live_render(socket, el, key, prev))
+      io.debug(live_render(ctx, el, key, prev))
     }
-    Keyed(key, el) -> live_render(socket, el, Some(key), prev)
+    Keyed(key, el) -> live_render(ctx, el, Some(key), prev)
     IgnoreUpdate(el) -> {
       case prev {
         Some(prev) -> {
@@ -84,63 +84,61 @@ pub fn live_render(
             constant(IgnoreUpdateAttr),
             "true",
           ))
-          |> RenderResult(socket, _)
+          |> RenderResult(ctx, _)
         }
         None -> {
           // render the element and add the ignore attribute
-          let RenderResult(socket, rendered) =
-            live_render(socket, el, key, prev)
+          let RenderResult(ctx, rendered) = live_render(ctx, el, key, prev)
 
           rendered
           |> append_attribute(RenderedAttribute(
             constant(IgnoreUpdateAttr),
             "true",
           ))
-          |> RenderResult(socket, _)
+          |> RenderResult(ctx, _)
         }
       }
     }
-    SafeHtml(html) -> safe_html(socket, html)
-    Raw(text) -> raw(socket, text)
+    SafeHtml(html) -> safe_html(ctx, html)
+    Raw(text) -> raw(ctx, text)
   }
 }
 
 /// Renders the given element into a stateless RenderedElement tree.
 pub fn render_element(el: Element) {
   let RenderResult(rendered: rendered, ..) =
-    live_render(socket.new(None), el, None, None)
+    live_render(context.new(None), el, None, None)
 
   rendered
 }
 
 fn element(
-  socket: Socket,
+  ctx: Context,
   tag: String,
   key: Option(String),
   attrs: List(Attribute),
   children: List(Element),
   prev: Option(RenderedElement),
 ) -> RenderResult(RenderedElement) {
-  let RenderResult(socket, rendered_attrs) =
+  let RenderResult(ctx, rendered_attrs) =
     list.fold(
       attrs,
-      RenderResult(socket, []),
+      RenderResult(ctx, []),
       fn(acc, current) {
-        let RenderResult(socket, rendered_attrs) = acc
+        let RenderResult(ctx, rendered_attrs) = acc
 
         case current {
           Attribute(name, value) -> {
             let assert Ok(value) = dynamic.string(value)
             RenderResult(
-              socket,
+              ctx,
               [RenderedAttribute(name, value), ..rendered_attrs],
             )
           }
           Event(kind, identifiable_cb) -> {
-            let #(socket, id) =
-              socket.push_event_handler(socket, identifiable_cb)
+            let #(ctx, id) = context.push_event_handler(ctx, identifiable_cb)
             RenderResult(
-              socket,
+              ctx,
               [
                 RenderedEventHandler(kind, unique.to_string(id)),
                 ..rendered_attrs
@@ -151,23 +149,23 @@ fn element(
       },
     )
 
-  let RenderResult(socket, children) =
+  let RenderResult(ctx, children) =
     children
     |> list.index_fold(
-      RenderResult(socket, []),
+      RenderResult(ctx, []),
       fn(acc, child, i) {
-        let RenderResult(socket, rendered) = acc
+        let RenderResult(ctx, rendered) = acc
 
         let prev_child = find_prev_child(prev, child, i)
 
-        let RenderResult(socket, rendered_child) =
-          live_render(socket, child, None, prev_child)
-        RenderResult(socket, [rendered_child, ..rendered])
+        let RenderResult(ctx, rendered_child) =
+          live_render(ctx, child, None, prev_child)
+        RenderResult(ctx, [rendered_child, ..rendered])
       },
     )
 
   RenderResult(
-    socket,
+    ctx,
     RenderedElement(
       tag,
       key,
@@ -178,20 +176,20 @@ fn element(
 }
 
 fn component(
-  socket: Socket,
+  ctx: Context,
   fc: AbstractFunctionalComponent,
   key: Option(String),
   props: Dynamic,
   prev: Option(RenderedElement),
 ) -> RenderResult(RenderedElement) {
-  // Prepare socket wip (work in progress) for component render
-  let socket = case prev {
+  // Prepare ctx wip (work in progress) for component render
+  let ctx = case prev {
     None ->
       // There is no previous rendered element, so this is the first render
-      Socket(..socket, wip: ComponentWip(ordered_map.new(), 0, True))
+      Context(..ctx, wip: ComponentWip(ordered_map.new(), 0, True))
     Some(RenderedComponent(_, _, _, hooks, _)) ->
       // There is a previous rendered element, so use the previously rendered hooks
-      Socket(..socket, wip: ComponentWip(hooks, 0, False))
+      Context(..ctx, wip: ComponentWip(hooks, 0, False))
     Some(_) -> {
       // This should never happen
       logger.error("Invalid previous element")
@@ -200,30 +198,30 @@ fn component(
   }
 
   // render the component
-  let #(socket, children) = fc(socket, props)
+  let #(ctx, children) = fc(ctx, props)
 
   // capture hook results
-  let hooks = socket.wip.hooks
+  let hooks = ctx.wip.hooks
 
   // process children
-  let RenderResult(socket, children) =
+  let RenderResult(ctx, children) =
     children
     |> list.index_fold(
-      RenderResult(socket, []),
+      RenderResult(ctx, []),
       fn(acc, child, i) {
-        let RenderResult(socket, rendered) = acc
+        let RenderResult(ctx, rendered) = acc
 
         let prev_child = find_prev_child(prev, child, i)
 
-        let RenderResult(socket, rendered_child) =
-          live_render(socket, child, None, prev_child)
+        let RenderResult(ctx, rendered_child) =
+          live_render(ctx, child, None, prev_child)
 
-        RenderResult(socket, [rendered_child, ..rendered])
+        RenderResult(ctx, [rendered_child, ..rendered])
       },
     )
 
   RenderResult(
-    socket,
+    ctx,
     RenderedComponent(fc, key, props, hooks, list.reverse(children)),
   )
 }
@@ -323,12 +321,12 @@ fn maybe_matching_el(
   }
 }
 
-fn safe_html(socket: Socket, html: String) -> RenderResult(RenderedElement) {
-  RenderResult(socket, RenderedText(html))
+fn safe_html(ctx: Context, html: String) -> RenderResult(RenderedElement) {
+  RenderResult(ctx, RenderedText(html))
 }
 
-fn raw(socket: Socket, text: String) -> RenderResult(RenderedElement) {
-  RenderResult(socket, RenderedText(text))
+fn raw(ctx: Context, text: String) -> RenderResult(RenderedElement) {
+  RenderResult(ctx, RenderedText(text))
 }
 
 pub fn traverse(

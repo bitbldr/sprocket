@@ -2,7 +2,7 @@ import gleam/dynamic
 import gleam/otp/actor
 import gleam/erlang/process.{Subject}
 import sprocket/element.{Element}
-import sprocket/socket.{Socket}
+import sprocket/context.{Context}
 import sprocket/hooks
 import sprocket/internal/utils/unique
 import sprocket/internal/constants.{call_timeout}
@@ -24,12 +24,12 @@ type StateOrDispatchReducer(model, msg) {
 }
 
 pub fn reducer(
-  socket: Socket,
+  ctx: Context,
   initial: model,
   reducer: Reducer(model, msg),
-  cb: fn(Socket, State(model, msg)) -> #(Socket, List(Element)),
-) -> #(Socket, List(Element)) {
-  let Socket(render_update: render_update, ..) = socket
+  cb: fn(Context, State(model, msg)) -> #(Context, List(Element)),
+) -> #(Context, List(Element)) {
+  let Context(render_update: render_update, ..) = ctx
 
   let reducer_init = fn() {
     // creates an actor process for a reducer that handles two types of messages:
@@ -64,8 +64,8 @@ pub fn reducer(
     )
   }
 
-  let assert #(socket, hooks.Reducer(_id, dyn_reducer_actor, _cleanup), _index) =
-    socket.fetch_or_init_hook(socket, reducer_init)
+  let assert #(ctx, hooks.Reducer(_id, dyn_reducer_actor, _cleanup), _index) =
+    context.fetch_or_init_hook(ctx, reducer_init)
 
   // we dont know what types of reducer messages a component will implement so the best
   // we can do is store the actors as dynamic and coerce them back when updating
@@ -83,5 +83,5 @@ pub fn reducer(
     Nil
   }
 
-  cb(socket, State(state, dispatch))
+  cb(ctx, State(state, dispatch))
 }

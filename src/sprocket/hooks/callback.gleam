@@ -2,7 +2,7 @@ import gleam/option.{None, Option, Some}
 import sprocket/element.{Element}
 import sprocket/internal/identifiable_callback.{CallbackFn,
   IdentifiableCallback}
-import sprocket/socket.{Socket}
+import sprocket/context.{Context}
 import sprocket/hooks.{
   Callback, CallbackResult, Changed, HookDependencies, HookTrigger, OnMount,
   OnUpdate, Unchanged, WithDeps, compare_deps,
@@ -11,31 +11,28 @@ import sprocket/internal/exception.{throw_on_unexpected_hook_result}
 import sprocket/internal/utils/unique
 
 pub fn callback(
-  socket: Socket,
+  ctx: Context,
   callback_fn: CallbackFn,
   trigger: HookTrigger,
-  cb: fn(Socket, IdentifiableCallback) -> #(Socket, List(Element)),
-) -> #(Socket, List(Element)) {
+  cb: fn(Context, IdentifiableCallback) -> #(ctx, List(Element)),
+) -> #(ctx, List(Element)) {
   let init_callback = fn() {
     Callback(unique.new(), callback_fn, trigger, None)
   }
 
-  let #(socket, Callback(id, _callback_fn, _trigger, prev), index) =
-    socket.fetch_or_init_hook(socket, init_callback)
+  let #(ctx, Callback(id, _callback_fn, _trigger, prev), index) =
+    context.fetch_or_init_hook(ctx, init_callback)
 
   let result = maybe_update_callback(callback_fn, trigger, prev)
 
-  let socket =
-    socket.update_hook(
-      socket,
+  let ctx =
+    context.update_hook(
+      ctx,
       Callback(id, result.callback, trigger, Some(result)),
       index,
     )
 
-  // TODO: this needs some work to take in from socket an async callback dispatcher
-  // and generate an anonymous function that will call the dispatcher when the callback is triggered
-
-  cb(socket, IdentifiableCallback(id, result.callback))
+  cb(ctx, IdentifiableCallback(id, result.callback))
 }
 
 fn maybe_update_callback(

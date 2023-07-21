@@ -1,7 +1,7 @@
 import gleam/list
 import gleam/result
 import gleam/option.{None}
-import sprocket/socket.{Socket}
+import sprocket/context.{Context}
 import sprocket/component.{component, render}
 import sprocket/html.{body, div, head, html, link, meta, script, title}
 import sprocket/html/attributes.{
@@ -38,7 +38,7 @@ pub type PageViewProps {
   PageViewProps(route: PageRoute, path_segments: List(String))
 }
 
-pub fn page_view(socket: Socket, props: PageViewProps) {
+pub fn page_view(ctx: Context, props: PageViewProps) {
   let PageViewProps(route: route, ..) = props
 
   // TODO: use memoization hook to avoid re-computing this on every render
@@ -62,7 +62,7 @@ pub fn page_view(socket: Socket, props: PageViewProps) {
     |> result.unwrap("Sprocket")
 
   render(
-    socket,
+    ctx,
     [
       html(
         [lang("en")],

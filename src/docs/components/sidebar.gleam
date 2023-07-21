@@ -1,6 +1,6 @@
 import gleam/int
 import gleam/option.{None, Option, Some}
-import sprocket/socket.{Socket}
+import sprocket/context.{Context}
 import sprocket/component.{component, render}
 import sprocket/hooks/reducer.{State, reducer}
 import sprocket/html.{a, div, keyed, text}
@@ -34,17 +34,17 @@ pub type SidebarProps {
   SidebarProps(pages: OrderedMap(PageRoute, Page), active: PageRoute)
 }
 
-pub fn sidebar(socket: Socket, props) {
+pub fn sidebar(ctx: Context, props) {
   let SidebarProps(pages: pages, active: active) = props
 
-  use socket, State(Model(search_filter: search_filter), dispatch) <- reducer(
-    socket,
+  use ctx, State(Model(search_filter: search_filter), dispatch) <- reducer(
+    ctx,
     initial(),
     update,
   )
 
   render(
-    socket,
+    ctx,
     [
       component(
         search_bar,
@@ -93,11 +93,11 @@ type LinkProps {
   LinkProps(title: String, href: String, is_active: Bool)
 }
 
-fn link(socket: Socket, props: LinkProps) {
+fn link(ctx: Context, props: LinkProps) {
   let LinkProps(title: title, href: href, is_active: is_active) = props
 
   render(
-    socket,
+    ctx,
     [
       a(
         [

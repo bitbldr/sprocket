@@ -1,6 +1,6 @@
 import gleam/option.{None, Option, Some}
 import gleam/erlang
-import sprocket/socket.{Socket}
+import sprocket/context.{Context}
 import sprocket/component.{component, render}
 import sprocket/html.{
   article, button_text, dangerous_raw_html, div, h1, h2, p, text,
@@ -38,15 +38,11 @@ pub type MiscPageProps {
   MiscPageProps
 }
 
-pub fn misc_page(socket: Socket, _props: MiscPageProps) {
-  use socket, State(Model(time_unit), _dispatch) <- reducer(
-    socket,
-    initial(),
-    update,
-  )
+pub fn misc_page(ctx: Context, _props: MiscPageProps) {
+  use ctx, State(Model(time_unit), _dispatch) <- reducer(ctx, initial(), update)
 
   render(
-    socket,
+    ctx,
     [
       article(
         [],
@@ -107,21 +103,21 @@ type UnitToggleProps {
   )
 }
 
-fn unit_toggle(socket: Socket, props: UnitToggleProps) {
+fn unit_toggle(ctx: Context, props: UnitToggleProps) {
   let UnitToggleProps(current, on_select) = props
 
-  use socket, on_select_millisecond <- callback(
-    socket,
+  use ctx, on_select_millisecond <- callback(
+    ctx,
     CallbackFn(fn() { on_select(erlang.Millisecond) }),
     WithDeps([]),
   )
-  use socket, on_select_second <- callback(
-    socket,
+  use ctx, on_select_second <- callback(
+    ctx,
     CallbackFn(fn() { on_select(erlang.Second) }),
     WithDeps([]),
   )
   render(
-    socket,
+    ctx,
     [
       div(
         [],

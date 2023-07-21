@@ -1,8 +1,7 @@
 import gleam/io
 import gleam/erlang
-import gleam/int
 import gleam/option.{None, Option, Some}
-import sprocket/socket.{Socket}
+import sprocket/context.{Context}
 import sprocket/component.{render}
 import sprocket/hooks.{WithDeps, dep}
 import sprocket/hooks/reducer.{State, reducer}
@@ -34,19 +33,19 @@ pub type ClockProps {
   ClockProps(label: Option(String), time_unit: Option(erlang.TimeUnit))
 }
 
-pub fn clock(socket: Socket, props: ClockProps) {
+pub fn clock(ctx: Context, props: ClockProps) {
   let ClockProps(label, time_unit) = props
 
   // Define a reducer to handle events and update the state
-  use socket, State(Model(time: time, ..), dispatch) <- reducer(
-    socket,
+  use ctx, State(Model(time: time, ..), dispatch) <- reducer(
+    ctx,
     initial(),
     update,
   )
 
   // Example effect with an empty list of dependencies, runs once on mount
-  use socket <- effect(
-    socket,
+  use ctx <- effect(
+    ctx,
     fn() {
       io.println("Clock component mounted!")
       None
@@ -59,8 +58,8 @@ pub fn clock(socket: Socket, props: ClockProps) {
     |> option.unwrap(erlang.Second)
 
   // Example effect that runs whenever the `time` variable changes and has a cleanup function
-  use socket <- effect(
-    socket,
+  use ctx <- effect(
+    ctx,
     fn() {
       let interval_duration = case time_unit {
         erlang.Millisecond -> 1
@@ -84,7 +83,7 @@ pub fn clock(socket: Socket, props: ClockProps) {
   let current_time = format_time(time, "%y-%m-%d %I:%M:%S %p")
 
   render(
-    socket,
+    ctx,
     case label {
       Some(label) -> [span([], [text(label)]), span([], [text(current_time)])]
       None -> [text(current_time)]

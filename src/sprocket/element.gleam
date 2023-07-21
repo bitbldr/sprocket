@@ -1,13 +1,13 @@
 import gleam/option.{Option}
 import gleam/dynamic.{Dynamic}
 import sprocket/html/attributes.{Attribute}
-import sprocket/socket.{Socket}
+import sprocket/context.{Context}
 
 pub type AbstractFunctionalComponent =
-  fn(Socket, Dynamic) -> #(Socket, List(Element))
+  fn(Context, Dynamic) -> #(Context, List(Element))
 
 pub type FunctionalComponent(p) =
-  fn(Socket, p) -> #(Socket, List(Element))
+  fn(Context, p) -> #(Context, List(Element))
 
 pub type Element {
   Element(tag: String, attrs: List(Attribute), children: List(Element))

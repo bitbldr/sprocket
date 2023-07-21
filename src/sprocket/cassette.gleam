@@ -11,7 +11,7 @@ import mist
 import mist/websocket
 import mist/internal/websocket.{TextMessage} as internal_websocket
 import sprocket/sprocket.{Sprocket}
-import sprocket/socket.{Updater, WebSocket}
+import sprocket/context.{Updater, WebSocket}
 import sprocket/render.{RenderedElement}
 import sprocket/internal/render/json as json_renderer
 import sprocket/element.{Element}
@@ -306,7 +306,7 @@ fn handle_ws_message(
           case get_sprocket(ca, ws) {
             Ok(sprocket) -> {
               case sprocket.get_handler(sprocket, id) {
-                Ok(socket.EventHandler(_, handler)) -> {
+                Ok(context.EventHandler(_, handler)) -> {
                   // call the event handler
                   case handler {
                     CallbackFn(cb) -> {

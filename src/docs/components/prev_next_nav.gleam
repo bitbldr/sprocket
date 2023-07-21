@@ -1,6 +1,6 @@
 import gleam/option.{Some}
 import gleam/result
-import sprocket/socket.{Socket}
+import sprocket/context.{Context}
 import sprocket/component.{component, render}
 import sprocket/html.{a, div, hr, i, text}
 import sprocket/html/attributes.{class, classes}
@@ -12,14 +12,14 @@ pub type PrevNextNavProps {
   PrevNextNavProps(pages: OrderedMap(PageRoute, Page), active: PageRoute)
 }
 
-pub fn prev_next_nav(socket: Socket, props) {
+pub fn prev_next_nav(ctx: Context, props) {
   let PrevNextNavProps(pages: pages, active: active) = props
 
   let prev_page = ordered_map.find_previous(pages, active)
   let next_page = ordered_map.find_next(pages, active)
 
   render(
-    socket,
+    ctx,
     [
       hr([class("text-gray-500 my-6")]),
       div(
@@ -47,7 +47,7 @@ type PageLinkProps {
   )
 }
 
-fn link(socket: Socket, props: PageLinkProps) {
+fn link(ctx: Context, props: PageLinkProps) {
   let PageLinkProps(page: page, active: active, next_or_prev: next_or_prev) =
     props
 
@@ -58,7 +58,7 @@ fn link(socket: Socket, props: PageLinkProps) {
     let is_active = page.route == active
 
     render(
-      socket,
+      ctx,
       [
         a(
           [
@@ -78,7 +78,7 @@ fn link(socket: Socket, props: PageLinkProps) {
       ],
     )
   })
-  |> result.unwrap(render(socket, []))
+  |> result.unwrap(render(ctx, []))
 }
 
 fn next_or_prev_icon(next_or_prev: NextOrPrev) {

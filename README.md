@@ -72,19 +72,19 @@ pub type ClockProps {
   ClockProps(label: Option(String))
 }
 
-pub fn clock(socket: Socket, props) {
+pub fn clock(ctx: Context, props) {
   let ClockProps(label) = props
 
   // Define a reducer to handle events and update the state
-  use socket, State(Model(time: time, ..), dispatch) <- reducer(
-    socket,
+  use ctx, State(Model(time: time, ..), dispatch) <- reducer(
+    ctx,
     initial(),
     update,
   )
 
   // Example effect that runs whenever the `time` variable changes and has a cleanup function
-  use socket <- effect(
-    socket,
+  use ctx <- effect(
+    ctx,
     fn() {
       let cancel =
         interval(
@@ -100,7 +100,7 @@ pub fn clock(socket: Socket, props) {
   let current_time = int.to_string(time)
 
   render(
-    socket,
+    ctx,
     case label {
       Some(label) -> [span([], [text(label)]), span([], [text(current_time)])]
       None -> [text(current_time)]
@@ -115,9 +115,9 @@ pub type ExampleViewProps {
   ExampleViewProps
 }
 
-pub fn example_view(socket: Socket, _props: ExampleViewProps) {
+pub fn example_view(ctx: Context, _props: ExampleViewProps) {
   render(
-    socket,
+    ctx,
     [
       html(
         [lang("en")],

@@ -1,5 +1,5 @@
 import gleam/option.{None, Option, Some}
-import sprocket/socket.{Socket}
+import sprocket/context.{Context}
 import sprocket/component.{render}
 import sprocket/html.{button, text}
 import sprocket/html/attributes.{class}
@@ -8,11 +8,11 @@ pub type HelloButtonProps {
   HelloButtonProps(label: Option(String))
 }
 
-pub fn hello_button(socket: Socket, props: HelloButtonProps) {
+pub fn hello_button(ctx: Context, props: HelloButtonProps) {
   let HelloButtonProps(label) = props
 
   render(
-    socket,
+    ctx,
     [
       button(
         [

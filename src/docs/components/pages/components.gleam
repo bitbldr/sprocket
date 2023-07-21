@@ -1,5 +1,5 @@
 import gleam/option.{None, Some}
-import sprocket/socket.{Socket}
+import sprocket/context.{Context}
 import sprocket/component.{component, render}
 import sprocket/html.{article, code_text, h1, h2, p, text}
 import docs/utils/codeblock.{codeblock}
@@ -10,9 +10,9 @@ pub type ComponentsPageProps {
   ComponentsPageProps
 }
 
-pub fn components_page(socket: Socket, _props: ComponentsPageProps) {
+pub fn components_page(ctx: Context, _props: ComponentsPageProps) {
   render(
-    socket,
+    ctx,
     [
       article(
         [],
@@ -39,7 +39,7 @@ pub fn components_page(socket: Socket, _props: ComponentsPageProps) {
             [],
             [
               text(
-                "A component is a function that takes a socket and props as arguments, and it may utilize hooks (we will cover hooks more in depth a
+                "A component is a function that takes a context and props as arguments, and it may utilize hooks (we will cover hooks more in depth a
                 bit later) to manage state and effects, and returns a list of child elements.",
               ),
             ],
@@ -58,7 +58,7 @@ pub fn components_page(socket: Socket, _props: ComponentsPageProps) {
             "gleam",
             "
                 import gleam/option.{None, Option, Some}
-                import sprocket/socket.{Socket}
+                import sprocket/context.{Context}
                 import sprocket/component.{render}
                 import sprocket/html.{button, text}
                 import sprocket/html/attributes.{class}
@@ -67,11 +67,11 @@ pub fn components_page(socket: Socket, _props: ComponentsPageProps) {
                   HelloButtonProps(label: Option(String))
                 }
 
-                pub fn hello_button(socket: Socket, props: HelloButtonProps) {
+                pub fn hello_button(ctx: Context, props: HelloButtonProps) {
                   let HelloButtonProps(label) = props
 
                   render(
-                    socket,
+                    ctx,
                     [
                       button(
                         [class(\"p-2 bg-blue-500 hover:bg-blue-600 active:bg-blue-700 text-white rounded\")],
@@ -91,7 +91,7 @@ pub fn components_page(socket: Socket, _props: ComponentsPageProps) {
             [],
             [
               text(
-                "As you can see, we've defined our component and it's props. The component takes a socket and props as arguments, and then renders a button with the label passed in as a prop. If no label is passed in, the button will render with the default label of \"Click me!\".",
+                "As you can see, we've defined our component and it's props. The component takes a context and props as arguments, and then renders a button with the label passed in as a prop. If no label is passed in, the button will render with the default label of \"Click me!\".",
               ),
             ],
           ),
@@ -128,9 +128,9 @@ pub fn components_page(socket: Socket, _props: ComponentsPageProps) {
                   PageViewProps
                 }
 
-                pub fn page_view(socket: Socket, _props: PageViewProps) {
+                pub fn page_view(ctx: Context, _props: PageViewProps) {
                   render(
-                    socket,
+                    ctx,
                     [
                       div(
                         [],

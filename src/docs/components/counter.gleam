@@ -2,7 +2,7 @@ import gleam/io
 import gleam/int
 import gleam/string
 import gleam/option.{None, Option}
-import sprocket/socket.{Socket}
+import sprocket/context.{Context}
 import sprocket/hooks.{WithDeps, dep}
 import sprocket/component.{render}
 import sprocket/hooks/reducer.{State, reducer}
@@ -31,19 +31,19 @@ pub type CounterProps {
   CounterProps(initial: Option(Int))
 }
 
-pub fn counter(socket: Socket, props: CounterProps) {
+pub fn counter(ctx: Context, props: CounterProps) {
   let CounterProps(initial) = props
 
   // Define a reducer to handle events and update the state
-  use socket, State(count, dispatch) <- reducer(
-    socket,
+  use ctx, State(count, dispatch) <- reducer(
+    ctx,
     option.unwrap(initial, 0),
     update,
   )
 
   // Example effect that runs every time count changes
-  use socket <- effect(
-    socket,
+  use ctx <- effect(
+    ctx,
     fn() {
       io.println(string.append("Count: ", int.to_string(count)))
       None
@@ -52,19 +52,19 @@ pub fn counter(socket: Socket, props: CounterProps) {
   )
 
   // Define event handlers
-  use socket, on_increment <- callback(
-    socket,
+  use ctx, on_increment <- callback(
+    ctx,
     CallbackFn(fn() { dispatch(UpdateCounter(count + 1)) }),
     WithDeps([dep(count)]),
   )
-  use socket, on_decrement <- callback(
-    socket,
+  use ctx, on_decrement <- callback(
+    ctx,
     CallbackFn(fn() { dispatch(UpdateCounter(count - 1)) }),
     WithDeps([dep(count)]),
   )
 
   render(
-    socket,
+    ctx,
     [
       div(
         [class("flex flex-row m-4")],

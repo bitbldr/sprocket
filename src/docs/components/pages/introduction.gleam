@@ -1,4 +1,4 @@
-import sprocket/socket.{Socket}
+import sprocket/context.{Context}
 import sprocket/component.{render}
 import sprocket/html.{article, div, h1, h2, li, p, span, text, ul}
 import sprocket/html/attributes.{class}
@@ -8,9 +8,9 @@ pub type IntroductionPageProps {
   IntroductionPageProps
 }
 
-pub fn introduction_page(socket: Socket, _props: IntroductionPageProps) {
+pub fn introduction_page(ctx: Context, _props: IntroductionPageProps) {
   render(
-    socket,
+    ctx,
     [
       article(
         [],

@@ -1,6 +1,6 @@
 import gleam/int
 import gleam/option.{Option, Some}
-import sprocket/socket.{Socket}
+import sprocket/context.{Context}
 import sprocket/hooks.{WithDeps, dep}
 import sprocket/component.{component, render}
 import sprocket/hooks/reducer.{State, reducer}
@@ -28,14 +28,14 @@ pub type CounterProps {
   CounterProps(enable_reset: Bool)
 }
 
-pub fn counter(socket: Socket, props: CounterProps) {
+pub fn counter(ctx: Context, props: CounterProps) {
   let CounterProps(enable_reset: enable_reset) = props
 
   // Define a reducer to handle events and update the state
-  use socket, State(count, dispatch) <- reducer(socket, 0, update)
+  use ctx, State(count, dispatch) <- reducer(ctx, 0, update)
 
   render(
-    socket,
+    ctx,
     [
       div(
         [class("flex flex-row m-4")],
@@ -78,17 +78,17 @@ pub type ButtonProps {
   ButtonProps(class: Option(String), label: String, on_click: fn() -> Nil)
 }
 
-pub fn button(socket: Socket, props: ButtonProps) {
+pub fn button(ctx: Context, props: ButtonProps) {
   let ButtonProps(class, label, ..) = props
 
-  use socket, on_click <- callback(
-    socket,
+  use ctx, on_click <- callback(
+    ctx,
     CallbackFn(props.on_click),
     WithDeps([dep(props.on_click)]),
   )
 
   render(
-    socket,
+    ctx,
     [
       html.button_text(
         [
@@ -110,17 +110,17 @@ pub type DisplayProps {
   DisplayProps(count: Int, on_reset: Option(fn() -> Nil))
 }
 
-pub fn display(socket: Socket, props: DisplayProps) {
+pub fn display(ctx: Context, props: DisplayProps) {
   let DisplayProps(count: count, on_reset: on_reset) = props
 
-  use socket, on_reset <- callback(
-    socket,
+  use ctx, on_reset <- callback(
+    ctx,
     CallbackFn(option.unwrap(on_reset, fn() { Nil })),
     WithDeps([]),
   )
 
   render(
-    socket,
+    ctx,
     [
       span(
         [

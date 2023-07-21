@@ -1,4 +1,4 @@
-import sprocket/socket.{Socket}
+import sprocket/context.{Context}
 import sprocket/component.{render}
 import sprocket/html.{article, h1, h2, p, text}
 
@@ -6,9 +6,9 @@ pub type HooksPageProps {
   HooksPageProps
 }
 
-pub fn hooks_page(socket: Socket, _props: HooksPageProps) {
+pub fn hooks_page(ctx: Context, _props: HooksPageProps) {
   render(
-    socket,
+    ctx,
     [
       article(
         [],

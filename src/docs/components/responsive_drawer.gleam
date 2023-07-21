@@ -1,5 +1,5 @@
 import gleam/option.{Some}
-import sprocket/socket.{Socket}
+import sprocket/context.{Context}
 import sprocket/component.{render}
 import sprocket/hooks.{OnMount}
 import sprocket/hooks/reducer.{State, reducer}
@@ -37,23 +37,19 @@ pub type ResponsiveDrawerProps {
   ResponsiveDrawerProps(drawer: Element, content: Element)
 }
 
-pub fn responsive_drawer(socket: Socket, props) {
+pub fn responsive_drawer(ctx: Context, props) {
   let ResponsiveDrawerProps(drawer: drawer, content: content) = props
 
-  use socket, State(Model(show: show), dispatch) <- reducer(
-    socket,
-    initial(),
-    update,
-  )
+  use ctx, State(Model(show: show), dispatch) <- reducer(ctx, initial(), update)
 
-  use socket, toggle_drawer <- callback(
-    socket,
+  use ctx, toggle_drawer <- callback(
+    ctx,
     CallbackFn(fn() { dispatch(Toggle) }),
     OnMount,
   )
 
-  use socket, hide_drawer <- callback(
-    socket,
+  use ctx, hide_drawer <- callback(
+    ctx,
     CallbackFn(fn() { dispatch(Hide) }),
     OnMount,
   )
@@ -70,7 +66,7 @@ pub fn responsive_drawer(socket: Socket, props) {
     )
 
   render(
-    socket,
+    ctx,
     [
       div(
         [classes([Some("relative flex-1 flex flex-row")])],

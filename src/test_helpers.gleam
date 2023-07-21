@@ -2,7 +2,7 @@ import gleam/io
 import gleam/list
 import gleam/option.{None, Some}
 import sprocket/sprocket.{Sprocket}
-import sprocket/socket
+import sprocket/context
 import sprocket/internal/identifiable_callback.{CallbackFn}
 import sprocket/render.{RenderedAttribute,
   RenderedElement, RenderedEventHandler}
@@ -74,7 +74,7 @@ pub fn render_event(spkt: Sprocket, event: Event, html_id: String) {
           case rendered_event_handler {
             Ok(RenderedEventHandler(_kind, event_id)) -> {
               case sprocket.get_handler(spkt, event_id) {
-                Ok(socket.EventHandler(_, handler)) -> {
+                Ok(context.EventHandler(_, handler)) -> {
                   // call the event handler
                   case handler {
                     CallbackFn(cb) -> {

@@ -1,7 +1,7 @@
 import gleam/dynamic
 import gleam/option.{None, Some}
 import gleeunit/should
-import sprocket/socket.{Socket}
+import sprocket/context.{Context}
 import sprocket/component.{component, render}
 import sprocket/html.{a, text}
 import sprocket/html/attributes.{classes}
@@ -18,17 +18,13 @@ type TestProps {
   TestProps(title: String, href: String, is_active: Bool)
 }
 
-fn test_component(socket: Socket, props: TestProps) {
+fn test_component(ctx: Context, props: TestProps) {
   let TestProps(title: title, href: _href, is_active: is_active) = props
 
-  use socket, on_click <- callback(
-    socket,
-    CallbackFn(fn() { todo }),
-    WithDeps([]),
-  )
+  use ctx, on_click <- callback(ctx, CallbackFn(fn() { todo }), WithDeps([]))
 
   render(
-    socket,
+    ctx,
     [
       a(
         [

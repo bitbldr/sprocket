@@ -11,7 +11,7 @@ import sprocket/internal/utils/ordered_map
 
 // gleeunit test functions end in `_test`
 pub fn text_change_test() {
-  let fc = fn(socket, _) { #(socket, []) }
+  let fc = fn(ctx, _) { #(ctx, []) }
   let props = dynamic.from([])
 
   let first =
@@ -96,7 +96,7 @@ pub fn text_change_test() {
 }
 
 pub fn first_fc_without_children_test() {
-  let fc = fn(socket, _) { #(socket, []) }
+  let fc = fn(ctx, _) { #(ctx, []) }
   let props = dynamic.from([])
 
   let first =
@@ -168,7 +168,7 @@ pub fn first_fc_without_children_test() {
 }
 
 pub fn add_child_test() {
-  let fc = fn(socket, _) { #(socket, []) }
+  let fc = fn(ctx, _) { #(ctx, []) }
   let props = dynamic.from([])
 
   let first =
@@ -277,7 +277,7 @@ pub fn add_child_test() {
 }
 
 pub fn add_move_child_with_keys_test() {
-  let fc = fn(socket, _) { #(socket, []) }
+  let fc = fn(ctx, _) { #(ctx, []) }
   let props = dynamic.from([])
 
   let first =
@@ -386,7 +386,7 @@ pub fn add_move_child_with_keys_test() {
 }
 
 pub fn add_move_update_child_with_keys_test() {
-  let fc = fn(socket, _) { #(socket, []) }
+  let fc = fn(ctx, _) { #(ctx, []) }
   let props = dynamic.from([])
 
   let first =
@@ -513,7 +513,7 @@ pub fn add_move_update_child_with_keys_test() {
 }
 
 pub fn add_move_replace_child_with_keys_test() {
-  let fc = fn(socket, _) { #(socket, []) }
+  let fc = fn(ctx, _) { #(ctx, []) }
   let props = dynamic.from([])
 
   let first =
@@ -633,7 +633,7 @@ pub fn add_move_replace_child_with_keys_test() {
 }
 
 pub fn attribute_change_test() {
-  let fc = fn(socket, _) { #(socket, []) }
+  let fc = fn(ctx, _) { #(ctx, []) }
   let props = dynamic.from([])
 
   let first =
@@ -733,7 +733,7 @@ pub fn attribute_change_test() {
 pub fn fc_change_test() {
   let props = dynamic.from([])
 
-  let fc1 = fn(socket, _) { #(socket, []) }
+  let fc1 = fn(ctx, _) { #(ctx, []) }
 
   let first =
     RenderedComponent(
@@ -758,7 +758,7 @@ pub fn fc_change_test() {
       ],
     )
 
-  let fc2 = fn(socket, _) { #(socket, []) }
+  let fc2 = fn(ctx, _) { #(ctx, []) }
 
   let second =
     RenderedComponent(
@@ -820,7 +820,7 @@ pub fn fc_change_test() {
 }
 
 pub fn fc_props_change_test() {
-  let fc = fn(socket, _) { #(socket, []) }
+  let fc = fn(ctx, _) { #(ctx, []) }
 
   let original_props = dynamic.from(["hello"])
 
@@ -909,7 +909,7 @@ pub fn fc_props_change_test() {
 }
 
 pub fn patch_to_json_test() {
-  let fc = fn(socket, _) { #(socket, []) }
+  let fc = fn(ctx, _) { #(ctx, []) }
   let props = dynamic.from([])
 
   let first =
@@ -1026,7 +1026,7 @@ pub fn patch_to_json_test() {
 }
 
 pub fn patch_to_json_replace_list_with_component_test() {
-  let fc = fn(socket, _) { #(socket, []) }
+  let fc = fn(ctx, _) { #(ctx, []) }
   let props = dynamic.from([])
 
   let first =
@@ -1070,7 +1070,7 @@ pub fn patch_to_json_replace_list_with_component_test() {
       ],
     )
 
-  let fc2 = fn(socket, _) { #(socket, []) }
+  let fc2 = fn(ctx, _) { #(ctx, []) }
 
   let second =
     RenderedComponent(

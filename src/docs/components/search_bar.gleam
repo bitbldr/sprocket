@@ -1,4 +1,4 @@
-import sprocket/socket.{Socket}
+import sprocket/context.{Context}
 import sprocket/component.{render}
 import sprocket/hooks.{WithDeps, dep}
 import sprocket/hooks/callback.{callback}
@@ -32,18 +32,18 @@ pub type SearchBarProps {
   SearchBarProps(on_search: fn(String) -> Nil)
 }
 
-pub fn search_bar(socket: Socket, props) {
+pub fn search_bar(ctx: Context, props) {
   let SearchBarProps(on_search: on_search) = props
 
   // Define a reducer to handle events and update the state
-  use socket, State(Model(query: query), dispatch) <- reducer(
-    socket,
+  use ctx, State(Model(query: query), dispatch) <- reducer(
+    ctx,
     initial(),
     update,
   )
 
-  use socket, on_input_query <- callback(
-    socket,
+  use ctx, on_input_query <- callback(
+    ctx,
     CallbackWithValueFn(fn(value: String) {
       on_search(value)
       dispatch(SetQuery(value))
@@ -52,7 +52,7 @@ pub fn search_bar(socket: Socket, props) {
   )
 
   render(
-    socket,
+    ctx,
     [
       input([
         input_type("text"),

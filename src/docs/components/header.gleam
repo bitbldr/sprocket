@@ -1,6 +1,6 @@
 import gleam/list
 import gleam/string
-import sprocket/socket.{Socket}
+import sprocket/context.{Context}
 import sprocket/component.{component, render}
 import sprocket/html.{a, div, i, span, text}
 import sprocket/html/attributes.{class}
@@ -13,11 +13,11 @@ pub type HeaderProps {
   HeaderProps(menu_items: List(MenuItem))
 }
 
-pub fn header(socket: Socket, props) {
+pub fn header(ctx: Context, props) {
   let HeaderProps(menu_items: menu_items) = props
 
   render(
-    socket,
+    ctx,
     [
       div(
         [
@@ -53,13 +53,13 @@ type MenuItemProps {
   MenuItemProps(item: MenuItem)
 }
 
-fn menu_item(socket: Socket, props: MenuItemProps) {
+fn menu_item(ctx: Context, props: MenuItemProps) {
   let MenuItemProps(item: MenuItem(label: label, href: href)) = props
 
   let is_external = is_external_href(href)
 
   render(
-    socket,
+    ctx,
     [
       a(
         [
