@@ -29,9 +29,12 @@ import docs/components/pages/effects.{EffectsPageProps, effects_page}
 import docs/components/pages/state_management.{
   StateManagementPageProps, state_management_page,
 }
+import docs/components/pages/under_the_hood.{
+  UnderTheHoodProps, under_the_hood_page,
+}
 import docs/page_route.{
   Components, Effects, Events, Hooks, Introduction, Misc, Page, PageRoute,
-  StateManagement, Unknown,
+  StateManagement, UnderTheHood, Unknown,
 }
 
 pub type PageViewProps {
@@ -50,6 +53,7 @@ pub fn page_view(ctx: Context, props: PageViewProps) {
       Page("State Management", StateManagement),
       Page("Effects", Effects),
       Page("Hooks", Hooks),
+      Page("Under the Hood", UnderTheHood),
       Page("Misc.", Misc),
     ]
     |> list.map(fn(page) { KeyedItem(page.route, page) })
@@ -175,6 +179,8 @@ pub fn page_view(ctx: Context, props: PageViewProps) {
                           )
                         Effects -> component(effects_page, EffectsPageProps)
                         Hooks -> component(hooks_page, HooksPageProps)
+                        UnderTheHood ->
+                          component(under_the_hood_page, UnderTheHoodProps)
                         Misc -> component(misc_page, MiscPageProps)
                         Unknown -> component(not_found_page, NotFoundPageProps)
                       },

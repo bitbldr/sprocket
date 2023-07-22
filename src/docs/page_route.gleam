@@ -11,6 +11,7 @@ pub type PageRoute {
   StateManagement
   Effects
   Hooks
+  UnderTheHood
   Misc
   Unknown
 }
@@ -23,6 +24,7 @@ pub fn from_string(route: String) -> PageRoute {
     "/state" -> StateManagement
     "/effects" -> Effects
     "/hooks" -> Hooks
+    "/under_the_hood" -> UnderTheHood
     "/misc" -> Misc
     _ -> Unknown
   }
@@ -36,6 +38,7 @@ pub fn href(route: PageRoute) -> String {
     StateManagement -> "/state"
     Effects -> "/effects"
     Hooks -> "/hooks"
+    UnderTheHood -> "/under_the_hood"
     Misc -> "/misc"
     Unknown -> {
       logger.error("Unknown page route")
