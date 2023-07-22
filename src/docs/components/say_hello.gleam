@@ -70,7 +70,7 @@ pub fn say_hello(ctx: Context, _props: SayHelloProps) {
               ),
               on_click(on_say_hello),
             ],
-            [text("Say Hello")],
+            [text("Say Hello!")],
           ),
           ..case hello {
             None -> []

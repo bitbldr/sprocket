@@ -146,7 +146,7 @@ pub fn components_page(ctx: Context, _props: ComponentsPageProps) {
                 }
                 ",
           ),
-          p([], [text("Here is our component in action:")]),
+          p([], [text("Here is our rendered component:")]),
           example([component(hello_button, HelloButtonProps(label: None))]),
           p(
             [],

@@ -186,11 +186,11 @@ pub fn state_management_page(ctx: Context, _props: StateManagementPageProps) {
               Model(selection: None, options: options)
             }
 
-            pub type SayHelloProps {
-              SayHelloProps
+            pub type HelloButtonProps {
+              HelloButtonProps
             }
 
-            pub fn say_hello(ctx: Context, _props: SayHelloProps) {
+            pub fn hello_button(ctx: Context, _props: HelloButtonProps) {
               use ctx, State(Model(selection: selection, options: options), dispatch) <- reducer(
                 ctx,
                 initial(hello_options()),
@@ -223,7 +223,7 @@ pub fn state_management_page(ctx: Context, _props: StateManagementPageProps) {
                           class(\"p-2 bg-blue-500 hover:bg-blue-600 active:bg-blue-700 text-white rounded\"),
                           on_click(on_say_hello),
                         ],
-                        [text(\"Say Hello\")],
+                        [text(\"Say Hello!\")],
                       ),
                       ..case hello {
                         None -> []
