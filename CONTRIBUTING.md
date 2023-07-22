@@ -20,7 +20,7 @@ There are several ways you can contribute to Sprocket:
 - **Reporting Issues**: If you encounter any problems or bugs while using Sprocket, please let us know by creating an issue in the GitHub repository.
 - **Suggesting Enhancements**: If you have ideas for new features or improvements to Sprocket, feel free to open an issue to discuss and suggest them.
 - **Writing Code**: You can contribute to the project by writing code, fixing bugs, or implementing new features. See the [Pull Requests](#pull-requests) section for more information.
-- **Testing**: Help us ensure the quality and reliability of Sprocket by testing the framework, reporting issues, and verifying bug fixes.
+- **Testing**: Help us ensure the quality and reliability of Sprocket by testing the library, reporting issues, and verifying bug fixes.
 - **Documentation**: Improve the project's documentation by suggesting changes, providing examples, or adding missing information.
 
 ## Reporting Issues

@@ -1,5 +1,5 @@
 # Sprocket
-A framework for building live views and real-time server components in [Gleam ✨](https://gleam.run/)
+A library for building live views and real-time server components in [Gleam ✨](https://gleam.run/)
 
 [![Package Version](https://img.shields.io/hexpm/v/sprocket)](https://hex.pm/packages/sprocket)
 [![Hex Docs](https://img.shields.io/badge/hex-docs-ffaff3)](https://hexdocs.pm/sprocket/)
@@ -36,7 +36,7 @@ coverage, providing extensive documentation of modules and API, and optimizing p
 
 ## Key Features
 
-- Real-time, scalable server-side component framework
+- Real-time, scalable server-side component library
 - Renders initial HTML and efficiently patches update diffs using a persistent WebSocket connection
 - Declarative and composable functional components that re-render when props change
 - Strongly-typed language means less runtime bugs and better peace of mind

@@ -145,7 +145,7 @@ pub fn state_management_page(ctx: Context, _props: StateManagementPageProps) {
             [],
             [
               text(
-                "We now have all the pieces we need to create a more interesting button that updates whenever it is clicked. Again, we are using Tailwind CSS to style our button but you can use whichever styling framework you prefer.",
+                "We now have all the pieces we need to create a more interesting button that updates whenever it is clicked. Again, we are using Tailwind CSS to style our button but you can use whichever style framework you prefer.",
               ),
             ],
           ),
