@@ -1,6 +1,7 @@
 import gleam/list
 import gleam/string
 import gleam/int
+import gleam/pair
 import gleam/map.{Map}
 import gleam/option.{None, Option, Some}
 import sprocket/render.{
@@ -208,6 +209,41 @@ fn build_attrs_map(attributes) {
   )
 }
 
+fn build_key_map(children) -> Map(String, #(Int, RenderedElement)) {
+  children
+  |> list.index_fold(
+    map.new(),
+    fn(acc, child, index) {
+      case child {
+        RenderedElement(key: Some(key), ..) -> {
+          map.insert(acc, key, #(index, child))
+        }
+        _ -> {
+          acc
+        }
+      }
+    },
+  )
+}
+
+fn compare_child_at_index(acc, old_children, new_child, index) {
+  case list.at(old_children, index) {
+    Ok(old_child) -> {
+      case create(old_child, new_child) {
+        NoOp -> {
+          acc
+        }
+        patch -> {
+          [#(index, patch), ..acc]
+        }
+      }
+    }
+    Error(Nil) -> {
+      [#(index, Insert(new_child)), ..acc]
+    }
+  }
+}
+
 // takes a list of old and new children and optionally returns a list of tuples
 // of the index and the diff for the children that have changed. This function will
 // use the key of the children to determine if they are the same or not regardless
@@ -216,14 +252,26 @@ fn compare_children(
   old_children: List(RenderedElement),
   new_children: List(RenderedElement),
 ) -> Option(List(#(Int, Patch))) {
-  let key_map: Map(String, #(Int, RenderedElement)) =
+  let old_key_map = build_key_map(old_children)
+  let new_key_map = build_key_map(new_children)
+
+  // determine removed children. some of these results eill actually be moves
+  // or replaces, but the next step will update those accordingly
+  let removals =
     old_children
     |> list.index_fold(
-      map.new(),
+      [],
       fn(acc, child, index) {
         case child {
           RenderedElement(key: Some(key), ..) -> {
-            map.insert(acc, key, #(index, child))
+            case map.get(new_key_map, key) {
+              Ok(_) -> {
+                acc
+              }
+              Error(Nil) -> {
+                [#(index, Remove), ..acc]
+              }
+            }
           }
           _ -> {
             acc
@@ -232,67 +280,45 @@ fn compare_children(
       },
     )
 
-  zip_all(old_children, new_children)
-  |> list.index_map(fn(index, zipped) {
-    let #(old_child, new_child) = zipped
+  new_children
+  |> list.index_fold(
+    removals,
+    fn(acc, new_child, index) {
+      case new_child {
+        // check if element has a key
+        RenderedElement(key: Some(key), ..) -> {
+          // check if it exists in the key map
+          case map.get(old_key_map, key) {
+            Ok(found) -> {
+              let #(old_index, old_child) = found
 
-    case old_child, new_child {
-      Some(old_child), Some(new_child) -> {
-        case old_child, new_child {
-          RenderedElement(..), RenderedElement(key: Some(key), ..) -> {
-            // check if element has a key and if it does, check if it exists in the key map
-            case map.get(key_map, key) {
-              Ok(found) -> {
-                let #(old_index, old_child) = found
+              let child_patch = create(old_child, new_child)
 
-                let child_patch = create(old_child, new_child)
-
-                case index == old_index {
-                  True -> {
-                    // if the index is the same, then the element has not moved
-                    #(index, child_patch)
-                  }
-                  False -> {
-                    #(index, Move(old_index, child_patch))
-                  }
+              case index == old_index {
+                True -> {
+                  // if the index is the same, then the element has not moved
+                  [#(index, child_patch), ..acc]
+                }
+                False -> {
+                  [#(index, Move(old_index, child_patch)), ..acc]
                 }
               }
-              Error(Nil) -> {
-                #(index, create(old_child, new_child))
-              }
+            }
+            Error(Nil) -> {
+              compare_child_at_index(acc, old_children, new_child, index)
             }
           }
-          _, _ -> {
-            #(index, create(old_child, new_child))
-          }
+        }
+        _ -> {
+          // theres no key, so we want to do a best effort approach here and try to compare
+          // the children without keys based on their position in the list
+          compare_child_at_index(acc, old_children, new_child, index)
         }
       }
-      None, Some(new_child) -> {
-        case new_child {
-          RenderedElement(key: Some(key), ..) -> {
-            // check if element has a key and if it does, check if it exists in the key map
-            case map.get(key_map, key) {
-              Ok(found) -> {
-                let #(old_index, old_child) = found
-                #(index, Move(old_index, create(old_child, new_child)))
-              }
-              Error(Nil) -> {
-                #(index, Insert(new_child))
-              }
-            }
-          }
-          _ -> {
-            // new child
-            #(index, Insert(new_child))
-          }
-        }
-      }
-      Some(_), _ -> {
-        // child removed
-        #(index, Remove)
-      }
-    }
-  })
+    },
+  )
+  // ensure that the list is sorted by index, mostly for stable testing
+  |> list.sort(fn(a, b) { int.compare(pair.first(a), pair.first(b)) })
   |> list.filter_map(fn(child_el) {
     case child_el {
       #(_index, NoOp) -> Error(Nil)
@@ -330,67 +356,97 @@ fn zip_all(a: List(a), b: List(b)) -> List(#(Option(a), Option(b))) {
   }
 }
 
-fn op_code(op: Patch) -> Int {
-  case op {
-    NoOp -> {
-      0
-    }
-    Update(..) -> {
-      1
-    }
-    Replace(..) -> {
-      2
-    }
-    Insert(..) -> {
-      3
-    }
-    Remove -> {
-      4
-    }
-    Change(..) -> {
-      5
-    }
-    Move(..) -> {
-      6
-    }
+pub fn op_code(op: Patch, debug: Bool) -> String {
+  case debug {
+    True ->
+      case op {
+        NoOp -> {
+          "NoOp"
+        }
+        Update(..) -> {
+          "Update"
+        }
+        Replace(..) -> {
+          "Replace"
+        }
+        Insert(..) -> {
+          "Insert"
+        }
+        Remove -> {
+          "Remove"
+        }
+        Change(..) -> {
+          "Change"
+        }
+        Move(..) -> {
+          "Move"
+        }
+      }
+    False ->
+      case op {
+        NoOp -> {
+          "0"
+        }
+        Update(..) -> {
+          "1"
+        }
+        Replace(..) -> {
+          "2"
+        }
+        Insert(..) -> {
+          "3"
+        }
+        Remove -> {
+          "4"
+        }
+        Change(..) -> {
+          "5"
+        }
+        Move(..) -> {
+          "6"
+        }
+      }
   }
 }
 
-pub fn patch_to_json(patch: Patch) -> Json {
+pub fn patch_to_json(patch: Patch, debug: Bool) -> Json {
   case patch {
     NoOp -> {
-      json.preprocessed_array([json.int(op_code(patch))])
+      json.preprocessed_array([json.string(op_code(patch, debug))])
     }
     Update(attrs, children) -> {
       json.preprocessed_array([
-        json.int(op_code(patch)),
+        json.string(op_code(patch, debug)),
         json.nullable(attrs, of: attrs_to_json),
-        json.nullable(children, of: children_to_json),
+        json.nullable(children, of: children_to_json(_, debug)),
       ])
     }
     Replace(el) -> {
       json.preprocessed_array([
-        json.int(op_code(patch)),
+        json.string(op_code(patch, debug)),
         json_renderer.renderer().render(el),
       ])
     }
     Insert(el) -> {
       json.preprocessed_array([
-        json.int(op_code(patch)),
+        json.string(op_code(patch, debug)),
         json_renderer.renderer().render(el),
       ])
     }
     Remove -> {
-      json.preprocessed_array([json.int(op_code(patch))])
+      json.preprocessed_array([json.string(op_code(patch, debug))])
     }
     Change(text) -> {
-      json.preprocessed_array([json.int(op_code(patch)), json.string(text)])
+      json.preprocessed_array([
+        json.string(op_code(patch, debug)),
+        json.string(text),
+      ])
     }
     Move(index, move_patch) -> {
       json.preprocessed_array([
-        json.int(op_code(patch)),
+        json.string(op_code(patch, debug)),
         json.int(index),
-        patch_to_json(move_patch),
+        patch_to_json(move_patch, debug),
       ])
     }
   }
@@ -414,13 +470,13 @@ fn attrs_to_json(attrs: List(RenderedAttribute)) -> Json {
   |> json.object()
 }
 
-fn children_to_json(children: List(#(Int, Patch))) -> Json {
+fn children_to_json(children: List(#(Int, Patch)), debug: Bool) -> Json {
   children
-  |> list.map(map_key_to_str)
+  |> list.map(map_key_to_str(_, debug))
   |> json.object()
 }
 
-fn map_key_to_str(c: #(Int, Patch)) -> #(String, Json) {
+fn map_key_to_str(c: #(Int, Patch), debug: Bool) -> #(String, Json) {
   let #(index, patch) = c
-  #(int.to_string(index), patch_to_json(patch))
+  #(int.to_string(index), patch_to_json(patch, debug))
 }

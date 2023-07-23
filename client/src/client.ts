@@ -33,7 +33,7 @@ window.addEventListener("DOMContentLoaded", () => {
           break;
 
         case "update":
-          dom = applyPatch(dom, parsed[1]) as Element;
+          dom = applyPatch(dom, parsed[1], parsed[2]) as Element;
           break;
       }
 

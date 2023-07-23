@@ -34,12 +34,13 @@ pub type State {
     sprockets: List(Sprocket),
     preflights: List(Preflight),
     cancel_preflight_cleanup_job: fn() -> Nil,
+    debug: Bool,
   )
 }
 
 pub type Message {
   Shutdown
-  GetState(reply_with: Subject(Result(State, Nil)))
+  GetState(reply_with: Subject(State))
   PushPreflight(preflight: Preflight)
   CleanupPreflights
   StartPreflightCleanupJob(cleanup_preflights: fn() -> Nil)
@@ -57,7 +58,7 @@ fn handle_message(message: Message, state: State) -> actor.Next(State) {
     }
 
     GetState(reply_with) -> {
-      process.send(reply_with, Ok(state))
+      process.send(reply_with, state)
       actor.Continue(state)
     }
 
@@ -148,6 +149,7 @@ pub fn start() {
         sprockets: [],
         preflights: [],
         cancel_preflight_cleanup_job: fn() { Nil },
+        debug: True,
       ),
       handle_message,
     )
@@ -159,6 +161,10 @@ pub fn start() {
 
 pub fn stop(ca: Cassette) {
   process.send(ca, Shutdown)
+}
+
+pub fn get_state(ca: Cassette) {
+  process.call(ca, GetState(_), call_timeout())
 }
 
 fn cleanup_preflights(ca: Cassette) {
@@ -224,7 +230,11 @@ fn connect(
 ) {
   let updater =
     Updater(send: fn(update) {
-      let _ = websocket.send(ws, TextMessage(update_to_json(update)))
+      let _ =
+        websocket.send(
+          ws,
+          TextMessage(update_to_json(update, get_state(ca).debug)),
+        )
       Ok(Nil)
     })
 
@@ -345,8 +355,12 @@ fn handle_ws_message(
   }
 }
 
-fn update_to_json(update: Patch) -> String {
-  json.preprocessed_array([json.string("update"), patch.patch_to_json(update)])
+fn update_to_json(update: Patch, debug: Bool) -> String {
+  json.preprocessed_array([
+    json.string("update"),
+    patch.patch_to_json(update, debug),
+    json.object([#("debug", json.bool(debug))]),
+  ])
   |> json.to_string()
 }
 

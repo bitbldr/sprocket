@@ -6,7 +6,9 @@ import gleam/option.{None, Some}
 import sprocket/render.{
   RenderedAttribute, RenderedComponent, RenderedElement, RenderedText,
 }
-import sprocket/internal/patch.{Change, Insert, Move, NoOp, Replace, Update}
+import sprocket/internal/patch.{
+  Change, Insert, Move, NoOp, Remove, Replace, Update, op_code,
+}
 import sprocket/internal/utils/ordered_map
 
 // gleeunit test functions end in `_test`
@@ -632,6 +634,126 @@ pub fn add_move_replace_child_with_keys_test() {
   ))
 }
 
+pub fn remove_middle_child_in_list_with_keys_test() {
+  let fc = fn(ctx, _) { #(ctx, []) }
+  let props = dynamic.from([])
+
+  let first =
+    RenderedComponent(
+      fc: fc,
+      key: None,
+      props: props,
+      hooks: ordered_map.new(),
+      children: [
+        RenderedElement(
+          tag: "ul",
+          key: None,
+          attrs: [],
+          children: [
+            RenderedElement(
+              tag: "li",
+              key: Some("one"),
+              attrs: [],
+              children: [RenderedText("One")],
+            ),
+            RenderedElement(
+              tag: "li",
+              key: Some("two"),
+              attrs: [],
+              children: [RenderedText("Two")],
+            ),
+            RenderedElement(
+              tag: "li",
+              key: Some("three"),
+              attrs: [],
+              children: [RenderedText("Three")],
+            ),
+            RenderedElement(
+              tag: "li",
+              key: Some("four"),
+              attrs: [],
+              children: [RenderedText("Four")],
+            ),
+            RenderedElement(
+              tag: "li",
+              key: Some("five"),
+              attrs: [],
+              children: [RenderedText("Five")],
+            ),
+          ],
+        ),
+      ],
+    )
+
+  let second =
+    RenderedComponent(
+      fc: fc,
+      key: None,
+      props: props,
+      hooks: ordered_map.new(),
+      children: [
+        RenderedElement(
+          tag: "ul",
+          key: None,
+          attrs: [],
+          children: [
+            RenderedElement(
+              tag: "li",
+              key: Some("one"),
+              attrs: [],
+              children: [RenderedText("One")],
+            ),
+            RenderedElement(
+              tag: "li",
+              key: Some("two"),
+              attrs: [],
+              children: [RenderedText("Two")],
+            ),
+            RenderedElement(
+              tag: "li",
+              key: Some("four"),
+              attrs: [],
+              children: [RenderedText("Four"), RenderedText("and a half")],
+            ),
+            RenderedElement(
+              tag: "li",
+              key: Some("five"),
+              attrs: [],
+              children: [RenderedText("Five")],
+            ),
+          ],
+        ),
+      ],
+    )
+
+  patch.create(first, second)
+  |> should.equal(Update(
+    attrs: None,
+    children: Some([
+      #(
+        0,
+        Update(
+          attrs: None,
+          children: Some([
+            #(2, Remove),
+            #(
+              2,
+              Move(
+                from: 3,
+                patch: Update(
+                  attrs: None,
+                  children: Some([#(1, Insert(RenderedText("and a half")))]),
+                ),
+              ),
+            ),
+            #(3, Move(from: 4, patch: NoOp)),
+          ]),
+        ),
+      ),
+    ]),
+  ))
+}
+
 pub fn attribute_change_test() {
   let fc = fn(ctx, _) { #(ctx, []) }
   let props = dynamic.from([])
@@ -983,7 +1105,7 @@ pub fn patch_to_json_test() {
     )
 
   patch.create(first, second)
-  |> patch.patch_to_json
+  |> patch.patch_to_json(True)
   |> json.to_string
   |> should.equal(
     "[
@@ -1105,19 +1227,19 @@ pub fn patch_to_json_replace_list_with_component_test() {
     )
 
   patch.create(first, second)
-  |> patch.patch_to_json
+  |> patch.patch_to_json(True)
   |> json.to_string
   |> should.equal(
     "[
-      1,
+      \"Update\",
       null,
       {
           \"0\": [
-              1,
+              \"Update\",
               null,
               {
                   \"1\": [
-                      2,
+                      \"Replace\",
                       {
                           \"type\": \"component\",
                           \"0\": {
@@ -1127,10 +1249,10 @@ pub fn patch_to_json_replace_list_with_component_test() {
                       }
                   ],
                   \"2\": [
-                      4
+                      \"Remove\"
                   ],
                   \"3\": [
-                      4
+                      \"Remove\"
                   ]
               }
           ]
@@ -1144,4 +1266,48 @@ fn normalize_json_str(json: String) {
   json
   |> string.replace("\n", "")
   |> string.replace(" ", "")
+}
+
+pub fn op_code_test() {
+  op_code(NoOp, False)
+  |> should.equal("0")
+
+  op_code(Update(None, None), False)
+  |> should.equal("1")
+
+  op_code(Replace(RenderedElement("div", None, [], [])), False)
+  |> should.equal("2")
+
+  op_code(Insert(RenderedElement("div", None, [], [])), False)
+  |> should.equal("3")
+
+  op_code(Remove, False)
+  |> should.equal("4")
+
+  op_code(Change(""), False)
+  |> should.equal("5")
+
+  op_code(Move(0, NoOp), False)
+  |> should.equal("6")
+
+  op_code(NoOp, False)
+  |> should.equal("0")
+
+  op_code(Update(None, None), True)
+  |> should.equal("Update")
+
+  op_code(Replace(RenderedElement("div", None, [], [])), True)
+  |> should.equal("Replace")
+
+  op_code(Insert(RenderedElement("div", None, [], [])), True)
+  |> should.equal("Insert")
+
+  op_code(Remove, True)
+  |> should.equal("Remove")
+
+  op_code(Change(""), True)
+  |> should.equal("Change")
+
+  op_code(Move(0, NoOp), True)
+  |> should.equal("Move")
 }

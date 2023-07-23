@@ -50,7 +50,7 @@ pub fn cleanup_preflights_test() {
 
   process.send(ca, CleanupPreflights)
 
-  let assert Ok(cassette.State(preflights: preflights, ..)) =
+  let assert cassette.State(preflights: preflights, ..) =
     process.call(ca, cassette.GetState(_), 1000)
 
   preflights
