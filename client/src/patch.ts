@@ -100,7 +100,7 @@ export function applyPatch(
     case OpCode.Update:
       const newAttrs = operation[1];
       const childrenPatchMap = operation[2];
-      let updated = original;
+      let updated = Object.assign({}, original);
 
       if (newAttrs) {
         updated = {
@@ -113,15 +113,22 @@ export function applyPatch(
         updated = Object.keys(childrenPatchMap)
           .filter((key) => isInteger(key))
           .reduce((updated, key) => {
+            const childOperation = getOperation(patch, !!opts.debug);
+
             let newEl = applyPatch(
               updated[key],
               childrenPatchMap[key],
               opts,
-              updated,
+              original,
               key
             );
 
             if (newEl) {
+              if (childOperation[0] === OpCode.Move) {
+                const fromKey = childOperation[1];
+                delete updated[fromKey];
+              }
+
               return {
                 ...updated,
                 [key]: newEl,
@@ -155,8 +162,8 @@ export function applyPatch(
           currentKey
         );
 
-        // remove from old position
-        delete (parent as any)[fromKey];
+        // // remove from old position
+        // delete (parent as any)[fromKey];
 
         return movedAndPatched;
       } else {

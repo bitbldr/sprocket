@@ -746,6 +746,126 @@ pub fn remove_middle_child_in_list_with_keys_test() {
               ),
             ),
             #(3, Move(from: 4, patch: NoOp)),
+            #(4, Remove),
+          ]),
+        ),
+      ),
+    ]),
+  ))
+}
+
+pub fn restor_full_list_from_partial_with_keys_test() {
+  let fc = fn(ctx, _) { #(ctx, []) }
+  let props = dynamic.from([])
+
+  let first =
+    RenderedComponent(
+      fc: fc,
+      key: None,
+      props: props,
+      hooks: ordered_map.new(),
+      children: [
+        RenderedElement(
+          tag: "ul",
+          key: None,
+          attrs: [],
+          children: [
+            RenderedElement(
+              tag: "li",
+              key: Some("one"),
+              attrs: [],
+              children: [RenderedText("One")],
+            ),
+            RenderedElement(
+              tag: "li",
+              key: Some("two"),
+              attrs: [],
+              children: [RenderedText("Two")],
+            ),
+            RenderedElement(
+              tag: "li",
+              key: Some("four"),
+              attrs: [],
+              children: [RenderedText("Four")],
+            ),
+            RenderedElement(
+              tag: "li",
+              key: Some("five"),
+              attrs: [],
+              children: [RenderedText("Five")],
+            ),
+          ],
+        ),
+      ],
+    )
+
+  let second =
+    RenderedComponent(
+      fc: fc,
+      key: None,
+      props: props,
+      hooks: ordered_map.new(),
+      children: [
+        RenderedElement(
+          tag: "ul",
+          key: None,
+          attrs: [],
+          children: [
+            RenderedElement(
+              tag: "li",
+              key: Some("one"),
+              attrs: [],
+              children: [RenderedText("One")],
+            ),
+            RenderedElement(
+              tag: "li",
+              key: Some("two"),
+              attrs: [],
+              children: [RenderedText("Two")],
+            ),
+            RenderedElement(
+              tag: "li",
+              key: Some("three"),
+              attrs: [],
+              children: [RenderedText("Three")],
+            ),
+            RenderedElement(
+              tag: "li",
+              key: Some("four"),
+              attrs: [],
+              children: [RenderedText("Four")],
+            ),
+            RenderedElement(
+              tag: "li",
+              key: Some("five"),
+              attrs: [],
+              children: [RenderedText("Five")],
+            ),
+          ],
+        ),
+      ],
+    )
+
+  patch.create(first, second)
+  |> should.equal(Update(
+    attrs: None,
+    children: Some([
+      #(
+        0,
+        Update(
+          attrs: None,
+          children: Some([
+            #(
+              2,
+              Replace(RenderedElement(
+                tag: "li",
+                key: Some("three"),
+                attrs: [],
+                children: [RenderedText("Three")],
+              )),
+            ),
+            #(3, Move(from: 2, patch: NoOp)),
+            #(4, Move(from: 3, patch: NoOp)),
           ]),
         ),
       ),

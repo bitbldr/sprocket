@@ -209,6 +209,7 @@ test("applyPatch removes middle element in children", () => {
     {
       "2": ["Move", 3, ["NoOp"]],
       "3": ["Move", 4, ["NoOp"]],
+      "4": ["Remove"],
     },
   ];
 

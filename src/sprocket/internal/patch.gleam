@@ -1,3 +1,4 @@
+import gleam/io
 import gleam/list
 import gleam/string
 import gleam/int
@@ -208,7 +209,9 @@ fn build_attrs_map(attributes) {
   )
 }
 
-fn build_key_map(children) -> Map(String, #(Int, RenderedElement)) {
+fn build_key_map(
+  children: List(RenderedElement),
+) -> Map(String, #(Int, RenderedElement)) {
   children
   |> list.index_fold(
     map.new(),
@@ -262,22 +265,35 @@ fn compare_children(
   // determine removed children. some of these results will actually be moves
   // or replaces, but the next step will update those accordingly
   let removals =
-    old_children
+    zip_all(old_children, new_children)
     |> list.index_fold(
       map.new(),
       fn(acc, child, index) {
         case child {
-          RenderedElement(key: Some(key), ..) -> {
-            case map.get(new_key_map, key) {
+          #(
+            Some(RenderedElement(key: Some(old_key), ..)),
+            Some(RenderedElement(key: Some(_key), ..)),
+          ) -> {
+            // if both children have keys, then we can check if the key exists in the new key map
+            case map.get(new_key_map, old_key) {
               Ok(_) -> {
+                // key exists in the new key map so the child has not been removed
                 acc
               }
               Error(Nil) -> {
+                // key does not exist in the new key map, so the child has been removed
                 map.insert(acc, index, Remove)
               }
             }
           }
+          #(_, None) -> {
+            // This is a case where the new children list is shorter than the old which
+            // means that the last child in the old list has either been moved or removed.
+            // In either case, this indicates the end of the list so we want to remove
+            map.insert(acc, index, Remove)
+          }
           _ -> {
+            // we can't determine if this child has been removed or not, so just continue
             acc
           }
         }

@@ -119,12 +119,14 @@ type Model {
 type Msg {
   NoOp
   Hide(Int)
+  Reset
 }
 
 fn update(model: Model, msg: Msg) {
   case msg {
     NoOp -> model
     Hide(id) -> Model(hidden: [id, ..model.hidden])
+    Reset -> Model(hidden: [])
   }
 }
 
@@ -140,6 +142,8 @@ pub fn product_list(ctx: Context, props: ProductListProps) {
   let ProductListProps(products: products) = props
 
   use ctx, State(Model(hidden), dispatch) <- reducer(ctx, initial(), update)
+
+  use ctx, reset <- callback(ctx, CallbackFn(fn() { dispatch(Reset) }), OnMount)
 
   render(
     ctx,
@@ -171,6 +175,15 @@ pub fn product_list(ctx: Context, props: ProductListProps) {
                   ))
               }
             }),
+          ),
+          button_text(
+            [
+              class(
+                "mt-5 text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800",
+              ),
+              on_click(reset),
+            ],
+            "Reset",
           ),
         ],
       ),
@@ -260,7 +273,7 @@ pub fn example_coffee_products() {
     Product(
       id: 2259,
       name: "Mocha Madness",
-      description: "Our classic roast. A decadent blend of Central American beans blended with premium cocoa nibs that are medium-roasted.",
+      description: "A decadent blend of Central American beans blended with premium cocoa nibs that are medium-roasted.",
       img_url: "https://images.pexels.com/photos/2396220/pexels-photo-2396220.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2",
       qty: "12 oz bag",
       price: 19.99,
