@@ -1,7 +1,6 @@
 import gleam/list
 import gleam/string
 import gleam/int
-import gleam/pair
 import gleam/map.{Map}
 import gleam/option.{None, Option, Some}
 import sprocket/render.{
@@ -226,7 +225,12 @@ fn build_key_map(children) -> Map(String, #(Int, RenderedElement)) {
   )
 }
 
-fn compare_child_at_index(acc, old_children, new_child, index) {
+fn compare_child_at_index(
+  acc: Map(Int, Patch),
+  old_children,
+  new_child,
+  index,
+) -> Map(Int, Patch) {
   case list.at(old_children, index) {
     Ok(old_child) -> {
       case create(old_child, new_child) {
@@ -234,12 +238,12 @@ fn compare_child_at_index(acc, old_children, new_child, index) {
           acc
         }
         patch -> {
-          [#(index, patch), ..acc]
+          map.insert(acc, index, patch)
         }
       }
     }
     Error(Nil) -> {
-      [#(index, Insert(new_child)), ..acc]
+      map.insert(acc, index, Insert(new_child))
     }
   }
 }
@@ -255,12 +259,12 @@ fn compare_children(
   let old_key_map = build_key_map(old_children)
   let new_key_map = build_key_map(new_children)
 
-  // determine removed children. some of these results eill actually be moves
+  // determine removed children. some of these results will actually be moves
   // or replaces, but the next step will update those accordingly
   let removals =
     old_children
     |> list.index_fold(
-      [],
+      map.new(),
       fn(acc, child, index) {
         case child {
           RenderedElement(key: Some(key), ..) -> {
@@ -269,7 +273,7 @@ fn compare_children(
                 acc
               }
               Error(Nil) -> {
-                [#(index, Remove), ..acc]
+                map.insert(acc, index, Remove)
               }
             }
           }
@@ -297,10 +301,10 @@ fn compare_children(
               case index == old_index {
                 True -> {
                   // if the index is the same, then the element has not moved
-                  [#(index, child_patch), ..acc]
+                  map.insert(acc, index, child_patch)
                 }
                 False -> {
-                  [#(index, Move(old_index, child_patch)), ..acc]
+                  map.insert(acc, index, Move(old_index, child_patch))
                 }
               }
             }
@@ -317,21 +321,19 @@ fn compare_children(
       }
     },
   )
-  // ensure that the list is sorted by index, mostly for stable testing
-  |> list.sort(fn(a, b) { int.compare(pair.first(a), pair.first(b)) })
-  |> list.filter_map(fn(child_el) {
+  |> map.filter(fn(_k, child_el) {
     case child_el {
-      #(_index, NoOp) -> Error(Nil)
-      #(index, patch) -> Ok(#(index, patch))
+      NoOp -> False
+      _ -> True
     }
   })
-  |> fn(diff_list) {
-    case diff_list {
-      [] -> {
-        None
+  |> fn(diff_map) {
+    case map.size(diff_map) > 0 {
+      True -> {
+        Some(map.to_list(diff_map))
       }
-      _ -> {
-        Some(diff_list)
+      False -> {
+        None
       }
     }
   }
@@ -479,4 +481,15 @@ fn children_to_json(children: List(#(Int, Patch)), debug: Bool) -> Json {
 fn map_key_to_str(c: #(Int, Patch), debug: Bool) -> #(String, Json) {
   let #(index, patch) = c
   #(int.to_string(index), patch_to_json(patch, debug))
+}
+
+fn map_index_fold(map: Map(a, k), acc: b, fold_fn: fn(b, k, a, Int) -> b) {
+  map
+  |> map.fold(
+    #(acc, 0),
+    fn(acc, item, key) {
+      let #(acc, index) = acc
+      #(fold_fn(acc, key, item, index), index + 1)
+    },
+  )
 }

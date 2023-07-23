@@ -4,7 +4,7 @@ enum OpCode {
   NoOp = 0,
   Update = 1,
   Replace = 2,
-  Add = 3,
+  Insert = 3,
   Remove = 4,
   Change = 5,
   Move = 6,
@@ -19,8 +19,8 @@ function getOperation(patch: Patch, debug: boolean): Operation {
         return [OpCode.Update, patch[1], patch[2]];
       case "Replace":
         return [OpCode.Replace, patch[1]];
-      case "Add":
-        return [OpCode.Add, patch[1]];
+      case "Insert":
+        return [OpCode.Insert, patch[1]];
       case "Remove":
         return [OpCode.Remove];
       case "Change":
@@ -41,7 +41,7 @@ function getOperation(patch: Patch, debug: boolean): Operation {
     case "2":
       return [OpCode.Replace, patch[1]];
     case "3":
-      return [OpCode.Add, patch[1]];
+      return [OpCode.Insert, patch[1]];
     case "4":
       return [OpCode.Remove];
     case "5":
@@ -70,7 +70,7 @@ export type DebugPatch =
   | ["NoOp"]
   | ["Update", Attributes, Children]
   | ["Replace", Element]
-  | ["Add", Element]
+  | ["Insert", Element]
   | ["Remove"]
   | ["Change", string]
   | ["Move", number, Patch];
@@ -81,7 +81,7 @@ export type Operation =
   | [OpCode.NoOp]
   | [OpCode.Update, Attributes, Children]
   | [OpCode.Replace, Element]
-  | [OpCode.Add, Element]
+  | [OpCode.Insert, Element]
   | [OpCode.Remove]
   | [OpCode.Change, string]
   | [OpCode.Move, number, Patch];
@@ -89,11 +89,11 @@ export type Operation =
 export function applyPatch(
   original: Record<string, any>,
   patch: Patch,
-  opts?: Record<string, any>,
+  opts: Record<string, any>,
   parent?: Record<string, any>,
   currentKey?: string
 ): Record<string, any> | string | null {
-  const operation = getOperation(patch, opts?.debug);
+  const operation = getOperation(patch, !!opts.debug);
   switch (operation[0]) {
     case OpCode.NoOp:
       return original;
@@ -137,17 +137,28 @@ export function applyPatch(
       return updated;
     case OpCode.Replace:
       return operation[1];
-    case OpCode.Add:
+    case OpCode.Insert:
       return operation[1];
     case OpCode.Remove:
       return null;
     case OpCode.Change:
       return operation[1];
     case OpCode.Move:
-      const moved = (parent as any)[currentKey as any];
+      if (parent) {
+        const fromKey = operation[1];
 
-      if (moved) {
-        return applyPatch(moved, operation[2], opts, parent, currentKey);
+        const movedAndPatched = applyPatch(
+          (parent as any)[fromKey],
+          operation[2],
+          opts,
+          parent,
+          currentKey
+        );
+
+        // remove from old position
+        delete (parent as any)[fromKey];
+
+        return movedAndPatched;
       } else {
         throw new Error("Cannot move element without parent");
       }

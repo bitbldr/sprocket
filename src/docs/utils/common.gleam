@@ -16,7 +16,7 @@ pub fn example(children: List(Element)) -> Element {
   div(
     [
       class(
-        "not-prose graph-paper bg-white dark:bg-black my-4 p-6 border border-gray-200 dark:border-gray-700 rounded-md",
+        "not-prose graph-paper bg-white dark:bg-black my-4 p-6 border border-gray-200 dark:border-gray-700 rounded-md overflow-x-auto",
       ),
     ],
     children,

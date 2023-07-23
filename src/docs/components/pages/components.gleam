@@ -4,6 +4,9 @@ import sprocket/component.{component, render}
 import sprocket/html.{article, code_text, h1, h2, p, text}
 import docs/utils/codeblock.{codeblock}
 import docs/components/hello_button.{HelloButtonProps, hello_button}
+import docs/components/product_list.{
+  ProductListProps, example_coffee_products, product_list,
+}
 import docs/utils/common.{example}
 
 pub type ComponentsPageProps {
@@ -175,6 +178,94 @@ pub fn components_page(ctx: Context, _props: ComponentsPageProps) {
               text(
                 "But our humble button isn't very interesting yet. Let's say we want to add some functionality to our button. We can do that by
                 implementing some events and state management via hooks, which we'll cover in the next couple sections.",
+              ),
+            ],
+          ),
+          h2([], [text("Dynamic Lists of Components")]),
+          p(
+            [],
+            [
+              text(
+                "Components can be rendered as a dynamic list of elements using ",
+              ),
+              code_text([], "list.map"),
+              text(" or "),
+              code_text([], "list.filter"),
+              text(". It's important to use the "),
+              code_text([], "keyed"),
+              text(
+                " function so that the diffing algorithm can keep track of similar components and thier states. Let's take a look at an example of a component that renders a list of products, each with their own state.",
+              ),
+            ],
+          ),
+          codeblock(
+            "gleam",
+            "
+              type Product {
+                Product(
+                  id: Int,
+                  name: String,
+                  description: String,
+                  img_url: String,
+                  qty: String,
+                  price: Float,
+                )
+              }
+
+              pub type ProductListProps {
+                ProductListProps(products: List(Product))
+              }
+
+              pub fn product_list(ctx: Context, props: ProductListProps) {
+                let ProductCardProps(products) = props
+
+                render(
+                  ctx,
+                  [
+                    div(
+                      [],
+                      list.map(
+                        products,
+                        fn (product) {
+                          keyed(product.id, 
+                            component(
+                              product_card,
+                              ProductCardProps(product: product),
+                            )
+                          )
+                        },
+                      ),
+                    ),
+                  ],
+                )
+              }
+            ",
+          ),
+          example([
+            component(
+              product_list,
+              ProductListProps(products: example_coffee_products()),
+            ),
+          ]),
+          p(
+            [],
+            [
+              text(
+                "As you can see, we've defined a component that takes a list of products as props, and then renders a list of product cards. Each product card has it's own state (whether it is in the cart or not), and we can filter products from the list by clicking \"Not Interested\". Because we are using the ",
+              ),
+              code_text([], "keyed"),
+              text(
+                " function, the diffing algorithm can keep track of each product card and will reconcile components that have changed position, keeping their state in-tact.",
+              ),
+            ],
+          ),
+          p(
+            [],
+            [
+              text("It's important to use the "),
+              code_text([], "keyed"),
+              text(
+                " function anytime you are dynamically rendering components or a list of components that may change.",
               ),
             ],
           ),

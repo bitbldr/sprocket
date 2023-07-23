@@ -735,7 +735,6 @@ pub fn remove_middle_child_in_list_with_keys_test() {
         Update(
           attrs: None,
           children: Some([
-            #(2, Remove),
             #(
               2,
               Move(
@@ -1109,15 +1108,15 @@ pub fn patch_to_json_test() {
   |> json.to_string
   |> should.equal(
     "[
-      1,
+      \"Update\",
       null,
       {
           \"0\": [
-              1,
+              \"Update\",
               null,
               {
                   \"1\": [
-                      2,
+                      \"Replace\",
                       {
                           \"type\": \"p\",
                           \"attrs\": {\"spkt-key\":\"great\"},
@@ -1125,7 +1124,7 @@ pub fn patch_to_json_test() {
                       }
                   ],
                   \"2\": [
-                      3,
+                      \"Insert\",
                       {
                           \"type\": \"p\",
                           \"attrs\": {\"spkt-key\":\"big\"},
@@ -1133,10 +1132,10 @@ pub fn patch_to_json_test() {
                       }
                   ],
                   \"3\": [
-                      6,
+                      \"Move\",
                       1,
                       [
-                          0
+                          \"NoOp\"
                       ]
                   ]
               }
