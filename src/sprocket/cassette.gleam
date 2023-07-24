@@ -142,14 +142,19 @@ fn handle_message(message: Message, state: State) -> actor.Next(State) {
   }
 }
 
-pub fn start() {
+pub type CassetteOpts {
+  CassetteOpts(debug: Bool)
+}
+
+pub fn start(opts: Option(CassetteOpts)) -> Cassette {
   let assert Ok(ca) =
     actor.start(
       State(
         sprockets: [],
         preflights: [],
         cancel_preflight_cleanup_job: fn() { Nil },
-        debug: True,
+        debug: option.map(opts, fn(opts) { opts.debug })
+        |> option.unwrap(False),
       ),
       handle_message,
     )

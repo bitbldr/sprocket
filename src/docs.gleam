@@ -1,6 +1,7 @@
 import gleam/int
 import gleam/string
 import gleam/result
+import gleam/option.{None}
 import gleam/erlang/os
 import gleam/erlang/process
 import gleam/http/service.{Service}
@@ -18,7 +19,7 @@ pub fn main() {
   logger.configure_backend()
 
   let port = load_port()
-  let ca = cassette.start()
+  let ca = cassette.start(None)
   let router = routes.stack(AppContext(ca))
 
   let assert Ok(_) =

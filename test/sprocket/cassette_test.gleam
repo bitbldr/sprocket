@@ -1,3 +1,4 @@
+import gleam/option.{None}
 import gleam/erlang
 import gleam/erlang/process
 import gleeunit/should
@@ -7,7 +8,7 @@ import sprocket/internal/csrf
 import sprocket/html.{div}
 
 pub fn push_pop_preflight_test() {
-  let ca = cassette.start()
+  let ca = cassette.start(None)
 
   let assert Ok(preflight_id) = uuid.v4()
   let view = div([], [])
@@ -35,7 +36,7 @@ pub fn push_pop_preflight_test() {
 }
 
 pub fn cleanup_preflights_test() {
-  let ca = cassette.start()
+  let ca = cassette.start(None)
 
   let assert Ok(preflight_id) = uuid.v4()
   let view = div([], [])
