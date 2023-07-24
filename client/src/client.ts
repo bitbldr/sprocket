@@ -43,6 +43,14 @@ window.addEventListener("DOMContentLoaded", () => {
 
           return true;
         },
+        getNodeKey: function (node) {
+          if (node.nodeType == Node.ELEMENT_NODE) {
+            const el = node as Element;
+            if (el.hasAttribute(constant.KeyAttr)) {
+              return el.getAttribute(constant.KeyAttr);
+            }
+          }
+        },
       });
     }
   });
