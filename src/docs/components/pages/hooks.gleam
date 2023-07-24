@@ -26,6 +26,8 @@ pub fn hooks_page(ctx: Context, _props: HooksPageProps) {
           ),
           h2([], [text("Hook Basics")]),
           p([], [text("COMING SOON")]),
+          h2([], [text("State Hooks")]),
+          p([], [text("COMING SOON")]),
           h2([], [text("Reducer Hooks")]),
           p([], [text("COMING SOON")]),
           h2([], [text("Callback Hooks")]),

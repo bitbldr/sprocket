@@ -18,7 +18,7 @@ import sprocket/render.{
 import sprocket/internal/patch.{Patch}
 import sprocket/internal/utils/ordered_map.{KeyedItem, OrderedMapIter}
 import sprocket/internal/utils/unique.{Unique}
-import sprocket/internal/exception.{throw_on_unexpected_hook_result}
+import sprocket/internal/exceptions.{throw_on_unexpected_hook_result}
 
 pub type Sprocket =
   Subject(Message)
@@ -39,6 +39,8 @@ pub type Message {
   SetRenderUpdate(fn() -> Nil)
   Render(reply_with: Subject(RenderedElement))
   RenderUpdate
+  SetUpdateHook(fn(Unique, fn(Hook) -> Hook) -> Nil)
+  UpdateHook(Unique, fn(Hook) -> Hook)
   GetEventHandler(reply_with: Subject(Result(EventHandler, Nil)), id: Unique)
 }
 
@@ -157,6 +159,16 @@ fn handle_message(message: Message, state: State) -> actor.Next(State) {
       }
     }
 
+    SetUpdateHook(update_hook) -> {
+      actor.Continue(
+        State(..state, ctx: Context(..state.ctx, update_hook: update_hook)),
+      )
+    }
+
+    UpdateHook(id, updater) -> {
+      actor.Continue(update_hook_state(state, id, updater))
+    }
+
     GetEventHandler(reply_with, id) -> {
       let handler =
         list.find(
@@ -187,6 +199,10 @@ pub fn start(
     )
 
   actor.send(actor, SetRenderUpdate(fn() { actor.send(actor, RenderUpdate) }))
+  actor.send(
+    actor,
+    SetUpdateHook(fn(id, updater) { actor.send(actor, UpdateHook(id, updater)) }),
+  )
 
   actor
 }
@@ -272,6 +288,9 @@ fn build_hooks_map(
                 map.insert(acc, id, hook)
               }
               Reducer(id, _, _) -> {
+                map.insert(acc, id, hook)
+              }
+              hooks.State(id, _) -> {
                 map.insert(acc, id, hook)
               }
             }
@@ -388,13 +407,13 @@ fn process_state_hooks(state: State, process_hook: HookProcessor) -> State {
   let rendered =
     option.map(
       state.rendered,
-      fn(node) { visit_rendered_node(node, process_hook) },
+      fn(node) { traverse_rendered_hooks(node, process_hook) },
     )
 
   State(..state, rendered: rendered)
 }
 
-fn visit_rendered_node(node: RenderedElement, process_hook: HookProcessor) {
+fn traverse_rendered_hooks(node: RenderedElement, process_hook: HookProcessor) {
   case node {
     RenderedComponent(fc, key, props, hooks, children) -> {
       let processed_hooks = process_hooks(hooks, process_hook)
@@ -403,7 +422,9 @@ fn visit_rendered_node(node: RenderedElement, process_hook: HookProcessor) {
         list.fold(
           children,
           [],
-          fn(acc, child) { [visit_rendered_node(child, process_hook), ..acc] },
+          fn(acc, child) {
+            [traverse_rendered_hooks(child, process_hook), ..acc]
+          },
         )
 
       RenderedComponent(
@@ -419,7 +440,9 @@ fn visit_rendered_node(node: RenderedElement, process_hook: HookProcessor) {
         list.fold(
           children,
           [],
-          fn(acc, child) { [visit_rendered_node(child, process_hook), ..acc] },
+          fn(acc, child) {
+            [traverse_rendered_hooks(child, process_hook), ..acc]
+          },
         )
 
       RenderedElement(tag, key, hooks, list.reverse(r_children))
@@ -464,4 +487,34 @@ fn process_next_hook(
     }
     Error(_) -> acc
   }
+}
+
+fn update_hook_state(
+  state: State,
+  hook_id: Unique,
+  update: fn(Hook) -> Hook,
+) -> State {
+  let rendered =
+    option.map(
+      state.rendered,
+      fn(node) {
+        traverse_rendered_hooks(
+          node,
+          fn(hook) {
+            case hook {
+              // this operation is only applicable to State hooks
+              hooks.State(id, _) -> {
+                case id == hook_id {
+                  True -> update(hook)
+                  False -> hook
+                }
+              }
+              _ -> hook
+            }
+          },
+        )
+      },
+    )
+
+  State(..state, rendered: rendered)
 }

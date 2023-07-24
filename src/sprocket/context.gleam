@@ -34,6 +34,7 @@ pub type Context {
     handlers: List(EventHandler),
     ws: Option(WebSocket),
     render_update: fn() -> Nil,
+    update_hook: fn(Unique, fn(Hook) -> Hook) -> Nil,
   )
 }
 
@@ -43,6 +44,7 @@ pub fn new(ws: Option(WebSocket)) -> Context {
     handlers: [],
     ws: ws,
     render_update: fn() { Nil },
+    update_hook: fn(_index, _updater) { Nil },
   )
 }
 

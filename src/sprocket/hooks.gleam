@@ -1,7 +1,7 @@
 import gleam/list
 import gleam/option.{Option}
 import gleam/dynamic.{Dynamic}
-import sprocket/internal/exception.{throw_on_unexpected_deps_mismatch}
+import sprocket/internal/exceptions.{throw_on_unexpected_deps_mismatch}
 import sprocket/internal/identifiable_callback.{CallbackFn}
 import sprocket/internal/utils/unique.{Unique}
 
@@ -44,6 +44,7 @@ pub type Hook {
     prev: Option(EffectResult),
   )
   Reducer(id: Unique, reducer: Dynamic, cleanup: fn() -> Nil)
+  State(id: Unique, value: Dynamic)
 }
 
 pub type Compared(a) {

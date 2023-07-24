@@ -7,7 +7,7 @@ import sprocket/hooks.{
   Callback, CallbackResult, Changed, HookDependencies, HookTrigger, OnMount,
   OnUpdate, Unchanged, WithDeps, compare_deps,
 }
-import sprocket/internal/exception.{throw_on_unexpected_hook_result}
+import sprocket/internal/exceptions.{throw_on_unexpected_hook_result}
 import sprocket/internal/utils/unique
 
 pub fn callback(

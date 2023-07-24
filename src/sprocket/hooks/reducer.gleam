@@ -76,11 +76,9 @@ pub fn reducer(
 
   // create a dispatch function for updating the reducer's state and triggering a render update
   let dispatch = fn(msg) -> Nil {
-    // TODO: we might need to wait for the reducer to finish updating before triggering a render update
     actor.send(reducer_actor, DispatchReducer(r: reducer, m: msg))
-    render_update()
 
-    Nil
+    render_update()
   }
 
   cb(ctx, State(state, dispatch))

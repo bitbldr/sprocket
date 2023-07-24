@@ -3,8 +3,9 @@ import gleam/list
 import gleam/float
 import sprocket/context.{Context}
 import sprocket/component.{component, render}
-import sprocket/hooks.{OnMount}
+import sprocket/hooks.{OnMount, WithDeps, dep}
 import sprocket/hooks/reducer.{State, reducer}
+import sprocket/hooks/state.{state}
 import sprocket/hooks/callback.{callback}
 import sprocket/internal/identifiable_callback.{CallbackFn}
 import sprocket/html.{
@@ -30,8 +31,16 @@ pub type ProductCardProps {
 pub fn product_card(ctx: Context, props: ProductCardProps) {
   let ProductCardProps(product, on_hide) = props
 
-  // use ctx, in_cart <- state(ctx, False)
-  let in_cart = False
+  use ctx, in_cart, set_in_cart <- state(ctx, False)
+
+  use ctx, toggle_in_cart <- callback(
+    ctx,
+    CallbackFn(fn() {
+      set_in_cart(!in_cart)
+      Nil
+    }),
+    WithDeps([dep(in_cart)]),
+  )
 
   use ctx, on_hide <- callback(
     ctx,
@@ -121,10 +130,10 @@ pub fn product_card(ctx: Context, props: ProductCardProps) {
                     True -> [
                       button(
                         [
-                          href("#"),
                           class(
                             "text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-green-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800",
                           ),
+                          on_click(toggle_in_cart),
                         ],
                         [
                           i([class("fa-solid fa-check mr-2")], []),
@@ -135,10 +144,10 @@ pub fn product_card(ctx: Context, props: ProductCardProps) {
                     False -> [
                       button(
                         [
-                          href("#"),
                           class(
                             "text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800",
                           ),
+                          on_click(toggle_in_cart),
                         ],
                         [
                           i([class("fa-solid fa-cart-shopping mr-2")], []),
