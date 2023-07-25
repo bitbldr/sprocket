@@ -22,16 +22,12 @@ window.addEventListener("DOMContentLoaded", () => {
   topbar.show(500);
 
   socket.addEventListener("open", function (event) {
-    startHeartbeat();
-
     socket.send(
       JSON.stringify(["join", { id: spktPreflightId, csrf: spktCsrfToken }])
     );
   });
 
   socket.addEventListener("message", function (event) {
-    if (event.data === "pong") return;
-
     let parsed = JSON.parse(event.data);
 
     if (Array.isArray(parsed)) {
@@ -80,29 +76,8 @@ window.addEventListener("DOMContentLoaded", () => {
 
   socket.addEventListener("close", function (event) {
     topbar.show();
-
-    stopHeartbeat();
   });
 
   // wire up event handlers
   initEventHandlers(socket);
-
-  let hbTimer;
-  const hbInterval = 5000; // 5 seconds
-
-  function startHeartbeat() {
-    hbTimer = setInterval(() => {
-      if (socket.readyState === WebSocket.OPEN) {
-        socket.send("ping");
-      } else {
-        console.log("WebSocket connection lost. Unable to send heartbeat.");
-
-        socket.send(JSON.stringify(["reconnect", {}]));
-      }
-    }, hbInterval);
-  }
-
-  function stopHeartbeat() {
-    clearInterval(hbTimer);
-  }
 });

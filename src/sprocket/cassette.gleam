@@ -259,37 +259,12 @@ fn connect(
         }
         Error(_) -> {
           logger.error("CSRF token mismatch for preflight id:" <> preflight_id)
-          websocket.send(ws, TextMessage("Error: CSRF token invalid"))
+          websocket.send(ws, TextMessage(error_to_json(InvalidCSRFToken)))
         }
       }
     }
     Error(Nil) -> {
       logger.error("Error no sprocket found for preflight id:" <> preflight_id)
-
-      websocket.send(ws, TextMessage(error_to_json(PreflightNotFound)))
-
-      Nil
-    }
-  }
-}
-
-fn reconnect(ca: Cassette, ws: WebSocket) {
-  case pop_sprocket(ca, ws) {
-    Ok(sprocket) -> {
-      sprocket.on_reconnect(sprocket)
-
-      // fresh render on reconnect
-      let rendered = sprocket.render(sprocket)
-      websocket.send(ws, TextMessage(rendered_to_json(rendered)))
-
-      logger.info("Sprocket reconnected!")
-
-      Nil
-    }
-    Error(Nil) -> {
-      logger.error("Error no sprocket found for websocket:")
-      io.debug(ws)
-
       websocket.send(ws, TextMessage(error_to_json(PreflightNotFound)))
 
       Nil
@@ -328,7 +303,7 @@ fn decode_event(data: Dynamic) {
   )
 }
 
-fn decode_reconnect(data: Dynamic) {
+fn decode_empty(data: Dynamic) {
   data
   |> dynamic.tuple2(
     dynamic.string,
@@ -342,15 +317,9 @@ fn handle_ws_message(
   msg: internal_websocket.Message,
 ) {
   case msg {
-    TextMessage("ping") -> {
-      websocket.send(ws, TextMessage("pong"))
-    }
     TextMessage(msg) -> {
       case
-        json.decode(
-          msg,
-          dynamic.any([decode_join, decode_event, decode_reconnect]),
-        )
+        json.decode(msg, dynamic.any([decode_join, decode_event, decode_empty]))
       {
         Ok(#("join", JoinPayload(id, csrf))) -> {
           logger.info("New client joined with preflight id: " <> id)
@@ -387,9 +356,6 @@ fn handle_ws_message(
             _ -> Nil
           }
         }
-        Ok(#("reconnect", _)) -> {
-          reconnect(ca, ws)
-        }
         Error(e) -> {
           logger.error("Error decoding message")
           io.debug(e)
@@ -425,6 +391,7 @@ fn rendered_to_json(update: RenderedElement) -> String {
 type ConnectError {
   ConnectError
   PreflightNotFound
+  InvalidCSRFToken
 }
 
 fn error_to_json(error: ConnectError) {
@@ -440,6 +407,11 @@ fn error_to_json(error: ConnectError) {
         json.object([
           #("code", json.string("preflight_not_found")),
           #("msg", json.string("No preflight found")),
+        ])
+      InvalidCSRFToken ->
+        json.object([
+          #("code", json.string("invalid_csrf_token")),
+          #("msg", json.string("Invalid CSRF token")),
         ])
     },
   ])

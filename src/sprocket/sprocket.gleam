@@ -20,9 +20,6 @@ import sprocket/internal/utils/unique.{Unique}
 import sprocket/internal/exceptions.{throw_on_unexpected_hook_result}
 import sprocket/internal/utils/timer.{interval}
 
-// Self destruct after 1 minute
-const self_destruct_timeout = 60_000
-
 pub type Sprocket =
   Subject(Message)
 
@@ -274,18 +271,6 @@ pub fn render(actor) -> RenderedElement {
 /// Render the view and send an update Patch to the updater
 pub fn render_update(actor) -> Nil {
   actor.send(actor, RenderUpdate)
-}
-
-/// Handle a websocket disconnect
-pub fn on_disconnect(actor) -> Nil {
-  // Starts a self destruct timer that will shutdown the actor after a given timeout
-  actor.send(actor, BeginSelfDestruct(self_destruct_timeout))
-}
-
-/// Handle a websocket reconnect
-pub fn on_reconnect(actor) -> Nil {
-  // Cancel the self destruct timer
-  actor.send(actor, CancelSelfDestruct)
 }
 
 fn cleanup_disposed_hooks(
