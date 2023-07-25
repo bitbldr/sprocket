@@ -11,10 +11,9 @@ import mist
 import mist/websocket
 import mist/internal/websocket.{TextMessage} as internal_websocket
 import sprocket/sprocket.{Sprocket}
-import sprocket/context.{Updater, WebSocket}
+import sprocket/context.{Element, Updater, WebSocket}
 import sprocket/render.{RenderedElement}
 import sprocket/internal/render/json as json_renderer
-import sprocket/element.{Element}
 import sprocket/internal/patch.{Patch}
 import sprocket/internal/identifiable_callback.{CallbackFn, CallbackWithValueFn}
 import sprocket/internal/logger
@@ -247,7 +246,7 @@ fn connect(
     Ok(Preflight(view: view, csrf_token: csrf_token, ..)) -> {
       case csrf.validate(preflight_csrf, csrf_token) {
         Ok(_) -> {
-          let sprocket = sprocket.start(Some(ws), Some(view), Some(updater))
+          let sprocket = sprocket.start(Some(ws), view, Some(updater))
           push_sprocket(ca, sprocket)
 
           // intitial live render

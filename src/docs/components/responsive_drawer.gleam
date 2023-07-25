@@ -1,11 +1,10 @@
 import gleam/option.{Some}
-import sprocket/context.{Context}
+import sprocket/context.{Context, Element}
 import sprocket/component.{render}
 import sprocket/hooks.{OnMount}
 import sprocket/hooks/reducer.{State, reducer}
 import sprocket/hooks/callback.{callback}
 import sprocket/internal/identifiable_callback.{CallbackFn}
-import sprocket/element.{Element}
 import sprocket/html.{aside, button, div, i}
 import sprocket/html/attributes.{class, classes, on_click}
 

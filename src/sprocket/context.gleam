@@ -1,6 +1,8 @@
 import gleam/int
 import gleam/list
-import gleam/option.{Option}
+import gleam/option.{None, Option}
+import gleam/dynamic.{Dynamic}
+import sprocket/html/attributes.{Attribute}
 import gleam/erlang/process.{Subject}
 import glisten/handler.{HandlerMessage}
 import sprocket/internal/identifiable_callback.{CallbackFn,
@@ -9,6 +11,22 @@ import sprocket/hooks.{Hook}
 import sprocket/internal/utils/ordered_map.{OrderedMap}
 import sprocket/internal/utils/unique.{Unique}
 import sprocket/internal/logger
+
+pub type AbstractFunctionalComponent =
+  fn(Context, Dynamic) -> #(Context, List(Element))
+
+pub type FunctionalComponent(p) =
+  fn(Context, p) -> #(Context, List(Element))
+
+pub type Element {
+  Element(tag: String, attrs: List(Attribute), children: List(Element))
+  Component(component: FunctionalComponent(Dynamic), props: Dynamic)
+  Debug(id: String, meta: Option(Dynamic), element: Element)
+  Keyed(key: String, element: Element)
+  IgnoreUpdate(element: Element)
+  SafeHtml(html: String)
+  Raw(text: String)
+}
 
 pub type EventHandler {
   EventHandler(id: Unique, handler: CallbackFn)
@@ -30,6 +48,7 @@ pub type ComponentWip {
 
 pub type Context {
   Context(
+    view: Element,
     wip: ComponentWip,
     handlers: List(EventHandler),
     ws: Option(WebSocket),
@@ -38,8 +57,9 @@ pub type Context {
   )
 }
 
-pub fn new(ws: Option(WebSocket)) -> Context {
+pub fn new(ws: Option(WebSocket), view: Element) -> Context {
   Context(
+    view: view,
     wip: ComponentWip(hooks: ordered_map.new(), index: 0, is_first_render: True),
     handlers: [],
     ws: ws,

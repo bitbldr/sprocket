@@ -1,6 +1,5 @@
 import gleam/dynamic
-import sprocket/element.{Component, Element, FunctionalComponent}
-import sprocket/context.{Context}
+import sprocket/context.{Component, Context, Element, FunctionalComponent}
 
 pub fn component(c: FunctionalComponent(p), props: p) -> Element {
   // // This function wrapper will not work since we need to compare the original function

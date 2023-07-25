@@ -4,9 +4,8 @@ import gleam/otp/actor
 import gleam/erlang/process.{Subject}
 import gleam/option.{None, Option, Some}
 import sprocket/internal/logger
-import sprocket/element.{Element}
 import sprocket/context.{
-  ComponentHooks, Context, EventHandler, Updater, WebSocket,
+  ComponentHooks, Context, Element, EventHandler, Updater, WebSocket,
 }
 import sprocket/hooks.{
   Callback, Changed, Effect, EffectCleanup, EffectResult, Hook, HookDependencies,
@@ -26,7 +25,6 @@ pub type Sprocket =
 type State {
   State(
     ctx: Context,
-    view: Option(Element),
     updater: Option(Updater(Patch)),
     rendered: Option(RenderedElement),
   )
@@ -75,7 +73,7 @@ fn handle_message(message: Message, state: State) -> actor.Next(State) {
 
     Render(reply_with) -> {
       let state = case state {
-        State(ctx: ctx, view: Some(view), rendered: prev_rendered, ..) -> {
+        State(ctx: Context(view: view, ..) as ctx, rendered: prev_rendered, ..) -> {
           let RenderResult(ctx, rendered) =
             ctx
             |> context.reset_for_render
@@ -92,7 +90,7 @@ fn handle_message(message: Message, state: State) -> actor.Next(State) {
           run_effects(State(..state, ctx: ctx, rendered: Some(rendered)))
         }
         _ -> {
-          logger.error("No renderer found!")
+          logger.error("No view found! A view must be provided to render.")
           state
         }
       }
@@ -102,12 +100,6 @@ fn handle_message(message: Message, state: State) -> actor.Next(State) {
 
     RenderUpdate -> {
       case state {
-        State(view: None, ..) -> {
-          logger.error("No view found! A view must be provided to render.")
-
-          actor.Continue(state)
-        }
-
         State(updater: None, ..) -> {
           logger.error(
             "No updater found! An updater must be provided to send updates to the client.",
@@ -125,8 +117,7 @@ fn handle_message(message: Message, state: State) -> actor.Next(State) {
         }
 
         State(
-          ctx: ctx,
-          view: Some(view),
+          ctx: Context(view: view, ..) as ctx,
           updater: Some(updater),
           rendered: Some(prev_rendered),
         ) -> {
@@ -189,12 +180,12 @@ fn handle_message(message: Message, state: State) -> actor.Next(State) {
 /// Start a new sprocket actor
 pub fn start(
   ws: Option(WebSocket),
-  view: Option(Element),
+  view: Element,
   updater: Option(Updater(Patch)),
 ) {
   let assert Ok(actor) =
     actor.start(
-      State(ctx: context.new(ws), view: view, updater: updater, rendered: None),
+      State(ctx: context.new(ws, view), updater: updater, rendered: None),
       handle_message,
     )
 

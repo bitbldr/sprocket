@@ -3,11 +3,10 @@ import gleam/list.{Continue, Stop}
 import gleam/option.{None, Option, Some}
 import gleam/dynamic.{Dynamic}
 import sprocket/html/attributes.{Attribute, Event}
-import sprocket/element.{
-  AbstractFunctionalComponent, Component, Debug, Element, IgnoreUpdate, Keyed,
-  Raw, SafeHtml,
+import sprocket/context.{
+  AbstractFunctionalComponent, Component, ComponentHooks, ComponentWip, Context,
+  Debug, Element, IgnoreUpdate, Keyed, Raw, SafeHtml,
 }
-import sprocket/context.{ComponentHooks, ComponentWip, Context}
 import sprocket/internal/utils/unique
 import sprocket/internal/utils/ordered_map
 import sprocket/internal/logger
@@ -49,7 +48,7 @@ pub type RenderResult(a) {
 // but then discards the ctx and returns the result.
 pub fn render(el: Element, renderer: Renderer(r)) -> r {
   let RenderResult(rendered: rendered, ..) =
-    live_render(context.new(None), el, None, None)
+    live_render(context.new(None, el), el, None, None)
 
   renderer.render(rendered)
 }
@@ -107,7 +106,7 @@ pub fn live_render(
 /// Renders the given element into a stateless RenderedElement tree.
 pub fn render_element(el: Element) {
   let RenderResult(rendered: rendered, ..) =
-    live_render(context.new(None), el, None, None)
+    live_render(context.new(None, el), el, None, None)
 
   rendered
 }

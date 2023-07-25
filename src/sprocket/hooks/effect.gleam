@@ -1,6 +1,5 @@
 import gleam/option.{None}
-import sprocket/context.{Context}
-import sprocket/element.{Element}
+import sprocket/context.{Context, Element}
 import sprocket/hooks.{Effect, EffectCleanup, HookTrigger}
 import sprocket/internal/utils/unique
 

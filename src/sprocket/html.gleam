@@ -3,7 +3,7 @@ import gleam/option.{None, Option, Some}
 import gleam/dynamic.{Dynamic}
 import gleam/string
 import gleam/string_builder
-import sprocket/element.{Debug, Element, IgnoreUpdate, Keyed, Raw, SafeHtml}
+import sprocket/context.{Debug, Element, IgnoreUpdate, Keyed, Raw, SafeHtml}
 import sprocket/html/attributes.{Attribute}
 
 pub fn el(tag: String, attrs: List(Attribute), children: List(Element)) {

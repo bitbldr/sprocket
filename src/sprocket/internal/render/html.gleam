@@ -10,7 +10,7 @@ import sprocket/internal/constants.{
   ClientScript, EventAttrPrefix, KeyAttr, MetaCrsfToken, MetaPreflightId,
   constant,
 }
-import sprocket/element.{Element}
+import sprocket/context.{Element}
 import sprocket/cassette.{Cassette, Preflight}
 import sprocket/html.{meta, script}
 import sprocket/html/attributes.{content, name, src}

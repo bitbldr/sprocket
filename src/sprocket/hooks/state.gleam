@@ -1,6 +1,5 @@
 import gleam/dynamic
-import sprocket/element.{Element}
-import sprocket/context.{Context}
+import sprocket/context.{Context, Element}
 import sprocket/hooks
 import sprocket/internal/utils/unique
 import sprocket/internal/exceptions.{throw_on_unexpected_hook_result}
