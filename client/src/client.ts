@@ -1,4 +1,5 @@
 import morphdom from "morphdom";
+import topbar from "topbar";
 import { renderDom } from "./render";
 import { applyPatch } from "./patch";
 import { initEventHandlers } from "./events";
@@ -17,23 +18,45 @@ window.addEventListener("DOMContentLoaded", () => {
     .querySelector("meta[name=spkt-csrf-token]")
     ?.getAttribute("content");
 
+  topbar.config({ barColors: { 0: "#29d" }, barThickness: 2 });
+  topbar.show(500);
+
   socket.addEventListener("open", function (event) {
+    startHeartbeat();
+
     socket.send(
       JSON.stringify(["join", { id: spktPreflightId, csrf: spktCsrfToken }])
     );
   });
 
   socket.addEventListener("message", function (event) {
+    if (event.data === "pong") return;
+
     let parsed = JSON.parse(event.data);
 
     if (Array.isArray(parsed)) {
       switch (parsed[0]) {
         case "ok":
+          topbar.hide();
+
           dom = parsed[1];
+
           break;
 
         case "update":
           dom = applyPatch(dom, parsed[1], parsed[2]) as Element;
+          break;
+
+        case "error":
+          const { code, msg } = parsed[1];
+          console.error(`Error ${code}: ${msg}`);
+
+          switch (code) {
+            case "preflight_not_found":
+              setTimeout(() => window.location.reload(), 1000);
+              break;
+          }
+
           break;
       }
 
@@ -55,6 +78,31 @@ window.addEventListener("DOMContentLoaded", () => {
     }
   });
 
+  socket.addEventListener("close", function (event) {
+    topbar.show();
+
+    stopHeartbeat();
+  });
+
   // wire up event handlers
   initEventHandlers(socket);
+
+  let hbTimer;
+  const hbInterval = 5000; // 5 seconds
+
+  function startHeartbeat() {
+    hbTimer = setInterval(() => {
+      if (socket.readyState === WebSocket.OPEN) {
+        socket.send("ping");
+      } else {
+        console.log("WebSocket connection lost. Unable to send heartbeat.");
+
+        socket.send(JSON.stringify(["reconnect", {}]));
+      }
+    }, hbInterval);
+  }
+
+  function stopHeartbeat() {
+    clearInterval(hbTimer);
+  }
 });

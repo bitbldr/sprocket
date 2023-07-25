@@ -18,12 +18,18 @@ import sprocket/internal/patch.{Patch}
 import sprocket/internal/utils/ordered_map.{KeyedItem, OrderedMapIter}
 import sprocket/internal/utils/unique.{Unique}
 import sprocket/internal/exceptions.{throw_on_unexpected_hook_result}
+import sprocket/internal/utils/timer.{interval}
+
+// Self destruct after 1 minute
+const self_destruct_timeout = 60_000
 
 pub type Sprocket =
   Subject(Message)
 
 type State {
   State(
+    self: Option(Sprocket),
+    cancel_shutdown: Option(fn() -> Nil),
     ctx: Context,
     updater: Option(Updater(Patch)),
     rendered: Option(RenderedElement),
@@ -32,6 +38,9 @@ type State {
 
 pub type Message {
   Shutdown
+  SetSelf(Sprocket)
+  BeginSelfDestruct(Int)
+  CancelSelfDestruct
   GetRendered(reply_with: Subject(Option(RenderedElement)))
   HasWebSocket(reply_with: Subject(Bool), websocket: WebSocket)
   SetRenderUpdate(fn() -> Nil)
@@ -45,6 +54,33 @@ pub type Message {
 fn handle_message(message: Message, state: State) -> actor.Next(State) {
   case message {
     Shutdown -> actor.Stop(process.Normal)
+
+    SetSelf(self) -> {
+      actor.Continue(State(..state, self: Some(self)))
+    }
+
+    BeginSelfDestruct(timeout) -> {
+      case state.self {
+        Some(self) -> {
+          let cancel = interval(timeout, fn() { actor.send(self, Shutdown) })
+
+          actor.Continue(State(..state, cancel_shutdown: Some(cancel)))
+        }
+        _ -> actor.Continue(state)
+      }
+    }
+
+    CancelSelfDestruct -> {
+      case state.cancel_shutdown {
+        Some(cancel) -> {
+          cancel()
+          actor.Continue(State(..state, cancel_shutdown: None))
+        }
+        _ -> actor.Continue(state)
+      }
+
+      actor.Continue(state)
+    }
 
     GetRendered(reply_with) -> {
       actor.send(reply_with, state.rendered)
@@ -100,26 +136,11 @@ fn handle_message(message: Message, state: State) -> actor.Next(State) {
 
     RenderUpdate -> {
       case state {
-        State(updater: None, ..) -> {
-          logger.error(
-            "No updater found! An updater must be provided to send updates to the client.",
-          )
-
-          actor.Continue(state)
-        }
-
-        State(rendered: None, ..) -> {
-          logger.error(
-            "No previous render found! View must be rendered at least once before updates can be sent.",
-          )
-
-          actor.Continue(state)
-        }
-
         State(
           ctx: Context(view: view, ..) as ctx,
           updater: Some(updater),
           rendered: Some(prev_rendered),
+          ..,
         ) -> {
           let RenderResult(ctx, rendered) =
             ctx
@@ -145,6 +166,26 @@ fn handle_message(message: Message, state: State) -> actor.Next(State) {
           let state =
             run_effects(State(..state, ctx: ctx, rendered: Some(rendered)))
 
+          actor.Continue(state)
+        }
+
+        State(updater: None, ..) -> {
+          logger.error(
+            "No updater found! An updater must be provided to send updates to the client.",
+          )
+
+          actor.Continue(state)
+        }
+
+        State(rendered: None, ..) -> {
+          logger.error(
+            "No previous render found! View must be rendered at least once before updates can be sent.",
+          )
+
+          actor.Continue(state)
+        }
+        _ -> {
+          logger.error("No view found! A view must be provided to render.")
           actor.Continue(state)
         }
       }
@@ -185,10 +226,17 @@ pub fn start(
 ) {
   let assert Ok(actor) =
     actor.start(
-      State(ctx: context.new(ws, view), updater: updater, rendered: None),
+      State(
+        self: None,
+        cancel_shutdown: None,
+        ctx: context.new(ws, view),
+        updater: updater,
+        rendered: None,
+      ),
       handle_message,
     )
 
+  actor.send(actor, SetSelf(actor))
   actor.send(actor, SetRenderUpdate(fn() { actor.send(actor, RenderUpdate) }))
   actor.send(
     actor,
@@ -226,6 +274,18 @@ pub fn render(actor) -> RenderedElement {
 /// Render the view and send an update Patch to the updater
 pub fn render_update(actor) -> Nil {
   actor.send(actor, RenderUpdate)
+}
+
+/// Handle a websocket disconnect
+pub fn on_disconnect(actor) -> Nil {
+  // Starts a self destruct timer that will shutdown the actor after a given timeout
+  actor.send(actor, BeginSelfDestruct(self_destruct_timeout))
+}
+
+/// Handle a websocket reconnect
+pub fn on_reconnect(actor) -> Nil {
+  // Cancel the self destruct timer
+  actor.send(actor, CancelSelfDestruct)
 }
 
 fn cleanup_disposed_hooks(

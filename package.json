@@ -25,6 +25,7 @@
     "build": "gleam build && yarn run client:build && yarn run tailwind:build"
   },
   "dependencies": {
-    "morphdom": "^2.7.0"
+    "morphdom": "^2.7.0",
+    "topbar": "^2.0.1"
   }
 }

@@ -19,7 +19,7 @@ import sprocket/internal/identifiable_callback.{CallbackFn, CallbackWithValueFn}
 import sprocket/internal/logger
 import sprocket/internal/constants.{call_timeout}
 import sprocket/internal/csrf
-import docs/utils/timer.{interval}
+import sprocket/internal/utils/timer.{interval}
 
 pub type Preflight {
   Preflight(id: String, view: Element, csrf_token: String, created_at: Int)
@@ -266,6 +266,32 @@ fn connect(
     Error(Nil) -> {
       logger.error("Error no sprocket found for preflight id:" <> preflight_id)
 
+      websocket.send(ws, TextMessage(error_to_json(PreflightNotFound)))
+
+      Nil
+    }
+  }
+}
+
+fn reconnect(ca: Cassette, ws: WebSocket) {
+  case pop_sprocket(ca, ws) {
+    Ok(sprocket) -> {
+      sprocket.on_reconnect(sprocket)
+
+      // fresh render on reconnect
+      let rendered = sprocket.render(sprocket)
+      websocket.send(ws, TextMessage(rendered_to_json(rendered)))
+
+      logger.info("Sprocket reconnected!")
+
+      Nil
+    }
+    Error(Nil) -> {
+      logger.error("Error no sprocket found for websocket:")
+      io.debug(ws)
+
+      websocket.send(ws, TextMessage(error_to_json(PreflightNotFound)))
+
       Nil
     }
   }
@@ -274,6 +300,7 @@ fn connect(
 type Payload {
   JoinPayload(preflight_id: String, csrf_token: String)
   EventPayload(kind: String, id: String, value: Option(String))
+  EmptyPayload(nothing: Option(String))
 }
 
 fn decode_join(data: Dynamic) {
@@ -301,14 +328,30 @@ fn decode_event(data: Dynamic) {
   )
 }
 
+fn decode_reconnect(data: Dynamic) {
+  data
+  |> dynamic.tuple2(
+    dynamic.string,
+    dynamic.decode1(EmptyPayload, optional_field("nothing", dynamic.string)),
+  )
+}
+
 fn handle_ws_message(
   ca: Cassette,
   ws: WebSocket,
   msg: internal_websocket.Message,
 ) {
   case msg {
+    TextMessage("ping") -> {
+      websocket.send(ws, TextMessage("pong"))
+    }
     TextMessage(msg) -> {
-      case json.decode(msg, dynamic.any([decode_join, decode_event])) {
+      case
+        json.decode(
+          msg,
+          dynamic.any([decode_join, decode_event, decode_reconnect]),
+        )
+      {
         Ok(#("join", JoinPayload(id, csrf))) -> {
           logger.info("New client joined with preflight id: " <> id)
 
@@ -344,6 +387,9 @@ fn handle_ws_message(
             _ -> Nil
           }
         }
+        Ok(#("reconnect", _)) -> {
+          reconnect(ca, ws)
+        }
         Error(e) -> {
           logger.error("Error decoding message")
           io.debug(e)
@@ -372,6 +418,30 @@ fn rendered_to_json(update: RenderedElement) -> String {
   json.preprocessed_array([
     json.string("ok"),
     json_renderer.renderer().render(update),
+  ])
+  |> json.to_string()
+}
+
+type ConnectError {
+  ConnectError
+  PreflightNotFound
+}
+
+fn error_to_json(error: ConnectError) {
+  json.preprocessed_array([
+    json.string("error"),
+    case error {
+      ConnectError ->
+        json.object([
+          #("code", json.string("connect_error")),
+          #("msg", json.string("Unable to connect to session")),
+        ])
+      PreflightNotFound ->
+        json.object([
+          #("code", json.string("preflight_not_found")),
+          #("msg", json.string("No preflight found")),
+        ])
+    },
   ])
   |> json.to_string()
 }
