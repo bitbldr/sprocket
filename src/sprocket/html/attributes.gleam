@@ -41,9 +41,13 @@ pub fn role(value: String) -> Attribute {
   attribute("role", value)
 }
 
-// Functions below are based on Nakai https://github.com/nakaixo/nakai
-// If we could use Nakai directly that would be ideal, but it's not generic or compatible with the
-// Sprocket Element type and wrapping in a hiher-level type would be too cumbersome to use.
+pub fn xmlns(value: String) -> Attribute {
+  attribute("xmlns", value)
+}
+
+pub fn xmlns_xlink(value: String) -> Attribute {
+  attribute("xmlns_xlink", value)
+}
 
 pub fn accept(value: String) -> Attribute {
   attribute("accept", value)

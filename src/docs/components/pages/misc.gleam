@@ -11,6 +11,7 @@ import sprocket/hooks.{WithDeps}
 import sprocket/hooks/callback.{callback}
 import sprocket/hooks/reducer.{State, reducer}
 import docs/components/clock.{ClockProps, clock}
+import docs/components/analog_clock.{AnalogClockProps, analog_clock}
 import docs/components/counter.{CounterProps, counter}
 import docs/components/say_hello.{SayHelloProps, say_hello}
 
@@ -63,13 +64,19 @@ pub fn misc_page(ctx: Context, _props: MiscPageProps) {
               //     },
               //   ),
               // ),
-              component(
-                clock,
-                ClockProps(
-                  label: Some("The current time is: "),
-                  time_unit: Some(time_unit),
-                ),
+              div(
+                [],
+                [
+                  component(
+                    clock,
+                    ClockProps(
+                      label: Some("The current time is: "),
+                      time_unit: Some(time_unit),
+                    ),
+                  ),
+                ],
               ),
+              div([], [component(analog_clock, AnalogClockProps)]),
               p(
                 [],
                 [

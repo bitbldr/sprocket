@@ -92,4 +92,4 @@ pub fn clock(ctx: Context, props: ClockProps) {
 }
 
 pub external fn format_time(a, String) -> String =
-  "Elixir.Sprocket" "format_time"
+  "Elixir.FFIUtils" "format_time"
