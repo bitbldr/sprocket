@@ -1,6 +1,6 @@
 import gleam/int
 import gleam/list
-import gleam/option.{None, Option}
+import gleam/option.{Option}
 import gleam/dynamic.{Dynamic}
 import sprocket/html/attributes.{Attribute}
 import gleam/erlang/process.{Subject}

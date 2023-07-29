@@ -10,9 +10,8 @@ import sprocket/hooks/effect.{effect}
 import sprocket/html/attributes.{xmlns, xmlns_xlink}
 import sprocket/html/svg/elements.{circle, g, line, path, svg}
 import sprocket/html/svg/attributes.{
-  class, cx, cy, d, enable_background, fill, height, id, r, stroke,
-  stroke_miterlimit, stroke_width, transform, version, view_box, width, x, x1,
-  x2, xml_space, y, y1, y2,
+  class, cx, cy, d, fill, height, id, r, stroke, stroke_miterlimit, stroke_width,
+  transform, version, view_box, width, x, x1, x2, xml_space, y, y1, y2,
 } as svg_attributes
 import sprocket/internal/utils/timer.{interval}
 
