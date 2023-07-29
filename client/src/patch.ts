@@ -162,9 +162,6 @@ export function applyPatch(
           currentKey
         );
 
-        // // remove from old position
-        // delete (parent as any)[fromKey];
-
         return movedAndPatched;
       } else {
         throw new Error("Cannot move element without parent");
