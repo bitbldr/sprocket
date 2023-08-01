@@ -70,8 +70,8 @@ pub fn analog_clock(ctx: Context, _props: AnalogClockProps) {
     True -> hours - 12
     False -> hours
   }
-  let hours = { hours * 3600 } + minutes
   let minutes = { minutes * 60 } + seconds
+  let hours = { hours * 3600 } + minutes
 
   let clock_second_hand_transform =
     "rotate(" <> float.to_string(360.0 *. { int.to_float(seconds) /. 60.0 }) <> ",192,192)"
