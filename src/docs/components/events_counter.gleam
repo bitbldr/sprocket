@@ -3,7 +3,7 @@ import gleam/option.{Option, Some}
 import sprocket/context.{Context}
 import sprocket/hooks.{WithDeps, dep}
 import sprocket/component.{component, render}
-import sprocket/hooks/reducer.{State, reducer}
+import sprocket/hooks/reducer.{reducer}
 import sprocket/hooks/callback.{callback}
 import sprocket/internal/identifiable_callback.{CallbackFn}
 import sprocket/html.{div, span, text}
@@ -32,7 +32,7 @@ pub fn counter(ctx: Context, props: CounterProps) {
   let CounterProps(enable_reset: enable_reset) = props
 
   // Define a reducer to handle events and update the state
-  use ctx, State(count, dispatch) <- reducer(ctx, 0, update)
+  use ctx, count, dispatch <- reducer(ctx, 0, update)
 
   render(
     ctx,

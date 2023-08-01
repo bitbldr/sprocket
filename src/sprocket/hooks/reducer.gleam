@@ -9,10 +9,6 @@ import sprocket/internal/constants.{call_timeout}
 pub type Updater(msg) =
   fn(msg) -> Nil
 
-pub type State(model, msg) {
-  State(m: model, d: Updater(msg))
-}
-
 type Reducer(model, msg) =
   fn(model, msg) -> model
 
@@ -26,7 +22,7 @@ pub fn reducer(
   ctx: Context,
   initial: model,
   reducer: Reducer(model, msg),
-  cb: fn(Context, State(model, msg)) -> #(Context, List(Element)),
+  cb: fn(Context, model, fn(msg) -> Nil) -> #(Context, List(Element)),
 ) -> #(Context, List(Element)) {
   let Context(render_update: render_update, ..) = ctx
 
@@ -80,5 +76,5 @@ pub fn reducer(
     render_update()
   }
 
-  cb(ctx, State(state, dispatch))
+  cb(ctx, state, dispatch)
 }

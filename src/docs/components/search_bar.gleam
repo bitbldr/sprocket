@@ -3,7 +3,7 @@ import sprocket/component.{render}
 import sprocket/hooks.{WithDeps, dep}
 import sprocket/hooks/callback.{callback}
 import sprocket/internal/identifiable_callback.{CallbackWithValueFn}
-import sprocket/hooks/reducer.{State, reducer}
+import sprocket/hooks/reducer.{reducer}
 import sprocket/html.{input}
 import sprocket/html/attributes.{class,
   input_type, on_input, placeholder, value}
@@ -36,11 +36,7 @@ pub fn search_bar(ctx: Context, props) {
   let SearchBarProps(on_search: on_search) = props
 
   // Define a reducer to handle events and update the state
-  use ctx, State(Model(query: query), dispatch) <- reducer(
-    ctx,
-    initial(),
-    update,
-  )
+  use ctx, Model(query: query), dispatch <- reducer(ctx, initial(), update)
 
   use ctx, on_input_query <- callback(
     ctx,

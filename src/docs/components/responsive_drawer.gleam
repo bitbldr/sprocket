@@ -2,7 +2,7 @@ import gleam/option.{Some}
 import sprocket/context.{Context, Element}
 import sprocket/component.{render}
 import sprocket/hooks.{OnMount}
-import sprocket/hooks/reducer.{State, reducer}
+import sprocket/hooks/reducer.{reducer}
 import sprocket/hooks/callback.{callback}
 import sprocket/internal/identifiable_callback.{CallbackFn}
 import sprocket/html.{aside, button, div, i}
@@ -39,7 +39,7 @@ pub type ResponsiveDrawerProps {
 pub fn responsive_drawer(ctx: Context, props) {
   let ResponsiveDrawerProps(drawer: drawer, content: content) = props
 
-  use ctx, State(Model(show: show), dispatch) <- reducer(ctx, initial(), update)
+  use ctx, Model(show: show), dispatch <- reducer(ctx, initial(), update)
 
   use ctx, toggle_drawer <- callback(
     ctx,

@@ -87,7 +87,7 @@ pub fn state_management_page(ctx: Context, _props: StateManagementPageProps) {
           codeblock(
             "gleam",
             "
-            use ctx, State(Model(selection: selection, options: options), dispatch) <- reducer(
+            use ctx, Model(selection: selection, options: options), dispatch <- reducer(
               ctx,
               initial(hello_options()),
               update,
@@ -191,7 +191,7 @@ pub fn state_management_page(ctx: Context, _props: StateManagementPageProps) {
             }
 
             pub fn hello_button(ctx: Context, _props: HelloButtonProps) {
-              use ctx, State(Model(selection: selection, options: options), dispatch) <- reducer(
+              use ctx, Model(selection: selection, options: options), dispatch <- reducer(
                 ctx,
                 initial(hello_options()),
                 update,

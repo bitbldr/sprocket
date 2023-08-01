@@ -2,7 +2,7 @@ import gleam/int
 import gleam/option.{None, Option, Some}
 import sprocket/context.{Context}
 import sprocket/component.{component, render}
-import sprocket/hooks/reducer.{State, reducer}
+import sprocket/hooks/reducer.{reducer}
 import sprocket/html.{a, div, keyed, text}
 import sprocket/html/attributes.{class, classes}
 import sprocket/internal/utils/ordered_map.{KeyedItem, OrderedMap}
@@ -37,7 +37,7 @@ pub type SidebarProps {
 pub fn sidebar(ctx: Context, props) {
   let SidebarProps(pages: pages, active: active) = props
 
-  use ctx, State(Model(search_filter: search_filter), dispatch) <- reducer(
+  use ctx, Model(search_filter: search_filter), dispatch <- reducer(
     ctx,
     initial(),
     update,

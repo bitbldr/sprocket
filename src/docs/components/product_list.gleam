@@ -4,7 +4,7 @@ import gleam/float
 import sprocket/context.{Context}
 import sprocket/component.{component, render}
 import sprocket/hooks.{OnMount, WithDeps, dep}
-import sprocket/hooks/reducer.{State, reducer}
+import sprocket/hooks/reducer.{reducer}
 import sprocket/hooks/state.{state}
 import sprocket/hooks/callback.{callback}
 import sprocket/internal/identifiable_callback.{CallbackFn}
@@ -195,7 +195,7 @@ pub type ProductListProps {
 pub fn product_list(ctx: Context, props: ProductListProps) {
   let ProductListProps(products: products) = props
 
-  use ctx, State(Model(hidden), dispatch) <- reducer(ctx, initial(), update)
+  use ctx, Model(hidden), dispatch <- reducer(ctx, initial(), update)
 
   use ctx, reset <- callback(ctx, CallbackFn(fn() { dispatch(Reset) }), OnMount)
 

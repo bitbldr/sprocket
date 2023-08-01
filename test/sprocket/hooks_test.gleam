@@ -7,7 +7,7 @@ import sprocket/component.{component}
 import sprocket/html.{button, text}
 import sprocket/html/attributes.{id, on_click}
 import sprocket/hooks.{OnMount, OnUpdate, WithDeps, dep}
-import sprocket/hooks/reducer.{State, reducer}
+import sprocket/hooks/reducer.{reducer}
 import sprocket/hooks/effect.{effect}
 import sprocket/hooks/callback.{callback}
 import sprocket/internal/identifiable_callback.{CallbackFn}
@@ -43,11 +43,7 @@ type TestCounterProps {
 
 fn inc_initial_render_counter(ctx: Context, _props) {
   // Define a reducer to handle events and update the state
-  use ctx, State(Model(count: count), dispatch) <- reducer(
-    ctx,
-    initial(),
-    update,
-  )
+  use ctx, Model(count: count), dispatch <- reducer(ctx, initial(), update)
 
   // Example effect with an empty list of dependencies, runs once on mount
   use ctx <- effect(
@@ -86,11 +82,7 @@ pub fn effect_should_only_run_on_initial_render_test() {
 
 fn inc_on_every_update_counter(ctx: Context, _props) {
   // Define a reducer to handle events and update the state
-  use ctx, State(Model(count: count), dispatch) <- reducer(
-    ctx,
-    initial(),
-    update,
-  )
+  use ctx, Model(count: count), dispatch <- reducer(ctx, initial(), update)
 
   // Example effect with an empty list of dependencies, runs once on mount
   use ctx <- effect(
@@ -135,11 +127,7 @@ pub fn effect_should_run_on_every_update_test() {
 
 fn inc_reset_on_button_click_counter(ctx: Context, _props) {
   // Define a reducer to handle events and update the state
-  use ctx, State(Model(count: count), dispatch) <- reducer(
-    ctx,
-    initial(),
-    update,
-  )
+  use ctx, Model(count: count), dispatch <- reducer(ctx, initial(), update)
 
   // Example effect with an empty list of dependencies, runs once on mount
   use ctx <- effect(

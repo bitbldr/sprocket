@@ -76,7 +76,7 @@ pub fn clock(ctx: Context, props) {
   let ClockProps(label) = props
 
   // Define a reducer to handle events and update the state
-  use ctx, State(Model(time: time, ..), dispatch) <- reducer(
+  use ctx, Model(time: time, ..), dispatch <- reducer(
     ctx,
     initial(),
     update,

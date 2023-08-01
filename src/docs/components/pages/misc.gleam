@@ -9,7 +9,7 @@ import sprocket/html/attributes.{classes, on_click}
 import sprocket/internal/identifiable_callback.{CallbackFn}
 import sprocket/hooks.{WithDeps}
 import sprocket/hooks/callback.{callback}
-import sprocket/hooks/reducer.{State, reducer}
+import sprocket/hooks/reducer.{reducer}
 import docs/components/clock.{ClockProps, clock}
 import docs/components/analog_clock.{AnalogClockProps, analog_clock}
 import docs/components/counter.{CounterProps, counter}
@@ -40,7 +40,7 @@ pub type MiscPageProps {
 }
 
 pub fn misc_page(ctx: Context, _props: MiscPageProps) {
-  use ctx, State(Model(time_unit), _dispatch) <- reducer(ctx, initial(), update)
+  use ctx, Model(time_unit), _dispatch <- reducer(ctx, initial(), update)
 
   render(
     ctx,

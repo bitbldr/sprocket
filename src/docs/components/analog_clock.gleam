@@ -5,7 +5,7 @@ import gleam/option.{Some}
 import sprocket/context.{Context}
 import sprocket/component.{render}
 import sprocket/hooks.{WithDeps, dep}
-import sprocket/hooks/reducer.{State, reducer}
+import sprocket/hooks/reducer.{reducer}
 import sprocket/hooks/effect.{effect}
 import sprocket/html/attributes.{xmlns, xmlns_xlink}
 import sprocket/html/svg/elements.{circle, g, line, path, svg}
@@ -43,11 +43,7 @@ pub fn analog_clock(ctx: Context, _props: AnalogClockProps) {
   // let AnalogClockProps() = props
 
   // Define a reducer to handle events and update the state
-  use ctx, State(Model(time: time, ..), dispatch) <- reducer(
-    ctx,
-    initial(),
-    update,
-  )
+  use ctx, Model(time: time, ..), dispatch <- reducer(ctx, initial(), update)
 
   // Example effect that runs whenever the `time` variable changes and has a cleanup function
   use ctx <- effect(

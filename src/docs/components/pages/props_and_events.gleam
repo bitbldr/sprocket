@@ -116,7 +116,7 @@ pub fn props_and_events_page(ctx: Context, _props: PropsAndEventsPageProps) {
 
             pub fn counter(ctx: Context, _props: CounterProps) {
               // Define a reducer to handle events and update the state
-              use ctx, State(count, dispatch) <- reducer(ctx, 0, update)
+              use ctx, count, dispatch <- reducer(ctx, 0, update)
 
               render(
                 ctx,

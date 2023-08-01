@@ -4,7 +4,7 @@ import gleam/option.{None, Option, Some}
 import sprocket/context.{Context}
 import sprocket/component.{render}
 import sprocket/hooks.{WithDeps, dep}
-import sprocket/hooks/reducer.{State, reducer}
+import sprocket/hooks/reducer.{reducer}
 import sprocket/hooks/effect.{effect}
 import sprocket/html.{span, text}
 import sprocket/internal/utils/timer.{interval}
@@ -37,11 +37,7 @@ pub fn clock(ctx: Context, props: ClockProps) {
   let ClockProps(label, time_unit) = props
 
   // Define a reducer to handle events and update the state
-  use ctx, State(Model(time: time, ..), dispatch) <- reducer(
-    ctx,
-    initial(),
-    update,
-  )
+  use ctx, Model(time: time, ..), dispatch <- reducer(ctx, initial(), update)
 
   // Example effect with an empty list of dependencies, runs once on mount
   use ctx <- effect(

@@ -5,7 +5,7 @@ import gleam/option.{None, Option, Some}
 import sprocket/context.{Context}
 import sprocket/component.{render}
 import sprocket/hooks.{WithDeps}
-import sprocket/hooks/reducer.{State, reducer}
+import sprocket/hooks/reducer.{reducer}
 import sprocket/hooks/callback.{callback}
 import sprocket/internal/identifiable_callback.{CallbackFn}
 import sprocket/html.{button, div, span, text}
@@ -37,7 +37,7 @@ pub type SayHelloProps {
 }
 
 pub fn say_hello(ctx: Context, _props: SayHelloProps) {
-  use ctx, State(Model(selection: selection, options: options), dispatch) <- reducer(
+  use ctx, Model(selection: selection, options: options), dispatch <- reducer(
     ctx,
     initial(hello_strings()),
     update,
