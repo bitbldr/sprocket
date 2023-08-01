@@ -3,8 +3,6 @@ import gleam/list
 import gleam/option.{Option}
 import gleam/dynamic.{Dynamic}
 import sprocket/html/attributes.{Attribute}
-import gleam/erlang/process.{Subject}
-import glisten/handler.{HandlerMessage}
 import sprocket/internal/identifiable_callback.{CallbackFn,
   IdentifiableCallback}
 import sprocket/hooks.{Hook}
@@ -32,9 +30,6 @@ pub type EventHandler {
   EventHandler(id: Unique, handler: CallbackFn)
 }
 
-pub type WebSocket =
-  Subject(HandlerMessage)
-
 pub type Updater(r) {
   Updater(send: fn(r) -> Result(Nil, Nil))
 }
@@ -51,13 +46,13 @@ pub type Context {
     view: Element,
     wip: ComponentWip,
     handlers: List(EventHandler),
-    ws: Option(WebSocket),
+    ws: Option(Dynamic),
     render_update: fn() -> Nil,
     update_hook: fn(Unique, fn(Hook) -> Hook) -> Nil,
   )
 }
 
-pub fn new(ws: Option(WebSocket), view: Element) -> Context {
+pub fn new(ws: Option(Dynamic), view: Element) -> Context {
   Context(
     view: view,
     wip: ComponentWip(hooks: ordered_map.new(), index: 0, is_first_render: True),

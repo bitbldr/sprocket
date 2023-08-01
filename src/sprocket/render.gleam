@@ -1,5 +1,5 @@
 import gleam/io
-import gleam/list.{Continue, Stop}
+import gleam/list
 import gleam/option.{None, Option, Some}
 import gleam/dynamic.{Dynamic}
 import sprocket/html/attributes.{Attribute, Event}

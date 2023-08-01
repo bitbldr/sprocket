@@ -1,7 +1,8 @@
 import gleam/int
 import gleam/string
-import gleam/result
 import gleam/option.{None}
+import gleam/result
+import gleam/dynamic
 import gleam/erlang/os
 import gleam/erlang/process
 import gleam/http/service.{Service}
@@ -10,7 +11,9 @@ import gleam/http/response.{Response}
 import gleam/http.{Get}
 import gleam/bit_builder.{BitBuilder}
 import mist
-import sprocket/cassette
+import mist/websocket
+import mist/internal/websocket.{TextMessage} as internal_websocket
+import sprocket/cassette.{Cassette, LiveService}
 import docs/routes
 import docs/app_context.{AppContext}
 import docs/utils/logger
@@ -27,7 +30,7 @@ pub fn main() {
       port,
       mist.handler_func(fn(req) {
         case req.method, request.path_segments(req) {
-          Get, ["live"] -> cassette.live_service(req, ca)
+          Get, ["live"] -> live_service(req, ca)
           _, _ -> http_service(req, router)
         }
       }),
@@ -37,6 +40,41 @@ pub fn main() {
   |> logger.info
 
   process.sleep_forever()
+}
+
+fn live_service(_req: Request(mist.Body), ca: Cassette) {
+  let LiveService(on_msg, on_init, on_close) = cassette.live_service(ca)
+
+  websocket.with_handler(fn(msg, ws) {
+    case msg {
+      TextMessage(msg) ->
+        on_msg(
+          msg,
+          dynamic.from(ws),
+          fn(msg) {
+            websocket.send(ws, TextMessage(msg))
+            Ok(Nil)
+          },
+        )
+
+      internal_websocket.BinaryMessage(_) -> {
+        logger.info("Received binary message")
+
+        Ok(Nil)
+      }
+    }
+  })
+  |> websocket.on_init(fn(ws) {
+    let _ = on_init(dynamic.from(ws))
+
+    Nil
+  })
+  |> websocket.on_close(fn(ws) {
+    let _ = on_close(dynamic.from(ws))
+
+    Nil
+  })
+  |> mist.upgrade
 }
 
 fn http_service(

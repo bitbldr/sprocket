@@ -1,12 +1,13 @@
 import gleam/list
+import gleam/dynamic.{Dynamic}
 import gleam/map.{Map}
 import gleam/otp/actor
 import gleam/erlang/process.{Subject}
 import gleam/option.{None, Option, Some}
 import sprocket/internal/logger
-import sprocket/context.{
-  ComponentHooks, Context, Element, EventHandler, Updater, WebSocket,
-}
+import sprocket/internal/constants.{call_timeout}
+import sprocket/context.{ComponentHooks,
+  Context, Element, EventHandler, Updater}
 import sprocket/hooks.{
   Callback, Changed, Effect, EffectCleanup, EffectResult, Hook, HookDependencies,
   HookTrigger, OnMount, OnUpdate, Reducer, Unchanged, WithDeps, compare_deps,
@@ -39,7 +40,7 @@ pub type Message {
   BeginSelfDestruct(Int)
   CancelSelfDestruct
   GetRendered(reply_with: Subject(Option(RenderedElement)))
-  HasWebSocket(reply_with: Subject(Bool), websocket: WebSocket)
+  HasWebSocket(reply_with: Subject(Bool), ws: Dynamic)
   SetRenderUpdate(fn() -> Nil)
   Render(reply_with: Subject(RenderedElement))
   RenderUpdate
@@ -85,10 +86,10 @@ fn handle_message(message: Message, state: State) -> actor.Next(State) {
       actor.Continue(state)
     }
 
-    HasWebSocket(reply_with, websocket) -> {
+    HasWebSocket(reply_with, ws) -> {
       case state.ctx {
-        Context(ws: Some(ws), ..) -> {
-          actor.send(reply_with, ws == websocket)
+        Context(ws: Some(context_ws), ..) -> {
+          actor.send(reply_with, context_ws == ws)
         }
         _ -> {
           actor.send(reply_with, False)
@@ -217,7 +218,7 @@ fn handle_message(message: Message, state: State) -> actor.Next(State) {
 
 /// Start a new sprocket actor
 pub fn start(
-  ws: Option(WebSocket),
+  ws: Option(Dynamic),
   view: Element,
   updater: Option(Updater(Patch)),
 ) {
@@ -250,22 +251,22 @@ pub fn stop(actor) {
 
 /// Returns true if the actor matches a given websocket connection
 pub fn has_websocket(actor, websocket) -> Bool {
-  actor.call(actor, HasWebSocket(_, websocket), 100)
+  actor.call(actor, HasWebSocket(_, websocket), call_timeout())
 }
 
 /// Get the previously rendered view from the actor
 pub fn get_rendered(actor) {
-  actor.call(actor, GetRendered(_), 100)
+  actor.call(actor, GetRendered(_), call_timeout())
 }
 
 /// Get the event handler for a given id
 pub fn get_handler(actor, id: String) {
-  actor.call(actor, GetEventHandler(_, unique.from_string(id)), 100)
+  actor.call(actor, GetEventHandler(_, unique.from_string(id)), call_timeout())
 }
 
 /// Render the view
 pub fn render(actor) -> RenderedElement {
-  actor.call(actor, Render(_), 100)
+  actor.call(actor, Render(_), call_timeout())
 }
 
 /// Render the view and send an update Patch to the updater
