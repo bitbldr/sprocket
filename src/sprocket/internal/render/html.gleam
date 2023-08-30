@@ -3,12 +3,12 @@ import gleam/erlang
 import gleam/option.{None, Option, Some}
 import gleam/string_builder.{StringBuilder}
 import sprocket/render.{
-  RenderedAttribute, RenderedComponent, RenderedElement, RenderedEventHandler,
-  RenderedText, Renderer, render_element, traverse,
+  RenderedAttribute, RenderedClientHook, RenderedComponent, RenderedElement,
+  RenderedEventHandler, RenderedText, Renderer, render_element, traverse,
 }
 import sprocket/internal/constants.{
-  ClientScript, EventAttrPrefix, KeyAttr, MetaCrsfToken, MetaPreflightId,
-  constant,
+  ClientHookAttrPrefix, ClientScript, EventAttrPrefix, KeyAttr, MetaCrsfToken,
+  MetaPreflightId, constant,
 }
 import sprocket/context.{Element}
 import sprocket/cassette.{Cassette, Preflight}
@@ -98,6 +98,22 @@ fn element(
               ]),
             )
           }
+          RenderedClientHook(name, id) -> {
+            string_builder.append_builder(
+              acc,
+              string_builder.from_strings([
+                " ",
+                constant(ClientHookAttrPrefix),
+                "=\"",
+                name,
+                "\" ",
+                constant(ClientHookAttrPrefix),
+                "-id=\"",
+                id,
+                "\"",
+              ]),
+            )
+          }
         }
       },
     )
@@ -153,7 +169,7 @@ fn inject_element(
   inject_element: RenderedElement,
   insert_op: InjectElementOperation,
 ) -> RenderedElement {
-  // TODO: implement and use a more efficient traverse_util that can stop
+  // TODO: implement and use a more efficient traverse_until that can stop
   // traversing once it finds the element it's looking for.
   traverse(
     root,

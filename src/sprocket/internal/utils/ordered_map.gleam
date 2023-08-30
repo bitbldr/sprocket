@@ -183,3 +183,20 @@ fn find_previous_helper(
       }
   }
 }
+
+pub fn find(
+  m: OrderedMap(k, a),
+  find_by: fn(KeyedItem(k, a)) -> Bool,
+) -> Result(KeyedItem(k, a), Nil) {
+  case m.ordered {
+    [] -> Error(Nil)
+    [item, ..rest] ->
+      case item {
+        KeyedItem(k, v) ->
+          case find_by(item) {
+            True -> Ok(KeyedItem(k, v))
+            False -> find(OrderedMap(rest, m.map, m.size), find_by)
+          }
+      }
+  }
+}

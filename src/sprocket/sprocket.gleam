@@ -6,8 +6,9 @@ import gleam/erlang/process.{Subject}
 import gleam/option.{None, Option, Some}
 import sprocket/internal/logger
 import sprocket/internal/constants.{call_timeout}
-import sprocket/context.{ComponentHooks,
-  Context, Element, EventHandler, Updater}
+import sprocket/context.{
+  ComponentHooks, Context, Dispatcher, Element, EventHandler, Updater,
+}
 import sprocket/hooks.{
   Callback, Changed, Effect, EffectCleanup, EffectResult, Hook, HookDependencies,
   HookTrigger, OnMount, OnUpdate, Reducer, Unchanged, WithDeps, compare_deps,
@@ -47,6 +48,7 @@ pub type Message {
   SetUpdateHook(fn(Unique, fn(Hook) -> Hook) -> Nil)
   UpdateHook(Unique, fn(Hook) -> Hook)
   GetEventHandler(reply_with: Subject(Result(EventHandler, Nil)), id: Unique)
+  GetClientHook(reply_with: Subject(Result(Hook, Nil)), id: Unique)
 }
 
 fn handle_message(message: Message, state: State) -> actor.Next(State) {
@@ -213,21 +215,46 @@ fn handle_message(message: Message, state: State) -> actor.Next(State) {
 
       actor.Continue(state)
     }
+
+    GetClientHook(reply_with, id) -> {
+      case state.rendered {
+        Some(rendered) -> {
+          let hook =
+            find_rendered_hook(
+              rendered,
+              fn(hook) {
+                case hook {
+                  hooks.Client(i, _, _) -> unique.equals(i, id)
+                  _ -> False
+                }
+              },
+            )
+
+          process.send(reply_with, option.to_result(hook, Nil))
+        }
+        None -> {
+          process.send(reply_with, Error(Nil))
+        }
+      }
+
+      actor.Continue(state)
+    }
   }
 }
 
 /// Start a new sprocket actor
 pub fn start(
-  ws: Option(Dynamic),
   view: Element,
+  ws: Option(Dynamic),
   updater: Option(Updater(Patch)),
+  dispatcher: Option(Dispatcher),
 ) {
   let assert Ok(actor) =
     actor.start(
       State(
         self: None,
         cancel_shutdown: None,
-        ctx: context.new(ws, view),
+        ctx: context.new(view, ws, dispatcher),
         updater: updater,
         rendered: None,
       ),
@@ -262,6 +289,11 @@ pub fn get_rendered(actor) {
 /// Get the event handler for a given id
 pub fn get_handler(actor, id: String) {
   actor.call(actor, GetEventHandler(_, unique.from_string(id)), call_timeout())
+}
+
+/// Get the client hook for a given id
+pub fn get_client_hook(actor, id: String) {
+  actor.call(actor, GetClientHook(_, unique.from_string(id)), call_timeout())
 }
 
 /// Render the view
@@ -328,6 +360,9 @@ fn build_hooks_map(
                 map.insert(acc, id, hook)
               }
               hooks.State(id, _) -> {
+                map.insert(acc, id, hook)
+              }
+              hooks.Client(id, _, _) -> {
                 map.insert(acc, id, hook)
               }
             }
@@ -448,6 +483,46 @@ fn process_state_hooks(state: State, process_hook: HookProcessor) -> State {
     )
 
   State(..state, rendered: rendered)
+}
+
+fn find_rendered_hook(
+  node: RenderedElement,
+  find_by: fn(Hook) -> Bool,
+) -> Option(Hook) {
+  case node {
+    RenderedComponent(_fc, _key, _props, hooks, children) -> {
+      case
+        ordered_map.find(hooks, fn(keyed_item) { find_by(keyed_item.value) })
+      {
+        Ok(KeyedItem(_, hook)) -> Some(hook)
+        _ -> {
+          list.fold(
+            children,
+            None,
+            fn(acc, child) {
+              case acc {
+                Some(_) -> acc
+                _ -> find_rendered_hook(child, find_by)
+              }
+            },
+          )
+        }
+      }
+    }
+    RenderedElement(_tag, _key, _hooks, children) -> {
+      list.fold(
+        children,
+        None,
+        fn(acc, child) {
+          case acc {
+            Some(_) -> acc
+            _ -> find_rendered_hook(child, find_by)
+          }
+        },
+      )
+    }
+    _ -> None
+  }
 }
 
 fn traverse_rendered_hooks(node: RenderedElement, process_hook: HookProcessor) {

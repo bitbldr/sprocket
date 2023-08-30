@@ -4,10 +4,12 @@ import gleam/string
 import gleam/option.{None, Option, Some}
 import gleam/json.{Json}
 import sprocket/render.{
-  RenderedAttribute, RenderedComponent, RenderedElement, RenderedEventHandler,
-  RenderedText, Renderer,
+  RenderedAttribute, RenderedClientHook, RenderedComponent, RenderedElement,
+  RenderedEventHandler, RenderedText, Renderer,
 }
-import sprocket/internal/constants.{EventAttrPrefix, KeyAttr, constant}
+import sprocket/internal/constants.{
+  ClientHookAttrPrefix, EventAttrPrefix, KeyAttr, constant,
+}
 
 pub fn renderer() -> Renderer(Json) {
   Renderer(render: fn(el) { render(el) })
@@ -30,16 +32,30 @@ fn element(
 ) -> Json {
   let attrs =
     attrs
-    |> list.map(fn(attr) {
+    |> list.flat_map(fn(attr) {
       case attr {
         RenderedAttribute(name, value) -> {
-          #(name, json.string(value))
+          [#(name, json.string(value))]
         }
         RenderedEventHandler(kind, id) -> {
-          #(
-            string.concat([constant(EventAttrPrefix), "-", kind]),
-            json.string(id),
-          )
+          [
+            #(
+              string.concat([constant(EventAttrPrefix), "-", kind]),
+              json.string(id),
+            ),
+          ]
+        }
+        RenderedClientHook(name, id) -> {
+          [
+            #(
+              string.concat([constant(ClientHookAttrPrefix)]),
+              json.string(name),
+            ),
+            #(
+              string.concat([constant(ClientHookAttrPrefix), "-id"]),
+              json.string(id),
+            ),
+          ]
         }
       }
     })

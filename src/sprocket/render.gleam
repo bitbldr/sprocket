@@ -2,7 +2,7 @@ import gleam/io
 import gleam/list
 import gleam/option.{None, Option, Some}
 import gleam/dynamic.{Dynamic}
-import sprocket/html/attributes.{Attribute, Event}
+import sprocket/html/attributes.{Attribute, ClientHook, Event}
 import sprocket/context.{
   AbstractFunctionalComponent, Component, ComponentHooks, ComponentWip, Context,
   Debug, Element, IgnoreUpdate, Keyed, Raw, SafeHtml,
@@ -15,6 +15,7 @@ import sprocket/internal/constants.{IgnoreUpdateAttr, constant}
 pub type RenderedAttribute {
   RenderedAttribute(name: String, value: String)
   RenderedEventHandler(kind: String, id: String)
+  RenderedClientHook(name: String, id: String)
 }
 
 pub type RenderedElement {
@@ -48,7 +49,7 @@ pub type RenderResult(a) {
 // but then discards the ctx and returns the result.
 pub fn render(el: Element, renderer: Renderer(r)) -> r {
   let RenderResult(rendered: rendered, ..) =
-    live_render(context.new(None, el), el, None, None)
+    live_render(context.new(el, None, None), el, None, None)
 
   renderer.render(rendered)
 }
@@ -106,7 +107,7 @@ pub fn live_render(
 /// Renders the given element into a stateless RenderedElement tree.
 pub fn render_element(el: Element) {
   let RenderResult(rendered: rendered, ..) =
-    live_render(context.new(None, el), el, None, None)
+    live_render(context.new(el, None, None), el, None, None)
 
   rendered
 }
@@ -142,6 +143,12 @@ fn element(
                 RenderedEventHandler(kind, unique.to_string(id)),
                 ..rendered_attrs
               ],
+            )
+          }
+          ClientHook(id, name) -> {
+            RenderResult(
+              ctx,
+              [RenderedClientHook(name, unique.to_string(id)), ..rendered_attrs],
             )
           }
         }

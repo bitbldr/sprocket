@@ -1,10 +1,11 @@
 import gleam/int
-import gleam/option.{Option, Some}
+import gleam/option.{Option, Some, None}
 import sprocket/context.{Context}
 import sprocket/hooks.{WithDeps, dep}
 import sprocket/component.{component, render}
 import sprocket/hooks/reducer.{reducer}
 import sprocket/hooks/callback.{callback}
+import sprocket/hooks/client.{client}
 import sprocket/internal/identifiable_callback.{CallbackFn}
 import sprocket/html.{div, span, text}
 import sprocket/html/attributes.{class, classes}
@@ -113,18 +114,31 @@ pub type DisplayProps {
 pub fn display(ctx: Context, props: DisplayProps) {
   let DisplayProps(count: count, on_reset: on_reset) = props
 
-  use ctx, on_reset <- callback(
-    ctx,
-    CallbackFn(option.unwrap(on_reset, fn() { Nil })),
-    WithDeps([]),
-  )
+  // use ctx, on_reset <- callback(
+  //   ctx,
+  //   CallbackFn(option.unwrap(on_reset, fn() { Nil })),
+  //   WithDeps([]),
+  // )
 
+  // TODO: reafactor this hook to its own reusable module, doubleclick
+  use ctx, client_doubleclick, _client_doubleclick_dispatch <- client(ctx, "DoubleClick", Some(fn(msg, _payload, _dispatch) {
+    case msg {
+      "doubleclick" -> {
+        case on_reset {
+          Some(on_reset) -> on_reset()
+          None -> Nil
+        }
+      }
+      _ -> Nil
+    }
+  }))
+  
   render(
     ctx,
     [
       span(
         [
-          attributes.on_doubleclick(on_reset),
+          client_doubleclick(),
           class(
             "p-1 px-2 w-10 bg-white dark:bg-gray-900 border-t border-b dark:border-gray-500 align-center text-center select-none",
           ),

@@ -3,13 +3,11 @@ import { constant } from "./constants";
 // map for browser events to listen for and the corresponding sprocket event types
 // they potentially handle
 const browserEventKinds = {
-  click: ["click", "doubleclick"],
+  click: ["click"],
+  dblclick: ["dblclick"],
   change: ["change"],
   input: ["input"],
 };
-
-const DOUBLE_CLICK_THRESHOLD = 500;
-let pendingDoubleClicks: string[] = [];
 
 export type EventHandler = {
   kind: string;
@@ -29,27 +27,7 @@ export function initEventHandlers(socket) {
       );
 
       if (handler) {
-        if (handler.kind === "doubleclick") {
-          if (pendingDoubleClicks.find((id) => id === handler.id)) {
-            // double click detected
-            socket.send(JSON.stringify(["event", handler]));
-            pendingDoubleClicks = pendingDoubleClicks.filter(
-              (id) => id !== handler.id
-            );
-          } else {
-            // track this as a potential first click in a double click sequence
-            pendingDoubleClicks.push(handler.id);
-
-            // clear the pending doubleclick event after a threshold
-            setTimeout(() => {
-              pendingDoubleClicks = pendingDoubleClicks.filter(
-                (id) => id !== handler.id
-              );
-            }, DOUBLE_CLICK_THRESHOLD);
-          }
-        } else {
-          socket.send(JSON.stringify(["event", handler]));
-        }
+        socket.send(JSON.stringify(["event", handler]));
       }
     });
   });

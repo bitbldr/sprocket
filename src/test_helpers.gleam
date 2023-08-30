@@ -9,7 +9,7 @@ import sprocket/render.{RenderedAttribute,
 import sprocket/internal/render/html as sprocket_render_html
 
 pub fn live(view) {
-  sprocket.start(None, view, None)
+  sprocket.start(view, None, None, None)
 }
 
 pub fn render_html(spkt) {

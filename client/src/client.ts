@@ -4,6 +4,11 @@ import { renderDom } from "./render";
 import { applyPatch } from "./patch";
 import { initEventHandlers } from "./events";
 import { constant } from "./constants";
+import { doubleclick } from "./hooks/doubleclick";
+
+const hooks = {
+  DoubleClick: doubleclick,
+};
 
 window.addEventListener("DOMContentLoaded", () => {
   let ws_protocol = location.protocol === "https:" ? "wss:" : "ws:";
@@ -34,6 +39,30 @@ window.addEventListener("DOMContentLoaded", () => {
       switch (parsed[0]) {
         case "ok":
           topbar.hide();
+
+          // handle hook lifecycle mounted events
+          Object.keys(hooks).forEach((hook) => {
+            if (hooks[hook].mounted) {
+              document
+                .querySelectorAll(`[${constant.HookAttrPrefix}=${hook}]`)
+                .forEach((el) => {
+                  const pushEvent = (name: string, payload: any) => {
+                    const hookId = el.getAttribute(
+                      `${constant.HookAttrPrefix}-id`
+                    );
+
+                    socket.send(
+                      JSON.stringify([
+                        "hook:event",
+                        { id: hookId, name, payload },
+                      ])
+                    );
+                  };
+
+                  hooks[hook].mounted({ el, pushEvent });
+                });
+            }
+          });
 
           dom = parsed[1];
 

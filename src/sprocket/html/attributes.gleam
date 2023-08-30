@@ -3,10 +3,12 @@ import gleam/string_builder
 import gleam/option.{None, Option, Some}
 import gleam/dynamic.{Dynamic}
 import sprocket/internal/identifiable_callback.{IdentifiableCallback}
+import sprocket/internal/utils/unique.{Unique}
 
 pub type Attribute {
   Attribute(name: String, value: Dynamic)
   Event(name: String, identifiable_cb: IdentifiableCallback)
+  ClientHook(id: Unique, name: String)
 }
 
 pub fn attribute(name: String, value: any) -> Attribute {
@@ -15,6 +17,10 @@ pub fn attribute(name: String, value: any) -> Attribute {
 
 pub fn event(name: String, identifiable_cb: IdentifiableCallback) -> Attribute {
   Event(name, identifiable_cb)
+}
+
+pub fn client_hook(id: Unique, name: String) -> Attribute {
+  ClientHook(id, name)
 }
 
 pub fn on_click(identifiable_cb: IdentifiableCallback) -> Attribute {

@@ -30,6 +30,9 @@ pub type CallbackResult {
   CallbackResult(callback: CallbackFn, deps: Option(HookDependencies))
 }
 
+pub type ClientDispatcher = fn (String, Option(String)) -> Result(Nil, Nil)
+pub type ClientEventHandler = fn(String, Option(Dynamic), ClientDispatcher) -> Nil
+
 pub type Hook {
   Callback(
     id: Unique,
@@ -45,6 +48,7 @@ pub type Hook {
   )
   Reducer(id: Unique, reducer: Dynamic, cleanup: fn() -> Nil)
   State(id: Unique, value: Dynamic)
+  Client(id: Unique, name: String, handle_event: Option(ClientEventHandler))
 }
 
 pub type Compared(a) {

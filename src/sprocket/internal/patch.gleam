@@ -1,12 +1,11 @@
-import gleam/io
 import gleam/list
 import gleam/string
 import gleam/int
 import gleam/map.{Map}
 import gleam/option.{None, Option, Some}
 import sprocket/render.{
-  RenderedAttribute, RenderedComponent, RenderedElement, RenderedEventHandler,
-  RenderedText,
+  RenderedAttribute, RenderedClientHook, RenderedComponent, RenderedElement,
+  RenderedEventHandler, RenderedText,
 }
 import gleam/json.{Json}
 import sprocket/internal/render/json as json_renderer
@@ -196,6 +195,9 @@ fn attr_key(attribute) {
       name
     }
     RenderedEventHandler(id: id, ..) -> {
+      id
+    }
+    RenderedClientHook(id: id, ..) -> {
       id
     }
   }
@@ -472,16 +474,24 @@ pub fn patch_to_json(patch: Patch, debug: Bool) -> Json {
 
 fn attrs_to_json(attrs: List(RenderedAttribute)) -> Json {
   attrs
-  |> list.map(fn(attr) {
+  |> list.flat_map(fn(attr) {
     case attr {
       RenderedAttribute(name, value) -> {
-        #(name, json.string(value))
+        [#(name, json.string(value))]
       }
       RenderedEventHandler(kind, id) -> {
-        #(
-          string.concat([constant(EventAttrPrefix), "-", kind]),
-          json.string(id),
-        )
+        [
+          #(
+            string.concat([constant(EventAttrPrefix), "-", kind]),
+            json.string(id),
+          ),
+        ]
+      }
+      RenderedClientHook(name, id) -> {
+        [
+          #(constant(EventAttrPrefix), json.string(name)),
+          #(string.concat([constant(EventAttrPrefix), "-id"]), json.string(id)),
+        ]
       }
     }
   })

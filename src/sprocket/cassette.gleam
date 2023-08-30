@@ -1,14 +1,15 @@
 import gleam/io
 import gleam/list
 import gleam/dynamic.{Dynamic, field, optional_field}
-import gleam/option.{Option, Some}
+import gleam/option.{None, Option, Some}
 import gleam/json
 import gleam/erlang
 import gleam/erlang/process.{Subject}
 import gleam/otp/actor
 import sprocket/sprocket.{Sprocket}
-import sprocket/context.{Element, Updater}
+import sprocket/context.{Dispatcher, Element, Updater}
 import sprocket/render.{RenderedElement}
+import sprocket/hooks.{Client}
 import sprocket/internal/render/json as json_renderer
 import sprocket/internal/patch.{Patch}
 import sprocket/internal/identifiable_callback.{CallbackFn, CallbackWithValueFn}
@@ -264,11 +265,18 @@ fn connect(
       Ok(Nil)
     })
 
+  let dispatcher =
+    Dispatcher(dispatch: fn(id, event, payload) {
+      let _ = ws_send(event_to_json(id, event, payload))
+      Ok(Nil)
+    })
+
   case pop_preflight(ca, preflight_id) {
     Ok(Preflight(view: view, csrf_token: csrf_token, ..)) -> {
       case csrf.validate(preflight_csrf, csrf_token) {
         Ok(_) -> {
-          let sprocket = sprocket.start(Some(ws), view, Some(updater))
+          let sprocket =
+            sprocket.start(view, Some(ws), Some(updater), Some(dispatcher))
           push_sprocket(ca, sprocket)
 
           logger.info("Sprocket connected!")
@@ -293,6 +301,7 @@ fn connect(
 type Payload {
   JoinPayload(preflight_id: String, csrf_token: String)
   EventPayload(kind: String, id: String, value: Option(String))
+  HookEventPayload(id: String, event: String, value: Option(Dynamic))
   EmptyPayload(nothing: Option(String))
 }
 
@@ -321,6 +330,19 @@ fn decode_event(data: Dynamic) {
   )
 }
 
+fn decode_hook_event(data: Dynamic) {
+  data
+  |> dynamic.tuple2(
+    dynamic.string,
+    dynamic.decode3(
+      HookEventPayload,
+      field("id", dynamic.string),
+      field("name", dynamic.string),
+      optional_field("value", dynamic.dynamic),
+    ),
+  )
+}
+
 fn decode_empty(data: Dynamic) {
   data
   |> dynamic.tuple2(
@@ -336,7 +358,10 @@ fn handle_ws_message(
   ws_send: fn(String) -> Result(Nil, Nil),
 ) -> Result(Nil, Nil) {
   case
-    json.decode(msg, dynamic.any([decode_join, decode_event, decode_empty]))
+    json.decode(
+      msg,
+      dynamic.any([decode_join, decode_event, decode_hook_event, decode_empty]),
+    )
   {
     Ok(#("join", JoinPayload(id, csrf))) -> {
       logger.info("New client joined with preflight id: " <> id)
@@ -379,6 +404,35 @@ fn handle_ws_message(
         _ -> Error(Nil)
       }
     }
+    Ok(#("hook:event", HookEventPayload(id, name, value))) -> {
+      logger.info("Hook Event: " <> id <> " " <> name)
+
+      case get_sprocket(ca, ws) {
+        Ok(sprocket) -> {
+          case sprocket.get_client_hook(sprocket, id) {
+            Ok(Client(_id, _name, handle_event)) -> {
+              // TODO: implement reply dispatcher
+              let reply_dispatcher = fn(event, payload) { todo }
+
+              option.map(
+                handle_event,
+                fn(handle_event) { handle_event(name, value, reply_dispatcher) },
+              )
+
+              Ok(Nil)
+            }
+            _ -> {
+              logger.error("Error: no client hook defined for id: " <> id)
+              io.debug(value)
+              panic
+            }
+          }
+        }
+        _ -> Error(Nil)
+      }
+
+      Ok(Nil)
+    }
     Error(e) -> {
       logger.error("Error decoding message")
       io.debug(e)
@@ -393,6 +447,23 @@ fn update_to_json(update: Patch, debug: Bool) -> String {
     json.string("update"),
     patch.patch_to_json(update, debug),
     json.object([#("debug", json.bool(debug))]),
+  ])
+  |> json.to_string()
+}
+
+fn event_to_json(id: String, event: String, value: Option(String)) -> String {
+  json.preprocessed_array([
+    json.string("event"),
+    case value {
+      Some(value) ->
+        json.object([
+          #("id", json.string(id)),
+          #("kind", json.string(event)),
+          #("value", json.string(value)),
+        ])
+      None ->
+        json.object([#("id", json.string(id)), #("kind", json.string(event))])
+    },
   ])
   |> json.to_string()
 }

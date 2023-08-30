@@ -5,6 +5,7 @@ pub type Const {
   MetaCrsfToken
   ClientScript
   IgnoreUpdateAttr
+  ClientHookAttrPrefix
 }
 
 pub fn constant(c: Const) -> String {
@@ -15,6 +16,7 @@ pub fn constant(c: Const) -> String {
     MetaCrsfToken -> "spkt-csrf-token"
     ClientScript -> "/client.js"
     IgnoreUpdateAttr -> "spkt-ignore-update"
+    ClientHookAttrPrefix -> "spkt-hook"
   }
 }
 
