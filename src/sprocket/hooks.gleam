@@ -30,8 +30,11 @@ pub type CallbackResult {
   CallbackResult(callback: CallbackFn, deps: Option(HookDependencies))
 }
 
-pub type ClientDispatcher = fn (String, Option(String)) -> Result(Nil, Nil)
-pub type ClientEventHandler = fn(String, Option(Dynamic), ClientDispatcher) -> Nil
+pub type ClientDispatcher =
+  fn(String, Option(String)) -> Result(Nil, Nil)
+
+pub type ClientEventHandler =
+  fn(String, Option(Dynamic), ClientDispatcher) -> Nil
 
 pub type Hook {
   Callback(

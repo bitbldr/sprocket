@@ -1,5 +1,5 @@
 import gleam/int
-import gleam/option.{Option, Some, None}
+import gleam/option.{None, Option, Some}
 import sprocket/context.{Context}
 import sprocket/hooks.{WithDeps, dep}
 import sprocket/component.{component, render}
@@ -121,18 +121,22 @@ pub fn display(ctx: Context, props: DisplayProps) {
   // )
 
   // TODO: reafactor this hook to its own reusable module, doubleclick
-  use ctx, client_doubleclick, _client_doubleclick_dispatch <- client(ctx, "DoubleClick", Some(fn(msg, _payload, _dispatch) {
-    case msg {
-      "doubleclick" -> {
-        case on_reset {
-          Some(on_reset) -> on_reset()
-          None -> Nil
+  use ctx, client_doubleclick, _client_doubleclick_dispatch <- client(
+    ctx,
+    "DoubleClick",
+    Some(fn(msg, _payload, _dispatch) {
+      case msg {
+        "doubleclick" -> {
+          case on_reset {
+            Some(on_reset) -> on_reset()
+            None -> Nil
+          }
         }
+        _ -> Nil
       }
-      _ -> Nil
-    }
-  }))
-  
+    }),
+  )
+
   render(
     ctx,
     [

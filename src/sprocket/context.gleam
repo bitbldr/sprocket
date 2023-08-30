@@ -1,6 +1,6 @@
 import gleam/int
 import gleam/list
-import gleam/option.{Option, Some, None}
+import gleam/option.{None, Option, Some}
 import gleam/dynamic.{Dynamic}
 import sprocket/html/attributes.{Attribute}
 import sprocket/internal/identifiable_callback.{CallbackFn,
@@ -57,7 +57,11 @@ pub type Context {
   )
 }
 
-pub fn new(view: Element, ws: Option(Dynamic), dispatcher: Option(Dispatcher)) -> Context {
+pub fn new(
+  view: Element,
+  ws: Option(Dynamic),
+  dispatcher: Option(Dispatcher),
+) -> Context {
   Context(
     view: view,
     wip: ComponentWip(hooks: ordered_map.new(), index: 0, is_first_render: True),
@@ -67,7 +71,8 @@ pub fn new(view: Element, ws: Option(Dynamic), dispatcher: Option(Dispatcher)) -
     update_hook: fn(_index, _updater) { Nil },
     dispatch_event: fn(id, name, payload) {
       case dispatcher {
-        Some(Dispatcher(dispatch: dispatch)) -> dispatch(unique.to_string(id), name, payload)
+        Some(Dispatcher(dispatch: dispatch)) ->
+          dispatch(unique.to_string(id), name, payload)
         None -> Error(Nil)
       }
     },
@@ -165,6 +170,11 @@ pub fn get_event_handler(
   #(ctx, handler)
 }
 
-pub fn dispatch_event(ctx: Context, id: Unique, name: String, payload: Option(String)) {
+pub fn dispatch_event(
+  ctx: Context,
+  id: Unique,
+  name: String,
+  payload: Option(String),
+) {
   ctx.dispatch_event(id, name, payload)
 }
