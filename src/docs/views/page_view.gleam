@@ -143,10 +143,7 @@ pub fn page_view(ctx: Context, props: PageViewProps) {
                   component(
                     header,
                     HeaderProps(menu_items: [
-                      MenuItem(
-                        "Github",
-                        "https://github.com/eliknebel/sprocket",
-                      ),
+                      MenuItem("Github", "https://github.com/bitbldr/sprocket"),
                     ]),
                   ),
                 ],

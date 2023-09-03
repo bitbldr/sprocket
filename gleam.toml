@@ -6,7 +6,7 @@ description = "A library for building live views and real-time server components
 # your project to the Hex package manager.
 #
 licences = ["MIT"]
-repository = { type = "github", user = "eliknebel", repo = "sprocket" }
+repository = { type = "github", user = "bitbldr", repo = "sprocket" }
 links = [{ title = "Website", href = "https://sprocket.live" }]
 
 # Modules that should be considered "internal" and will not be included in

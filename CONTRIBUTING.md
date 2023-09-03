@@ -51,7 +51,7 @@ To set up a development environment for working on Sprocket, follow the steps be
 
 1. Clone the Sprocket repository:
 ```
-git clone https://github.com/eliknebel/sprocket.git
+git clone https://github.com/bitbldr/sprocket.git
 ```
 
 1. Install the required dependencies:

@@ -226,7 +226,7 @@ pub fn introduction_page(ctx: Context, _props: IntroductionPageProps) {
               ),
               text(" and taking a look at the configuration in the "),
               a_text(
-                [href("https://github.com/eliknebel/sprocket")],
+                [href("https://github.com/bitbldr/sprocket")],
                 "docs repository on GitHub.",
               ),
             ],

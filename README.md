@@ -146,7 +146,7 @@ To get started with Sprocket, follow the instructions below:
 
 1. Clone the Sprocket repository:
 ```sh
-git clone https://github.com/eliknebel/sprocket.git
+git clone https://github.com/bitbldr/sprocket.git
 ```
 
 2. Install the required dependencies:
@@ -198,8 +198,8 @@ Sprocket is still in its early stages and has a roadmap for future development. 
 
 Contributions to Sprocket are welcome and encouraged! If you would like to contribute, please follow
 the guidelines outlined in the
-[CONTRIBUTING.md](https://github.com/eliknebel/sprocket/blob/master/CONTRIBUTING.md) file.
+[CONTRIBUTING.md](https://github.com/bitbldr/sprocket/blob/master/CONTRIBUTING.md) file.
 
 ## License
 
-Sprocket is released under the [MIT License](https://github.com/eliknebel/sprocket/blob/master/LICENSE.md).
+Sprocket is released under the [MIT License](https://github.com/bitbldr/sprocket/blob/master/LICENSE.md).
