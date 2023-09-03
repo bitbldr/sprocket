@@ -78,7 +78,7 @@ pub fn responsive_drawer(ctx: Context, props) {
                   False -> Some("hidden")
                 },
                 Some(
-                  "sm:block w-64 z-40 transition-transform -translate-x-full translate-x-0 transition-transform",
+                  "md:block w-64 z-40 transition-transform -translate-x-full translate-x-0 transition-transform",
                 ),
               ]),
             ],
@@ -94,7 +94,7 @@ pub fn responsive_drawer(ctx: Context, props) {
             ],
           ),
           div(
-            [class("relative flex-1")],
+            [class("relative flex-1 overflow-hidden")],
             [
               button(
                 [
