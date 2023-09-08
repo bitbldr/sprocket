@@ -1,4 +1,4 @@
-FROM ghcr.io/gleam-lang/gleam:v0.29.0-erlang-alpine as builder
+FROM ghcr.io/gleam-lang/gleam:v0.30.0-erlang-alpine as builder
 
 RUN apk add --update nodejs npm elixir
 
