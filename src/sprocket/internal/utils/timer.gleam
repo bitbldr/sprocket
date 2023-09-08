@@ -13,7 +13,7 @@ type TimerMsg {
 fn handle_timer_message(
   msg: TimerMsg,
   state: TimerInterval,
-) -> Next(TimerInterval) {
+) -> Next(TimerMsg, TimerInterval) {
   case msg {
     Cancel -> {
       actor.Stop(process.Normal)
@@ -25,7 +25,7 @@ fn handle_timer_message(
     Interval(actor, interval_ms, cb) -> {
       cb()
       process.send_after(actor, interval_ms, Interval(actor, interval_ms, cb))
-      actor.Continue(state)
+      actor.continue(state)
     }
   }
 }

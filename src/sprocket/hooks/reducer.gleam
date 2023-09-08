@@ -34,6 +34,7 @@ pub fn reducer(
       actor.start(
         initial,
         fn(message: StateOrDispatchReducer(model, msg), state: model) -> actor.Next(
+          StateOrDispatchReducer(model, msg),
           model,
         ) {
           case message {
@@ -41,12 +42,12 @@ pub fn reducer(
 
             StateReducer(reply_with) -> {
               process.send(reply_with, state)
-              actor.Continue(state)
+              actor.continue(state)
             }
 
             DispatchReducer(r, m) -> {
               r(state, m)
-              |> actor.Continue()
+              |> actor.continue()
             }
           }
         },

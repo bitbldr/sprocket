@@ -17,6 +17,7 @@ import sprocket/internal/logger
 import sprocket/internal/constants.{call_timeout}
 import sprocket/internal/csrf
 import sprocket/internal/utils/timer.{interval}
+import sprocket/internal/utils/unique.{Unique}
 
 pub type Preflight {
   Preflight(id: String, view: Element, csrf_token: String, created_at: Int)
@@ -42,11 +43,11 @@ pub type Message {
   StartPreflightCleanupJob(cleanup_preflights: fn() -> Nil)
   PopPreflight(reply_with: Subject(Result(Preflight, Nil)), id: String)
   PushSprocket(sprocket: Sprocket)
-  GetSprocket(reply_with: Subject(Result(Sprocket, Nil)), ws: Dynamic)
-  PopSprocket(reply_with: Subject(Result(Sprocket, Nil)), ws: Dynamic)
+  GetSprocket(reply_with: Subject(Result(Sprocket, Nil)), ws: Unique)
+  PopSprocket(reply_with: Subject(Result(Sprocket, Nil)), ws: Unique)
 }
 
-fn handle_message(message: Message, state: State) -> actor.Next(State) {
+fn handle_message(message: Message, state: State) -> actor.Next(Message, State) {
   case message {
     Shutdown -> {
       state.cancel_preflight_cleanup_job()
@@ -55,13 +56,13 @@ fn handle_message(message: Message, state: State) -> actor.Next(State) {
 
     GetState(reply_with) -> {
       process.send(reply_with, state)
-      actor.Continue(state)
+      actor.continue(state)
     }
 
     PushPreflight(preflight) -> {
       let updated_preflights = [preflight, ..state.preflights]
 
-      actor.Continue(State(..state, preflights: updated_preflights))
+      actor.continue(State(..state, preflights: updated_preflights))
     }
 
     CleanupPreflights -> {
@@ -71,14 +72,14 @@ fn handle_message(message: Message, state: State) -> actor.Next(State) {
       let updated_preflights =
         list.filter(state.preflights, fn(p) { p.created_at + 60 * 1000 > now })
 
-      actor.Continue(State(..state, preflights: updated_preflights))
+      actor.continue(State(..state, preflights: updated_preflights))
     }
 
     StartPreflightCleanupJob(cleanup_preflights) -> {
       // start preflight cleanup job, run every minute
       let cancel = interval(60 * 1000, fn() { cleanup_preflights() })
 
-      actor.Continue(State(..state, cancel_preflight_cleanup_job: cancel))
+      actor.continue(State(..state, cancel_preflight_cleanup_job: cancel))
     }
 
     PopPreflight(reply_with, id) -> {
@@ -91,10 +92,10 @@ fn handle_message(message: Message, state: State) -> actor.Next(State) {
           let updated_preflights =
             list.filter(state.preflights, fn(p) { p.id != id })
 
-          actor.Continue(State(..state, preflights: updated_preflights))
+          actor.continue(State(..state, preflights: updated_preflights))
         }
 
-        Error(_) -> actor.Continue(state)
+        Error(_) -> actor.continue(state)
       }
     }
 
@@ -102,7 +103,7 @@ fn handle_message(message: Message, state: State) -> actor.Next(State) {
       let updated_sprockets =
         list.reverse([sprocket, ..list.reverse(state.sprockets)])
 
-      actor.Continue(State(..state, sprockets: updated_sprockets))
+      actor.continue(State(..state, sprockets: updated_sprockets))
     }
 
     GetSprocket(reply_with, ws) -> {
@@ -111,7 +112,7 @@ fn handle_message(message: Message, state: State) -> actor.Next(State) {
 
       process.send(reply_with, spkt)
 
-      actor.Continue(state)
+      actor.continue(state)
     }
 
     PopSprocket(reply_with, ws) -> {
@@ -129,10 +130,10 @@ fn handle_message(message: Message, state: State) -> actor.Next(State) {
 
           let new_state = State(..state, sprockets: updated_sprockets)
 
-          actor.Continue(new_state)
+          actor.continue(new_state)
         }
 
-        Error(_) -> actor.Continue(state)
+        Error(_) -> actor.continue(state)
       }
     }
   }
@@ -200,10 +201,11 @@ pub fn pop_preflight(ca: Cassette, id: String) -> Result(Preflight, Nil) {
 
 pub type LiveService {
   LiveService(
-    on_msg: fn(String, Dynamic, fn(String) -> Result(Nil, Nil)) ->
+    id: Unique,
+    on_msg: fn(String, Unique, fn(String) -> Result(Nil, Nil)) ->
       Result(Nil, Nil),
-    on_init: fn(Dynamic) -> Result(Nil, Nil),
-    on_close: fn(Dynamic) -> Result(Nil, Nil),
+    on_init: fn(Unique) -> Result(Nil, Nil),
+    on_close: fn(Unique) -> Result(Nil, Nil),
   )
 }
 
@@ -216,6 +218,7 @@ pub type LiveService {
 /// Refer to the example docs repository for an example of how to use this.
 pub fn live_service(ca: Cassette) {
   LiveService(
+    id: unique.new(),
     on_msg: fn(msg, ws, ws_send) { handle_ws_message(ca, msg, ws, ws_send) },
     on_init: fn(_ws) { Ok(Nil) },
     on_close: fn(ws) {
@@ -242,19 +245,19 @@ fn push_sprocket(ca: Cassette, sprocket: Sprocket) {
 }
 
 /// Gets a sprocket from the cassette.
-fn get_sprocket(ca: Cassette, ws: Dynamic) {
+fn get_sprocket(ca: Cassette, ws: Unique) {
   process.call(ca, GetSprocket(_, ws), call_timeout())
 }
 
 /// Pops a sprocket from the cassette.
-fn pop_sprocket(ca: Cassette, ws: Dynamic) {
+fn pop_sprocket(ca: Cassette, ws: Unique) {
   process.call(ca, PopSprocket(_, ws), call_timeout())
 }
 
 /// Handles client websocket connection initialization.
 fn connect(
   ca: Cassette,
-  ws: Dynamic,
+  ws: Unique,
   ws_send: fn(String) -> Result(Nil, Nil),
   preflight_id: String,
   preflight_csrf: String,
@@ -354,7 +357,7 @@ fn decode_empty(data: Dynamic) {
 fn handle_ws_message(
   ca: Cassette,
   msg: String,
-  ws: Dynamic,
+  ws: Unique,
   ws_send: fn(String) -> Result(Nil, Nil),
 ) -> Result(Nil, Nil) {
   case

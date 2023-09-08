@@ -50,7 +50,7 @@ pub type Context {
     view: Element,
     wip: ComponentWip,
     handlers: List(EventHandler),
-    ws: Option(Dynamic),
+    ws: Option(Unique),
     render_update: fn() -> Nil,
     update_hook: fn(Unique, fn(Hook) -> Hook) -> Nil,
     dispatch_event: fn(Unique, String, Option(String)) -> Result(Nil, Nil),
@@ -59,7 +59,7 @@ pub type Context {
 
 pub fn new(
   view: Element,
-  ws: Option(Dynamic),
+  ws: Option(Unique),
   dispatcher: Option(Dispatcher),
 ) -> Context {
   Context(

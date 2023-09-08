@@ -1,5 +1,4 @@
 import gleam/list
-import gleam/dynamic.{Dynamic}
 import gleam/map.{Map}
 import gleam/otp/actor
 import gleam/erlang/process.{Subject}
@@ -41,7 +40,7 @@ pub type Message {
   BeginSelfDestruct(Int)
   CancelSelfDestruct
   GetRendered(reply_with: Subject(Option(RenderedElement)))
-  HasWebSocket(reply_with: Subject(Bool), ws: Dynamic)
+  HasWebSocket(reply_with: Subject(Bool), ws: Unique)
   SetRenderUpdate(fn() -> Nil)
   Render(reply_with: Subject(RenderedElement))
   RenderUpdate
@@ -51,12 +50,12 @@ pub type Message {
   GetClientHook(reply_with: Subject(Result(Hook, Nil)), id: Unique)
 }
 
-fn handle_message(message: Message, state: State) -> actor.Next(State) {
+fn handle_message(message: Message, state: State) -> actor.Next(Message, State) {
   case message {
     Shutdown -> actor.Stop(process.Normal)
 
     SetSelf(self) -> {
-      actor.Continue(State(..state, self: Some(self)))
+      actor.continue(State(..state, self: Some(self)))
     }
 
     BeginSelfDestruct(timeout) -> {
@@ -64,9 +63,9 @@ fn handle_message(message: Message, state: State) -> actor.Next(State) {
         Some(self) -> {
           let cancel = interval(timeout, fn() { actor.send(self, Shutdown) })
 
-          actor.Continue(State(..state, cancel_shutdown: Some(cancel)))
+          actor.continue(State(..state, cancel_shutdown: Some(cancel)))
         }
-        _ -> actor.Continue(state)
+        _ -> actor.continue(state)
       }
     }
 
@@ -74,18 +73,18 @@ fn handle_message(message: Message, state: State) -> actor.Next(State) {
       case state.cancel_shutdown {
         Some(cancel) -> {
           cancel()
-          actor.Continue(State(..state, cancel_shutdown: None))
+          actor.continue(State(..state, cancel_shutdown: None))
         }
-        _ -> actor.Continue(state)
+        _ -> actor.continue(state)
       }
 
-      actor.Continue(state)
+      actor.continue(state)
     }
 
     GetRendered(reply_with) -> {
       actor.send(reply_with, state.rendered)
 
-      actor.Continue(state)
+      actor.continue(state)
     }
 
     HasWebSocket(reply_with, ws) -> {
@@ -98,11 +97,11 @@ fn handle_message(message: Message, state: State) -> actor.Next(State) {
         }
       }
 
-      actor.Continue(state)
+      actor.continue(state)
     }
 
     SetRenderUpdate(render_update) -> {
-      actor.Continue(
+      actor.continue(
         State(..state, ctx: Context(..state.ctx, render_update: render_update)),
       )
     }
@@ -131,7 +130,7 @@ fn handle_message(message: Message, state: State) -> actor.Next(State) {
         }
       }
 
-      actor.Continue(state)
+      actor.continue(state)
     }
 
     RenderUpdate -> {
@@ -166,7 +165,7 @@ fn handle_message(message: Message, state: State) -> actor.Next(State) {
           let state =
             run_effects(State(..state, ctx: ctx, rendered: Some(rendered)))
 
-          actor.Continue(state)
+          actor.continue(state)
         }
 
         State(updater: None, ..) -> {
@@ -174,7 +173,7 @@ fn handle_message(message: Message, state: State) -> actor.Next(State) {
             "No updater found! An updater must be provided to send updates to the client.",
           )
 
-          actor.Continue(state)
+          actor.continue(state)
         }
 
         State(rendered: None, ..) -> {
@@ -182,23 +181,23 @@ fn handle_message(message: Message, state: State) -> actor.Next(State) {
             "No previous render found! View must be rendered at least once before updates can be sent.",
           )
 
-          actor.Continue(state)
+          actor.continue(state)
         }
         _ -> {
           logger.error("No view found! A view must be provided to render.")
-          actor.Continue(state)
+          actor.continue(state)
         }
       }
     }
 
     SetUpdateHook(update_hook) -> {
-      actor.Continue(
+      actor.continue(
         State(..state, ctx: Context(..state.ctx, update_hook: update_hook)),
       )
     }
 
     UpdateHook(id, updater) -> {
-      actor.Continue(update_hook_state(state, id, updater))
+      actor.continue(update_hook_state(state, id, updater))
     }
 
     GetEventHandler(reply_with, id) -> {
@@ -213,7 +212,7 @@ fn handle_message(message: Message, state: State) -> actor.Next(State) {
 
       process.send(reply_with, handler)
 
-      actor.Continue(state)
+      actor.continue(state)
     }
 
     GetClientHook(reply_with, id) -> {
@@ -237,7 +236,7 @@ fn handle_message(message: Message, state: State) -> actor.Next(State) {
         }
       }
 
-      actor.Continue(state)
+      actor.continue(state)
     }
   }
 }
@@ -245,7 +244,7 @@ fn handle_message(message: Message, state: State) -> actor.Next(State) {
 /// Start a new sprocket actor
 pub fn start(
   view: Element,
-  ws: Option(Dynamic),
+  ws: Option(Unique),
   updater: Option(Updater(Patch)),
   dispatcher: Option(Dispatcher),
 ) {
