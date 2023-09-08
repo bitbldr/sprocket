@@ -3,7 +3,6 @@ pub type Const {
   EventAttrPrefix
   MetaPreflightId
   MetaCrsfToken
-  ClientScript
   IgnoreUpdateAttr
   ClientHookAttrPrefix
 }
@@ -14,7 +13,6 @@ pub fn constant(c: Const) -> String {
     EventAttrPrefix -> "spkt-event"
     MetaPreflightId -> "spkt-preflight-id"
     MetaCrsfToken -> "spkt-csrf-token"
-    ClientScript -> "/client.js"
     IgnoreUpdateAttr -> "spkt-ignore-update"
     ClientHookAttrPrefix -> "spkt-hook"
   }

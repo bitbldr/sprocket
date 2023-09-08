@@ -17,7 +17,7 @@ pub fn index(req: Request(String), ctx: AppContext) -> Response(String) {
       ),
     )
 
-  let body = render(view, html.preflight_renderer(ctx.ca, view))
+  let body = render(view, html.preflight_renderer(ctx.ca, view, "/app.js"))
 
   response.new(200)
   |> response.set_body(body)

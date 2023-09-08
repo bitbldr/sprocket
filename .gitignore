@@ -11,7 +11,8 @@ coverage
 .vscode
 
 .DS_Store
-priv/static/app.css
-priv/static/client.js
-priv/static/client.js.map
+
+priv/static
+client/dist
+
 yarn-error.log

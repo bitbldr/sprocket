@@ -4,32 +4,29 @@ import { renderDom } from "./render";
 import { applyPatch } from "./patch";
 import { initEventHandlers } from "./events";
 import { constant } from "./constants";
-import { doubleclick } from "./hooks/doubleclick";
 
-const hooks = {
-  DoubleClick: doubleclick,
+type Opts = {
+  preflightId: string;
+  csrfToken: string;
+  dom: Element;
+  hooks?: Record<string, any>;
 };
 
-window.addEventListener("DOMContentLoaded", () => {
+export function connect(path: String, opts: Opts) {
+  const preflightId = opts.preflightId;
+  const csrfToken = opts.csrfToken;
+  const hooks = opts.hooks;
+
   let ws_protocol = location.protocol === "https:" ? "wss:" : "ws:";
-  const socket = new WebSocket(ws_protocol + "//" + location.host + "/live");
+  const socket = new WebSocket(ws_protocol + "//" + location.host + path);
 
   let dom: Record<string, any>;
-  const spktPreflightId = document
-    .querySelector("meta[name=spkt-preflight-id]")
-    ?.getAttribute("content");
-
-  const spktCsrfToken = document
-    .querySelector("meta[name=spkt-csrf-token]")
-    ?.getAttribute("content");
 
   topbar.config({ barColors: { 0: "#29d" }, barThickness: 2 });
   topbar.show(500);
 
   socket.addEventListener("open", function (event) {
-    socket.send(
-      JSON.stringify(["join", { id: spktPreflightId, csrf: spktCsrfToken }])
-    );
+    socket.send(JSON.stringify(["join", { id: preflightId, csrf: csrfToken }]));
   });
 
   socket.addEventListener("message", function (event) {
@@ -41,28 +38,29 @@ window.addEventListener("DOMContentLoaded", () => {
           topbar.hide();
 
           // handle hook lifecycle mounted events
-          Object.keys(hooks).forEach((hook) => {
-            if (hooks[hook].mounted) {
-              document
-                .querySelectorAll(`[${constant.HookAttrPrefix}=${hook}]`)
-                .forEach((el) => {
-                  const pushEvent = (name: string, payload: any) => {
-                    const hookId = el.getAttribute(
-                      `${constant.HookAttrPrefix}-id`
-                    );
+          hooks &&
+            Object.keys(hooks).forEach((hook) => {
+              if (hooks[hook].mounted) {
+                document
+                  .querySelectorAll(`[${constant.HookAttrPrefix}=${hook}]`)
+                  .forEach((el) => {
+                    const pushEvent = (name: string, payload: any) => {
+                      const hookId = el.getAttribute(
+                        `${constant.HookAttrPrefix}-id`
+                      );
 
-                    socket.send(
-                      JSON.stringify([
-                        "hook:event",
-                        { id: hookId, name, payload },
-                      ])
-                    );
-                  };
+                      socket.send(
+                        JSON.stringify([
+                          "hook:event",
+                          { id: hookId, name, payload },
+                        ])
+                      );
+                    };
 
-                  hooks[hook].mounted({ el, pushEvent });
-                });
-            }
-          });
+                    hooks[hook].mounted({ el, pushEvent });
+                  });
+              }
+            });
 
           dom = parsed[1];
 
@@ -109,4 +107,4 @@ window.addEventListener("DOMContentLoaded", () => {
 
   // wire up event handlers
   initEventHandlers(socket);
-});
+}

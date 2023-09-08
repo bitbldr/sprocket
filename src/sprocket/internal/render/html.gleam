@@ -7,8 +7,8 @@ import sprocket/render.{
   RenderedEventHandler, RenderedText, Renderer, render_element, traverse,
 }
 import sprocket/internal/constants.{
-  ClientHookAttrPrefix, ClientScript, EventAttrPrefix, KeyAttr, MetaCrsfToken,
-  MetaPreflightId, constant,
+  ClientHookAttrPrefix, EventAttrPrefix, KeyAttr, MetaCrsfToken, MetaPreflightId,
+  constant,
 }
 import sprocket/context.{Element}
 import sprocket/cassette.{Cassette, Preflight}
@@ -21,7 +21,11 @@ pub fn renderer() -> Renderer(String) {
   Renderer(render: fn(el) { string_builder.to_string(render(el)) })
 }
 
-pub fn preflight_renderer(ca: Cassette, view: Element) -> Renderer(String) {
+pub fn preflight_renderer(
+  ca: Cassette,
+  view: Element,
+  client_script: String,
+) -> Renderer(String) {
   let assert Ok(preflight_id) = uuid.v4()
   let csrf_token = csrf.generate()
 
@@ -44,7 +48,7 @@ pub fn preflight_renderer(ca: Cassette, view: Element) -> Renderer(String) {
     |> render_element()
 
   let sprocket_client =
-    script([src(constant(ClientScript))], None)
+    script([src(client_script)], None)
     |> render_element()
 
   Renderer(render: fn(el) {
