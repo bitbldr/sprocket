@@ -11,7 +11,7 @@ import sprocket/internal/identifiable_callback.{CallbackFn}
 import sprocket/html.{
   button, button_text, div, div_text, h5_text, i, img, keyed, li, text, ul,
 }
-import sprocket/html/attributes.{alt, class, href, on_click, role, src}
+import sprocket/html/attributes.{alt, class, on_click, role, src}
 
 pub type Product {
   Product(

@@ -87,5 +87,5 @@ pub fn clock(ctx: Context, props: ClockProps) {
   )
 }
 
-pub external fn format_time(a, String) -> String =
-  "Elixir.FFIUtils" "format_time"
+@external(erlang, "Elixir.FFIUtils", "format_time")
+pub fn format_time(a: a, b: String) -> String

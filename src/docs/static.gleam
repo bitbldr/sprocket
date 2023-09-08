@@ -52,5 +52,5 @@ pub fn middleware(service: Service(in, BitBuilder)) -> Service(in, BitBuilder) {
   }
 }
 
-pub external fn priv_directory() -> String =
-  "sprocket_ffi" "priv_directory"
+@external(erlang, "sprocket_ffi", "priv_directory")
+pub fn priv_directory() -> String

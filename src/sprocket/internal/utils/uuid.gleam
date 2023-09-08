@@ -138,5 +138,5 @@ fn e(n: Int) -> Int {
   }
 }
 
-external fn crypto_strong_rand_bytes(Int) -> BitString =
-  "crypto" "strong_rand_bytes"
+@external(erlang, "crypto", "strong_rand_bytes")
+fn crypto_strong_rand_bytes(a: Int) -> BitString

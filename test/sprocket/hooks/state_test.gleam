@@ -1,12 +1,10 @@
 import gleam/int
 import gleam/string
-import gleam/option.{None}
-import gleeunit/should
 import sprocket/context.{Context}
 import sprocket/component.{component}
 import sprocket/html.{button, text}
 import sprocket/html/attributes.{id, on_click}
-import sprocket/hooks.{OnMount, OnUpdate, WithDeps, dep}
+import sprocket/hooks.{WithDeps, dep}
 import sprocket/hooks/state.{state}
 import sprocket/hooks/callback.{callback}
 import sprocket/internal/identifiable_callback.{CallbackFn}

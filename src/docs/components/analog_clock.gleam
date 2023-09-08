@@ -178,5 +178,5 @@ pub fn analog_clock(ctx: Context, _props: AnalogClockProps) {
   )
 }
 
-external fn clock_time(Int) -> #(Int, Int, Int) =
-  "Elixir.FFIUtils" "clock_time"
+@external(erlang, "Elixir.FFIUtils", "clock_time")
+fn clock_time(a: Int) -> #(Int, Int, Int)

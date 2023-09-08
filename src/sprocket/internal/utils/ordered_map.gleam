@@ -144,7 +144,7 @@ pub fn find_next(m: OrderedMap(k, a), key: k) -> Result(a, Nil) {
     [] -> Error(Nil)
     [item, ..rest] ->
       case item {
-        KeyedItem(k, v) ->
+        KeyedItem(k, _v) ->
           case k == key {
             True -> find_next_helper(rest)
             False -> find_next(OrderedMap(rest, m.map, m.size), key)

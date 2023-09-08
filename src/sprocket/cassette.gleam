@@ -415,7 +415,7 @@ fn handle_ws_message(
           case sprocket.get_client_hook(sprocket, id) {
             Ok(Client(_id, _name, handle_event)) -> {
               // TODO: implement reply dispatcher
-              let reply_dispatcher = fn(event, payload) { todo }
+              let reply_dispatcher = fn(_event, _payload) { todo }
 
               option.map(
                 handle_event,

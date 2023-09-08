@@ -7,6 +7,6 @@ import gleam/map.{Map}
 /// ```
 ///   let assert "Hello World!" = "Hello {name}!" |> s_strfmt({"name": "World"})
 /// ```
-pub fn s_strfmt(str: String, interpolations: Map(String, String)) {
+pub fn s_strfmt(_str: String, _interpolations: Map(String, String)) {
   todo
 }
