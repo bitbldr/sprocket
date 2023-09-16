@@ -1,3 +1,4 @@
+import gleam/io
 import gleam/int
 import gleam/string
 import gleam/option.{None}
@@ -21,7 +22,7 @@ pub fn main() {
   logger.configure_backend()
 
   let port = load_port()
-  let ca = cassette.start(None)
+  let ca = cassette.start(validate_csrf, None)
   let router = routes.stack(AppContext(ca))
 
   fn(req: Request(Connection)) -> Response(ResponseData) {
@@ -38,6 +39,10 @@ pub fn main() {
   |> logger.info
 
   process.sleep_forever()
+}
+
+fn validate_csrf(_token: String) {
+  Ok(Nil)
 }
 
 fn live_service(req: Request(Connection), ca: Cassette) {
@@ -57,14 +62,16 @@ fn live_service(req: Request(Connection), ca: Cassette) {
 fn handle_ws_message(state: Nil, conn, message, live_service) {
   let LiveService(id, on_msg, _on_init, on_close) = live_service
 
+  io.debug(#("LiveService id", id))
+
   case message {
     mist.Text(msg) -> {
       let assert Ok(msg) = bit_string.to_string(msg)
 
       let _ =
         on_msg(
-          msg,
           id,
+          msg,
           fn(msg) {
             let assert Ok(_) =
               mist.send_text_frame(conn, bit_string.from_string(msg))

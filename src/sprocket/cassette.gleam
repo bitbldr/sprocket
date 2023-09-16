@@ -32,6 +32,7 @@ pub type State {
     preflights: List(Preflight),
     cancel_preflight_cleanup_job: fn() -> Nil,
     debug: Bool,
+    validate_csrf: fn(String) -> Result(Nil, Nil),
   )
 }
 
@@ -45,6 +46,7 @@ pub type Message {
   PushSprocket(sprocket: Sprocket)
   GetSprocket(reply_with: Subject(Result(Sprocket, Nil)), ws: Unique)
   PopSprocket(reply_with: Subject(Result(Sprocket, Nil)), ws: Unique)
+  ValidateCSRF(reply_with: Subject(Result(Nil, Nil)), csrf_token: String)
 }
 
 fn handle_message(message: Message, state: State) -> actor.Next(Message, State) {
@@ -106,18 +108,16 @@ fn handle_message(message: Message, state: State) -> actor.Next(Message, State) 
       actor.continue(State(..state, sprockets: updated_sprockets))
     }
 
-    GetSprocket(reply_with, ws) -> {
-      let spkt =
-        list.find(state.sprockets, fn(s) { sprocket.has_websocket(s, ws) })
+    GetSprocket(reply_with, id) -> {
+      let spkt = list.find(state.sprockets, fn(s) { sprocket.has(s, id) })
 
       process.send(reply_with, spkt)
 
       actor.continue(state)
     }
 
-    PopSprocket(reply_with, ws) -> {
-      let sprocket =
-        list.find(state.sprockets, fn(s) { sprocket.has_websocket(s, ws) })
+    PopSprocket(reply_with, id) -> {
+      let sprocket = list.find(state.sprockets, fn(s) { sprocket.has(s, id) })
 
       process.send(reply_with, sprocket)
 
@@ -136,6 +136,11 @@ fn handle_message(message: Message, state: State) -> actor.Next(Message, State) 
         Error(_) -> actor.continue(state)
       }
     }
+
+    ValidateCSRF(reply_with, csrf_token) -> {
+      process.send(reply_with, state.validate_csrf(csrf_token))
+      actor.continue(state)
+    }
   }
 }
 
@@ -148,7 +153,7 @@ pub type CassetteOpts {
 /// 
 /// The cassette is a long running process that manages the state of
 /// all sprockets and preflights.
-pub fn start(opts: Option(CassetteOpts)) -> Cassette {
+pub fn start(validate_csrf, opts: Option(CassetteOpts)) -> Cassette {
   let assert Ok(ca) =
     actor.start(
       State(
@@ -157,6 +162,7 @@ pub fn start(opts: Option(CassetteOpts)) -> Cassette {
         cancel_preflight_cleanup_job: fn() { Nil },
         debug: option.map(opts, fn(opts) { opts.debug })
         |> option.unwrap(False),
+        validate_csrf: validate_csrf,
       ),
       handle_message,
     )
@@ -202,7 +208,7 @@ pub fn pop_preflight(ca: Cassette, id: String) -> Result(Preflight, Nil) {
 pub type LiveService {
   LiveService(
     id: Unique,
-    on_msg: fn(String, Unique, fn(String) -> Result(Nil, Nil)) ->
+    on_msg: fn(Unique, String, fn(String) -> Result(Nil, Nil)) ->
       Result(Nil, Nil),
     on_init: fn(Unique) -> Result(Nil, Nil),
     on_close: fn(Unique) -> Result(Nil, Nil),
@@ -219,10 +225,10 @@ pub type LiveService {
 pub fn live_service(ca: Cassette) {
   LiveService(
     id: unique.new(),
-    on_msg: fn(msg, ws, ws_send) { handle_ws_message(ca, msg, ws, ws_send) },
-    on_init: fn(_ws) { Ok(Nil) },
-    on_close: fn(ws) {
-      let spkt = pop_sprocket(ca, ws)
+    on_msg: fn(id, msg, ws_send) { handle_ws_message(ca, id, msg, ws_send) },
+    on_init: fn(_id) { Ok(Nil) },
+    on_close: fn(id) {
+      let spkt = pop_sprocket(ca, id)
 
       case spkt {
         Ok(sprocket) -> {
@@ -230,8 +236,8 @@ pub fn live_service(ca: Cassette) {
           Ok(Nil)
         }
         Error(_) -> {
-          logger.error("failed to pop sprocket for websoket:")
-          io.debug(ws)
+          logger.error("failed to pop sprocket with id:")
+          io.debug(id)
           Ok(Nil)
         }
       }
@@ -245,22 +251,22 @@ fn push_sprocket(ca: Cassette, sprocket: Sprocket) {
 }
 
 /// Gets a sprocket from the cassette.
-fn get_sprocket(ca: Cassette, ws: Unique) {
-  process.call(ca, GetSprocket(_, ws), call_timeout())
+fn get_sprocket(ca: Cassette, id: Unique) {
+  process.call(ca, GetSprocket(_, id), call_timeout())
 }
 
 /// Pops a sprocket from the cassette.
-fn pop_sprocket(ca: Cassette, ws: Unique) {
-  process.call(ca, PopSprocket(_, ws), call_timeout())
+fn pop_sprocket(ca: Cassette, id: Unique) {
+  process.call(ca, PopSprocket(_, id), call_timeout())
 }
 
 /// Handles client websocket connection initialization.
 fn connect(
   ca: Cassette,
-  ws: Unique,
+  id: Unique,
   ws_send: fn(String) -> Result(Nil, Nil),
   preflight_id: String,
-  preflight_csrf: String,
+  csrf_token: String,
 ) {
   let updater =
     Updater(send: fn(update) {
@@ -275,11 +281,11 @@ fn connect(
     })
 
   case pop_preflight(ca, preflight_id) {
-    Ok(Preflight(view: view, csrf_token: csrf_token, ..)) -> {
-      case csrf.validate(preflight_csrf, csrf_token) {
+    Ok(Preflight(view: view, ..)) -> {
+      case validate_csrf(ca, csrf_token) {
         Ok(_) -> {
           let sprocket =
-            sprocket.start(view, Some(ws), Some(updater), Some(dispatcher))
+            sprocket.start(id, view, Some(updater), Some(dispatcher))
           push_sprocket(ca, sprocket)
 
           logger.info("Sprocket connected!")
@@ -295,10 +301,16 @@ fn connect(
       }
     }
     Error(Nil) -> {
-      logger.error("Error no sprocket found for preflight id:" <> preflight_id)
+      logger.error(
+        "Error no sprocket found for preflight id:" <> unique.to_string(id),
+      )
       ws_send(error_to_json(PreflightNotFound))
     }
   }
+}
+
+fn validate_csrf(ca, csrf_token) {
+  process.call(ca, ValidateCSRF(_, csrf_token), call_timeout())
 }
 
 type Payload {
@@ -356,8 +368,8 @@ fn decode_empty(data: Dynamic) {
 
 fn handle_ws_message(
   ca: Cassette,
+  id: Unique,
   msg: String,
-  ws: Unique,
   ws_send: fn(String) -> Result(Nil, Nil),
 ) -> Result(Nil, Nil) {
   case
@@ -366,17 +378,19 @@ fn handle_ws_message(
       dynamic.any([decode_join, decode_event, decode_hook_event, decode_empty]),
     )
   {
-    Ok(#("join", JoinPayload(id, csrf))) -> {
-      logger.info("New client joined with preflight id: " <> id)
+    Ok(#("join", JoinPayload(preflight_id, csrf))) -> {
+      logger.info(
+        "New client joined with preflight id: " <> unique.to_string(id),
+      )
 
-      connect(ca, ws, ws_send, id, csrf)
+      connect(ca, id, ws_send, preflight_id, csrf)
     }
-    Ok(#("event", EventPayload(kind, id, value))) -> {
-      logger.info("Event: " <> kind <> " " <> id)
+    Ok(#("event", EventPayload(kind, event_id, value))) -> {
+      logger.info("Event: " <> kind <> " " <> event_id)
 
-      case get_sprocket(ca, ws) {
+      case get_sprocket(ca, id) {
         Ok(sprocket) -> {
-          case sprocket.get_handler(sprocket, id) {
+          case sprocket.get_handler(sprocket, event_id) {
             Ok(context.EventHandler(_, handler)) -> {
               // call the event handler
               case handler {
@@ -407,12 +421,12 @@ fn handle_ws_message(
         _ -> Error(Nil)
       }
     }
-    Ok(#("hook:event", HookEventPayload(id, name, value))) -> {
-      logger.info("Hook Event: " <> id <> " " <> name)
+    Ok(#("hook:event", HookEventPayload(event_id, name, value))) -> {
+      logger.info("Hook Event: " <> event_id <> " " <> name)
 
-      case get_sprocket(ca, ws) {
+      case get_sprocket(ca, id) {
         Ok(sprocket) -> {
-          case sprocket.get_client_hook(sprocket, id) {
+          case sprocket.get_client_hook(sprocket, event_id) {
             Ok(Client(_id, _name, handle_event)) -> {
               // TODO: implement reply dispatcher
               let reply_dispatcher = fn(_event, _payload) { todo }
@@ -425,7 +439,7 @@ fn handle_ws_message(
               Ok(Nil)
             }
             _ -> {
-              logger.error("Error: no client hook defined for id: " <> id)
+              logger.error("Error: no client hook defined for id: " <> event_id)
               io.debug(value)
               panic
             }

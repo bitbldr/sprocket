@@ -8,7 +8,7 @@ import sprocket/internal/csrf
 import sprocket/html.{div}
 
 pub fn push_pop_preflight_test() {
-  let ca = cassette.start(None)
+  let ca = cassette.start(fn(_csrf) { Ok(Nil) }, None)
 
   let assert Ok(preflight_id) = uuid.v4()
   let view = div([], [])
@@ -36,7 +36,7 @@ pub fn push_pop_preflight_test() {
 }
 
 pub fn cleanup_preflights_test() {
-  let ca = cassette.start(None)
+  let ca = cassette.start(fn(_csrf) { Ok(Nil) }, None)
 
   let assert Ok(preflight_id) = uuid.v4()
   let view = div([], [])

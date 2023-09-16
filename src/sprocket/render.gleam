@@ -49,7 +49,7 @@ pub type RenderResult(a) {
 // but then discards the ctx and returns the result.
 pub fn render(el: Element, renderer: Renderer(r)) -> r {
   let RenderResult(rendered: rendered, ..) =
-    live_render(context.new(el, None, None), el, None, None)
+    live_render(context.new(el, None), el, None, None)
 
   renderer.render(rendered)
 }
@@ -107,7 +107,7 @@ pub fn live_render(
 /// Renders the given element into a stateless RenderedElement tree.
 pub fn render_element(el: Element) {
   let RenderResult(rendered: rendered, ..) =
-    live_render(context.new(el, None, None), el, None, None)
+    live_render(context.new(el, None), el, None, None)
 
   rendered
 }
