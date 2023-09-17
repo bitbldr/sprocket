@@ -38,11 +38,11 @@ import docs/page_route.{
 }
 
 pub type PageViewProps {
-  PageViewProps(route: PageRoute, path_segments: List(String))
+  PageViewProps(route: PageRoute, csrf: String)
 }
 
 pub fn page_view(ctx: Context, props: PageViewProps) {
-  let PageViewProps(route: route, ..) = props
+  let PageViewProps(route: route, csrf: csrf) = props
 
   // TODO: use memoization hook to avoid re-computing this on every render
   let pages =
@@ -76,6 +76,7 @@ pub fn page_view(ctx: Context, props: PageViewProps) {
             [
               title(page_title),
               meta([charset("utf-8")]),
+              meta([name("csrf-token"), content(csrf)]),
               meta([
                 name("viewport"),
                 content("width=device-width, initial-scale=1"),
@@ -186,6 +187,7 @@ pub fn page_view(ctx: Context, props: PageViewProps) {
                   ),
                 ),
               ),
+              script([src("/docs/app.js")], None),
             ],
           ),
         ],

@@ -1,3 +1,4 @@
+import gleam/io
 import gleam/list
 import gleam/map.{Map}
 import gleam/otp/actor
@@ -26,6 +27,7 @@ pub type Sprocket =
 
 type State {
   State(
+    id: Unique,
     self: Option(Sprocket),
     cancel_shutdown: Option(fn() -> Nil),
     ctx: Context,
@@ -40,7 +42,7 @@ pub type Message {
   BeginSelfDestruct(Int)
   CancelSelfDestruct
   GetRendered(reply_with: Subject(Option(RenderedElement)))
-  HasWebSocket(reply_with: Subject(Bool), ws: Unique)
+  GetId(reply_with: Subject(Unique))
   SetRenderUpdate(fn() -> Nil)
   Render(reply_with: Subject(RenderedElement))
   RenderUpdate
@@ -87,15 +89,8 @@ fn handle_message(message: Message, state: State) -> actor.Next(Message, State) 
       actor.continue(state)
     }
 
-    HasWebSocket(reply_with, ws) -> {
-      case state.ctx {
-        Context(ws: Some(context_ws), ..) -> {
-          actor.send(reply_with, context_ws == ws)
-        }
-        _ -> {
-          actor.send(reply_with, False)
-        }
-      }
+    GetId(reply_with) -> {
+      actor.send(reply_with, state.id)
 
       actor.continue(state)
     }
@@ -243,17 +238,18 @@ fn handle_message(message: Message, state: State) -> actor.Next(Message, State) 
 
 /// Start a new sprocket actor
 pub fn start(
+  id: Unique,
   view: Element,
-  ws: Option(Unique),
   updater: Option(Updater(Patch)),
   dispatcher: Option(Dispatcher),
 ) {
   let assert Ok(actor) =
     actor.start(
       State(
+        id: id,
         self: None,
         cancel_shutdown: None,
-        ctx: context.new(view, ws, dispatcher),
+        ctx: context.new(view, dispatcher),
         updater: updater,
         rendered: None,
       ),
@@ -276,8 +272,8 @@ pub fn stop(actor) {
 }
 
 /// Returns true if the actor matches a given websocket connection
-pub fn has_websocket(actor, websocket) -> Bool {
-  actor.call(actor, HasWebSocket(_, websocket), call_timeout())
+pub fn get_id(actor) -> Unique {
+  actor.call(actor, GetId(_), call_timeout())
 }
 
 /// Get the previously rendered view from the actor

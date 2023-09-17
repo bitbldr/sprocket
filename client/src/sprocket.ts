@@ -6,16 +6,15 @@ import { initEventHandlers } from "./events";
 import { constant } from "./constants";
 
 type Opts = {
-  preflightId: string;
   csrfToken: string;
-  dom: Element;
+  targetEl?: Element;
   hooks?: Record<string, any>;
 };
 
 export function connect(path: String, opts: Opts) {
-  const preflightId = opts.preflightId;
-  const csrfToken = opts.csrfToken;
-  const hooks = opts.hooks;
+  const csrfToken = opts.csrfToken || new Error("Missing CSRF token");
+  const targetEl = opts.targetEl || document.documentElement;
+  const hooks = opts.hooks || {};
 
   let ws_protocol = location.protocol === "https:" ? "wss:" : "ws:";
   const socket = new WebSocket(ws_protocol + "//" + location.host + path);
@@ -26,7 +25,7 @@ export function connect(path: String, opts: Opts) {
   topbar.show(500);
 
   socket.addEventListener("open", function (event) {
-    socket.send(JSON.stringify(["join", { id: preflightId, csrf: csrfToken }]));
+    socket.send(JSON.stringify(["join", { csrf: csrfToken }]));
   });
 
   socket.addEventListener("message", function (event) {
@@ -38,29 +37,28 @@ export function connect(path: String, opts: Opts) {
           topbar.hide();
 
           // handle hook lifecycle mounted events
-          hooks &&
-            Object.keys(hooks).forEach((hook) => {
-              if (hooks[hook].mounted) {
-                document
-                  .querySelectorAll(`[${constant.HookAttrPrefix}=${hook}]`)
-                  .forEach((el) => {
-                    const pushEvent = (name: string, payload: any) => {
-                      const hookId = el.getAttribute(
-                        `${constant.HookAttrPrefix}-id`
-                      );
+          Object.keys(hooks).forEach((hook) => {
+            if (hooks[hook].mounted) {
+              document
+                .querySelectorAll(`[${constant.HookAttrPrefix}=${hook}]`)
+                .forEach((el) => {
+                  const pushEvent = (name: string, payload: any) => {
+                    const hookId = el.getAttribute(
+                      `${constant.HookAttrPrefix}-id`
+                    );
 
-                      socket.send(
-                        JSON.stringify([
-                          "hook:event",
-                          { id: hookId, name, payload },
-                        ])
-                      );
-                    };
+                    socket.send(
+                      JSON.stringify([
+                        "hook:event",
+                        { id: hookId, name, payload },
+                      ])
+                    );
+                  };
 
-                    hooks[hook].mounted({ el, pushEvent });
-                  });
-              }
-            });
+                  hooks[hook].mounted({ el, pushEvent });
+                });
+            }
+          });
 
           dom = parsed[1];
 
@@ -83,7 +81,7 @@ export function connect(path: String, opts: Opts) {
           break;
       }
 
-      morphdom(document.documentElement, renderDom(dom), {
+      morphdom(targetEl, renderDom(dom), {
         onBeforeElUpdated: function (fromEl, toEl) {
           if (toEl.hasAttribute(constant.IgnoreUpdate)) return false;
 

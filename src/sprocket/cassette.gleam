@@ -3,7 +3,6 @@ import gleam/list
 import gleam/dynamic.{Dynamic, field, optional_field}
 import gleam/option.{None, Option, Some}
 import gleam/json
-import gleam/erlang
 import gleam/erlang/process.{Subject}
 import gleam/otp/actor
 import sprocket/sprocket.{Sprocket}
@@ -15,88 +14,35 @@ import sprocket/internal/patch.{Patch}
 import sprocket/internal/identifiable_callback.{CallbackFn, CallbackWithValueFn}
 import sprocket/internal/logger
 import sprocket/internal/constants.{call_timeout}
-import sprocket/internal/csrf
-import sprocket/internal/utils/timer.{interval}
 import sprocket/internal/utils/unique.{Unique}
 
-pub type Preflight {
-  Preflight(id: String, view: Element, csrf_token: String, created_at: Int)
-}
+pub type CSRFValidator =
+  fn(String) -> Result(Nil, Nil)
 
 pub type Cassette =
   Subject(Message)
 
 pub type State {
-  State(
-    sprockets: List(Sprocket),
-    preflights: List(Preflight),
-    cancel_preflight_cleanup_job: fn() -> Nil,
-    debug: Bool,
-  )
+  State(sprockets: List(Sprocket), debug: Bool, csrf_validator: CSRFValidator)
 }
 
 pub type Message {
   Shutdown
   GetState(reply_with: Subject(State))
-  PushPreflight(preflight: Preflight)
-  CleanupPreflights
-  StartPreflightCleanupJob(cleanup_preflights: fn() -> Nil)
-  PopPreflight(reply_with: Subject(Result(Preflight, Nil)), id: String)
   PushSprocket(sprocket: Sprocket)
-  GetSprocket(reply_with: Subject(Result(Sprocket, Nil)), ws: Unique)
-  PopSprocket(reply_with: Subject(Result(Sprocket, Nil)), ws: Unique)
+  GetSprocket(reply_with: Subject(Result(Sprocket, Nil)), id: Unique)
+  PopSprocket(reply_with: Subject(Result(Sprocket, Nil)), id: Unique)
 }
 
 fn handle_message(message: Message, state: State) -> actor.Next(Message, State) {
   case message {
     Shutdown -> {
-      state.cancel_preflight_cleanup_job()
       actor.Stop(process.Normal)
     }
 
     GetState(reply_with) -> {
       process.send(reply_with, state)
       actor.continue(state)
-    }
-
-    PushPreflight(preflight) -> {
-      let updated_preflights = [preflight, ..state.preflights]
-
-      actor.continue(State(..state, preflights: updated_preflights))
-    }
-
-    CleanupPreflights -> {
-      let now = erlang.system_time(erlang.Millisecond)
-
-      // cleanup all preflights older than 60 seconds
-      let updated_preflights =
-        list.filter(state.preflights, fn(p) { p.created_at + 60 * 1000 > now })
-
-      actor.continue(State(..state, preflights: updated_preflights))
-    }
-
-    StartPreflightCleanupJob(cleanup_preflights) -> {
-      // start preflight cleanup job, run every minute
-      let cancel = interval(60 * 1000, fn() { cleanup_preflights() })
-
-      actor.continue(State(..state, cancel_preflight_cleanup_job: cancel))
-    }
-
-    PopPreflight(reply_with, id) -> {
-      let preflight = list.find(state.preflights, fn(p) { p.id == id })
-
-      process.send(reply_with, preflight)
-
-      case preflight {
-        Ok(_preflight) -> {
-          let updated_preflights =
-            list.filter(state.preflights, fn(p) { p.id != id })
-
-          actor.continue(State(..state, preflights: updated_preflights))
-        }
-
-        Error(_) -> actor.continue(state)
-      }
     }
 
     PushSprocket(sprocket) -> {
@@ -106,18 +52,24 @@ fn handle_message(message: Message, state: State) -> actor.Next(Message, State) 
       actor.continue(State(..state, sprockets: updated_sprockets))
     }
 
-    GetSprocket(reply_with, ws) -> {
+    GetSprocket(reply_with, id) -> {
       let spkt =
-        list.find(state.sprockets, fn(s) { sprocket.has_websocket(s, ws) })
+        list.find(
+          state.sprockets,
+          fn(s) { unique.equals(sprocket.get_id(s), id) },
+        )
 
       process.send(reply_with, spkt)
 
       actor.continue(state)
     }
 
-    PopSprocket(reply_with, ws) -> {
+    PopSprocket(reply_with, id) -> {
       let sprocket =
-        list.find(state.sprockets, fn(s) { sprocket.has_websocket(s, ws) })
+        list.find(
+          state.sprockets,
+          fn(s) { unique.equals(sprocket.get_id(s), id) },
+        )
 
       process.send(reply_with, sprocket)
 
@@ -148,20 +100,20 @@ pub type CassetteOpts {
 /// 
 /// The cassette is a long running process that manages the state of
 /// all sprockets and preflights.
-pub fn start(opts: Option(CassetteOpts)) -> Cassette {
+pub fn start(
+  csrf_validator: CSRFValidator,
+  opts: Option(CassetteOpts),
+) -> Cassette {
   let assert Ok(ca) =
     actor.start(
       State(
         sprockets: [],
-        preflights: [],
-        cancel_preflight_cleanup_job: fn() { Nil },
         debug: option.map(opts, fn(opts) { opts.debug })
         |> option.unwrap(False),
+        csrf_validator: csrf_validator,
       ),
       handle_message,
     )
-
-  start_preflight_cleanup_job(ca, cleanup_preflights)
 
   ca
 }
@@ -176,91 +128,139 @@ pub fn get_state(ca: Cassette) {
   process.call(ca, GetState(_), call_timeout())
 }
 
-fn cleanup_preflights(ca: Cassette) {
-  process.send(ca, CleanupPreflights)
-}
-
-fn start_preflight_cleanup_job(
-  ca: Cassette,
-  cleanup_preflights: fn(Cassette) -> Nil,
-) {
-  process.send(ca, StartPreflightCleanupJob(fn() { cleanup_preflights(ca) }))
-}
-
-/// Pushes a preflight to the cassette.
-pub fn push_preflight(ca: Cassette, preflight: Preflight) -> Preflight {
-  process.send(ca, PushPreflight(preflight))
-
-  preflight
-}
-
-/// Pops a preflight from the cassette.
-pub fn pop_preflight(ca: Cassette, id: String) -> Result(Preflight, Nil) {
-  process.call(ca, PopPreflight(_, id), call_timeout())
-}
-
-pub type LiveService {
-  LiveService(
-    id: Unique,
-    on_msg: fn(String, Unique, fn(String) -> Result(Nil, Nil)) ->
-      Result(Nil, Nil),
-    on_init: fn(Unique) -> Result(Nil, Nil),
-    on_close: fn(Unique) -> Result(Nil, Nil),
-  )
-}
-
-/// Returns a live service specification for a sprocket websocket.
-/// 
-/// This is a generic interface for handling websocket messages that can be
-/// used to implement a live service for a sprocket with a variety of different
-/// web servers.
-/// 
-/// Refer to the example docs repository for an example of how to use this.
-pub fn live_service(ca: Cassette) {
-  LiveService(
-    id: unique.new(),
-    on_msg: fn(msg, ws, ws_send) { handle_ws_message(ca, msg, ws, ws_send) },
-    on_init: fn(_ws) { Ok(Nil) },
-    on_close: fn(ws) {
-      let spkt = pop_sprocket(ca, ws)
-
-      case spkt {
-        Ok(sprocket) -> {
-          sprocket.stop(sprocket)
-          Ok(Nil)
-        }
-        Error(_) -> {
-          logger.error("failed to pop sprocket for websoket:")
-          io.debug(ws)
-          Ok(Nil)
-        }
-      }
-    },
-  )
-}
-
 /// Pushes a sprocket to the cassette.
-fn push_sprocket(ca: Cassette, sprocket: Sprocket) {
+pub fn push_sprocket(ca: Cassette, sprocket: Sprocket) {
   process.send(ca, PushSprocket(sprocket))
 }
 
 /// Gets a sprocket from the cassette.
-fn get_sprocket(ca: Cassette, ws: Unique) {
+pub fn get_sprocket(ca: Cassette, ws: Unique) {
   process.call(ca, GetSprocket(_, ws), call_timeout())
 }
 
 /// Pops a sprocket from the cassette.
-fn pop_sprocket(ca: Cassette, ws: Unique) {
+pub fn pop_sprocket(ca: Cassette, ws: Unique) {
   process.call(ca, PopSprocket(_, ws), call_timeout())
+}
+
+/// Validates a CSRF token.
+fn validate_csrf(ca: Cassette, csrf: String) {
+  case get_state(ca) {
+    State(_, _, csrf_validator) -> csrf_validator(csrf)
+  }
+}
+
+type Payload {
+  JoinPayload(csrf_token: String)
+  EventPayload(kind: String, id: String, value: Option(String))
+  HookEventPayload(id: String, event: String, value: Option(Dynamic))
+  EmptyPayload(nothing: Option(String))
+}
+
+pub fn live_message(
+  ca: Cassette,
+  id: Unique,
+  view: Element,
+  msg: String,
+  ws_send: fn(String) -> Result(Nil, Nil),
+) -> Result(Nil, Nil) {
+  case
+    json.decode(
+      msg,
+      dynamic.any([decode_join, decode_event, decode_hook_event, decode_empty]),
+    )
+  {
+    Ok(#("join", JoinPayload(csrf))) -> {
+      logger.info("New client joined")
+
+      case validate_csrf(ca, csrf) {
+        Ok(_) -> connect(ca, id, view, ws_send)
+        Error(_) -> {
+          logger.error("Invalid CSRF token")
+          ws_send(error_to_json(InvalidCSRFToken))
+        }
+      }
+    }
+    Ok(#("event", EventPayload(kind, event_id, value))) -> {
+      logger.info("Event: " <> kind <> " " <> event_id)
+
+      case get_sprocket(ca, id) {
+        Ok(sprocket) -> {
+          case sprocket.get_handler(sprocket, event_id) {
+            Ok(context.EventHandler(_, handler)) -> {
+              // call the event handler
+              case handler {
+                CallbackFn(cb) -> {
+                  cb()
+
+                  Ok(Nil)
+                }
+                CallbackWithValueFn(cb) -> {
+                  case value {
+                    Some(value) -> {
+                      cb(value)
+
+                      Ok(Nil)
+                    }
+                    _ -> {
+                      logger.error("Error: expected a value but got None")
+                      io.debug(value)
+                      panic
+                    }
+                  }
+                }
+              }
+            }
+            _ -> Ok(Nil)
+          }
+        }
+        _ -> Error(Nil)
+      }
+    }
+    Ok(#("hook:event", HookEventPayload(hook_id, name, value))) -> {
+      logger.info("Hook Event: " <> hook_id <> " " <> name)
+
+      case get_sprocket(ca, id) {
+        Ok(sprocket) -> {
+          case sprocket.get_client_hook(sprocket, hook_id) {
+            Ok(Client(_id, _name, handle_event)) -> {
+              // TODO: implement reply dispatcher
+              let reply_dispatcher = fn(_event, _payload) { todo }
+
+              option.map(
+                handle_event,
+                fn(handle_event) { handle_event(name, value, reply_dispatcher) },
+              )
+
+              Ok(Nil)
+            }
+            _ -> {
+              logger.error("Error: no client hook defined for id: " <> hook_id)
+              io.debug(value)
+              panic
+            }
+          }
+        }
+        _ -> Error(Nil)
+      }
+
+      Ok(Nil)
+    }
+    Error(e) -> {
+      logger.error("Error decoding message")
+      io.debug(e)
+
+      Error(Nil)
+    }
+  }
 }
 
 /// Handles client websocket connection initialization.
 fn connect(
   ca: Cassette,
-  ws: Unique,
+  id: Unique,
+  view: Element,
   ws_send: fn(String) -> Result(Nil, Nil),
-  preflight_id: String,
-  preflight_csrf: String,
 ) {
   let updater =
     Updater(send: fn(update) {
@@ -274,49 +274,22 @@ fn connect(
       Ok(Nil)
     })
 
-  case pop_preflight(ca, preflight_id) {
-    Ok(Preflight(view: view, csrf_token: csrf_token, ..)) -> {
-      case csrf.validate(preflight_csrf, csrf_token) {
-        Ok(_) -> {
-          let sprocket =
-            sprocket.start(view, Some(ws), Some(updater), Some(dispatcher))
-          push_sprocket(ca, sprocket)
+  let sprocket = sprocket.start(id, view, Some(updater), Some(dispatcher))
+  push_sprocket(ca, sprocket)
 
-          logger.info("Sprocket connected!")
+  logger.info("Sprocket connected! " <> unique.to_string(id))
 
-          // intitial live render
-          let rendered = sprocket.render(sprocket)
-          ws_send(rendered_to_json(rendered))
-        }
-        Error(_) -> {
-          logger.error("CSRF token mismatch for preflight id:" <> preflight_id)
-          ws_send(error_to_json(InvalidCSRFToken))
-        }
-      }
-    }
-    Error(Nil) -> {
-      logger.error("Error no sprocket found for preflight id:" <> preflight_id)
-      ws_send(error_to_json(PreflightNotFound))
-    }
-  }
-}
+  // intitial live render
+  let rendered = sprocket.render(sprocket)
 
-type Payload {
-  JoinPayload(preflight_id: String, csrf_token: String)
-  EventPayload(kind: String, id: String, value: Option(String))
-  HookEventPayload(id: String, event: String, value: Option(Dynamic))
-  EmptyPayload(nothing: Option(String))
+  ws_send(rendered_to_json(rendered))
 }
 
 fn decode_join(data: Dynamic) {
   data
   |> dynamic.tuple2(
     dynamic.string,
-    dynamic.decode2(
-      JoinPayload,
-      field("id", dynamic.string),
-      field("csrf", dynamic.string),
-    ),
+    dynamic.decode1(JoinPayload, field("csrf", dynamic.string)),
   )
 }
 
@@ -352,97 +325,6 @@ fn decode_empty(data: Dynamic) {
     dynamic.string,
     dynamic.decode1(EmptyPayload, optional_field("nothing", dynamic.string)),
   )
-}
-
-fn handle_ws_message(
-  ca: Cassette,
-  msg: String,
-  ws: Unique,
-  ws_send: fn(String) -> Result(Nil, Nil),
-) -> Result(Nil, Nil) {
-  case
-    json.decode(
-      msg,
-      dynamic.any([decode_join, decode_event, decode_hook_event, decode_empty]),
-    )
-  {
-    Ok(#("join", JoinPayload(id, csrf))) -> {
-      logger.info("New client joined with preflight id: " <> id)
-
-      connect(ca, ws, ws_send, id, csrf)
-    }
-    Ok(#("event", EventPayload(kind, id, value))) -> {
-      logger.info("Event: " <> kind <> " " <> id)
-
-      case get_sprocket(ca, ws) {
-        Ok(sprocket) -> {
-          case sprocket.get_handler(sprocket, id) {
-            Ok(context.EventHandler(_, handler)) -> {
-              // call the event handler
-              case handler {
-                CallbackFn(cb) -> {
-                  cb()
-
-                  Ok(Nil)
-                }
-                CallbackWithValueFn(cb) -> {
-                  case value {
-                    Some(value) -> {
-                      cb(value)
-
-                      Ok(Nil)
-                    }
-                    _ -> {
-                      logger.error("Error: expected a value but got None")
-                      io.debug(value)
-                      panic
-                    }
-                  }
-                }
-              }
-            }
-            _ -> Ok(Nil)
-          }
-        }
-        _ -> Error(Nil)
-      }
-    }
-    Ok(#("hook:event", HookEventPayload(id, name, value))) -> {
-      logger.info("Hook Event: " <> id <> " " <> name)
-
-      case get_sprocket(ca, ws) {
-        Ok(sprocket) -> {
-          case sprocket.get_client_hook(sprocket, id) {
-            Ok(Client(_id, _name, handle_event)) -> {
-              // TODO: implement reply dispatcher
-              let reply_dispatcher = fn(_event, _payload) { todo }
-
-              option.map(
-                handle_event,
-                fn(handle_event) { handle_event(name, value, reply_dispatcher) },
-              )
-
-              Ok(Nil)
-            }
-            _ -> {
-              logger.error("Error: no client hook defined for id: " <> id)
-              io.debug(value)
-              panic
-            }
-          }
-        }
-        _ -> Error(Nil)
-      }
-
-      Ok(Nil)
-    }
-    Error(e) -> {
-      logger.error("Error decoding message")
-      io.debug(e)
-
-      Error(Nil)
-    }
-  }
 }
 
 fn update_to_json(update: Patch, debug: Bool) -> String {

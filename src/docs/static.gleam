@@ -1,14 +1,18 @@
 import gleam/http/response.{Response}
 import gleam/http/request.{Request}
 import gleam/http/service.{Service}
-import gleam/bit_builder.{BitBuilder}
+import gleam/bit_builder
+import mist.{ResponseData}
 import gleam/erlang/file
 import gleam/result
 import gleam/string
 import gleam/list
+import docs/utils/common.{mist_response}
 
-pub fn middleware(service: Service(in, BitBuilder)) -> Service(in, BitBuilder) {
-  fn(request: Request(in)) -> Response(BitBuilder) {
+pub fn middleware(
+  service: Service(in, ResponseData),
+) -> Service(in, ResponseData) {
+  fn(request: Request(in)) -> Response(ResponseData) {
     let request_path = case request.path {
       "/" -> "/index.html"
       path -> path
@@ -46,6 +50,7 @@ pub fn middleware(service: Service(in, BitBuilder)) -> Service(in, BitBuilder) {
           _ -> "octet-stream"
         }
         Response(200, [#("content-type", content_type)], bits)
+        |> mist_response()
       }
       Error(_) -> service(request)
     }
