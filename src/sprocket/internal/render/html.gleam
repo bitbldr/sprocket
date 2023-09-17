@@ -1,64 +1,16 @@
 import gleam/list
-import gleam/erlang
 import gleam/option.{None, Option, Some}
 import gleam/string_builder.{StringBuilder}
 import sprocket/render.{
   RenderedAttribute, RenderedClientHook, RenderedComponent, RenderedElement,
-  RenderedEventHandler, RenderedText, Renderer, render_element, traverse,
+  RenderedEventHandler, RenderedText, Renderer, traverse,
 }
 import sprocket/internal/constants.{
-  ClientHookAttrPrefix, EventAttrPrefix, KeyAttr, MetaCrsfToken, MetaPreflightId,
-  constant,
+  ClientHookAttrPrefix, EventAttrPrefix, KeyAttr, constant,
 }
-import sprocket/context.{Element}
-import sprocket/cassette.{Cassette, Preflight}
-import sprocket/html.{meta, script}
-import sprocket/html/attributes.{content, name, src}
-import sprocket/internal/utils/uuid
-import sprocket/internal/csrf
 
 pub fn renderer() -> Renderer(String) {
   Renderer(render: fn(el) { string_builder.to_string(render(el)) })
-}
-
-pub fn preflight_renderer(
-  ca: Cassette,
-  view: Element,
-  client_script: String,
-) -> Renderer(String) {
-  let assert Ok(preflight_id) = uuid.v4()
-  let csrf_token = csrf.generate()
-
-  cassette.push_preflight(
-    ca,
-    Preflight(
-      id: preflight_id,
-      view: view,
-      csrf_token: csrf_token,
-      created_at: erlang.system_time(erlang.Millisecond),
-    ),
-  )
-
-  let preflight_meta =
-    meta([name(constant(MetaPreflightId)), content(preflight_id)])
-    |> render_element()
-
-  let csrf_meta =
-    meta([name(constant(MetaCrsfToken)), content(csrf_token)])
-    |> render_element()
-
-  let sprocket_client =
-    script([src(client_script)], None)
-    |> render_element()
-
-  Renderer(render: fn(el) {
-    el
-    |> inject_element("head", preflight_meta, Append)
-    |> inject_element("head", csrf_meta, Append)
-    |> inject_element("body", sprocket_client, Append)
-    |> render()
-    |> string_builder.to_string()
-  })
 }
 
 fn render(el: RenderedElement) -> StringBuilder {
@@ -188,6 +140,43 @@ fn inject_element(
               Append -> list.append(children, [inject_element])
               Prepend -> [inject_element, ..children]
             },
+          )
+        }
+        _ -> el
+      }
+    },
+  )
+}
+
+fn inject_attribute(
+  root: RenderedElement,
+  target_tag: String,
+  inject_attr: RenderedAttribute,
+) -> RenderedElement {
+  traverse(
+    root,
+    fn(el) {
+      case el {
+        RenderedElement(tag: _tag, key: key, attrs: attrs, children: children) -> {
+          RenderedElement(
+            tag: target_tag,
+            key: key,
+            attrs: attrs
+            |> list.fold(
+              [],
+              fn(acc, attr) {
+                case attr, inject_attr {
+                  RenderedAttribute(name, ..), RenderedAttribute(
+                    inject_attr_name,
+                    ..,
+                  ) if name == inject_attr_name -> {
+                    list.append(acc, [inject_attr, attr])
+                  }
+                  _, _ -> list.append(acc, [attr])
+                }
+              },
+            ),
+            children: children,
           )
         }
         _ -> el

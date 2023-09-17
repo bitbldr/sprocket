@@ -1,3 +1,4 @@
+import gleam/string
 import docs/utils/logger
 
 pub type Page {
@@ -17,6 +18,16 @@ pub type PageRoute {
 }
 
 pub fn from_string(route: String) -> PageRoute {
+  let route = case string.ends_with(route, "/live") {
+    True -> string.slice(route, 0, string.length(route) - 5)
+    False -> route
+  }
+
+  let route = case route {
+    "" -> "/"
+    _ -> route
+  }
+
   case route {
     "/" -> Introduction
     "/components" -> Components

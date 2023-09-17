@@ -7,9 +7,10 @@ import sprocket/internal/identifiable_callback.{CallbackFn}
 import sprocket/render.{RenderedAttribute,
   RenderedElement, RenderedEventHandler}
 import sprocket/internal/render/html as sprocket_render_html
+import sprocket/internal/utils/unique
 
 pub fn live(view) {
-  sprocket.start(view, None, None, None)
+  sprocket.start(unique.new(), view, None, None)
 }
 
 pub fn render_html(spkt) {

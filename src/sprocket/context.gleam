@@ -50,23 +50,17 @@ pub type Context {
     view: Element,
     wip: ComponentWip,
     handlers: List(EventHandler),
-    ws: Option(Unique),
     render_update: fn() -> Nil,
     update_hook: fn(Unique, fn(Hook) -> Hook) -> Nil,
     dispatch_event: fn(Unique, String, Option(String)) -> Result(Nil, Nil),
   )
 }
 
-pub fn new(
-  view: Element,
-  ws: Option(Unique),
-  dispatcher: Option(Dispatcher),
-) -> Context {
+pub fn new(view: Element, dispatcher: Option(Dispatcher)) -> Context {
   Context(
     view: view,
     wip: ComponentWip(hooks: ordered_map.new(), index: 0, is_first_render: True),
     handlers: [],
-    ws: ws,
     render_update: fn() { Nil },
     update_hook: fn(_index, _updater) { Nil },
     dispatch_event: fn(id, name, payload) {

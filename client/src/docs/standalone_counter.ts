@@ -1,9 +1,4 @@
-import { doubleclick } from "./hooks/doubleclick";
 import { connect } from "../sprocket";
-
-const hooks = {
-  DoubleClick: doubleclick,
-};
 
 window.addEventListener("DOMContentLoaded", () => {
   const csrfToken = document
@@ -11,12 +6,9 @@ window.addEventListener("DOMContentLoaded", () => {
     ?.getAttribute("content");
 
   if (csrfToken) {
-    let livePath = window.location.pathname.split("/").concat("live").join("/");
-
-    connect(livePath, {
+    connect("/counter/live", {
       csrfToken,
-      // targetEl: document.querySelector("#app") as Element,
-      hooks,
+      targetEl: document.getElementById("counter") as Element,
     });
   } else {
     console.error("Missing CSRF token");
