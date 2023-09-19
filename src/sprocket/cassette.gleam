@@ -225,7 +225,9 @@ pub fn live_message(
           case sprocket.get_client_hook(sprocket, hook_id) {
             Ok(Client(_id, _name, handle_event)) -> {
               // TODO: implement reply dispatcher
-              let reply_dispatcher = fn(_event, _payload) { todo }
+              let reply_dispatcher = fn(event, payload) {
+                ws_send(hook_event_to_json(hook_id, event, payload))
+              }
 
               option.map(
                 handle_event,
@@ -270,7 +272,7 @@ fn connect(
 
   let dispatcher =
     Dispatcher(dispatch: fn(id, event, payload) {
-      let _ = ws_send(event_to_json(id, event, payload))
+      let _ = ws_send(hook_event_to_json(id, event, payload))
       Ok(Nil)
     })
 
@@ -336,9 +338,13 @@ fn update_to_json(update: Patch, debug: Bool) -> String {
   |> json.to_string()
 }
 
-fn event_to_json(id: String, event: String, value: Option(String)) -> String {
+fn hook_event_to_json(
+  id: String,
+  event: String,
+  value: Option(String),
+) -> String {
   json.preprocessed_array([
-    json.string("event"),
+    json.string("hook:event"),
     case value {
       Some(value) ->
         json.object([

@@ -4,6 +4,11 @@ import { renderDom } from "./render";
 import { applyPatch } from "./patch";
 import { initEventHandlers } from "./events";
 import { constant } from "./constants";
+import {
+  processClientHookMount,
+  processClientHookLifecycle,
+  processClientHookDestroyed,
+} from "./hooks";
 
 type Opts = {
   csrfToken: string;
@@ -20,12 +25,17 @@ export function connect(path: String, opts: Opts) {
   const socket = new WebSocket(ws_protocol + "//" + location.host + path);
 
   let dom: Record<string, any>;
+  let clientHookMap: Record<string, any>;
 
   topbar.config({ barColors: { 0: "#29d" }, barThickness: 2 });
   topbar.show(500);
 
   socket.addEventListener("open", function (event) {
     socket.send(JSON.stringify(["join", { csrf: csrfToken }]));
+
+    if (clientHookMap) {
+      processClientHookLifecycle("reconnected", hooks, clientHookMap, targetEl);
+    }
   });
 
   socket.addEventListener("message", function (event) {
@@ -36,36 +46,22 @@ export function connect(path: String, opts: Opts) {
         case "ok":
           topbar.hide();
 
-          // handle hook lifecycle mounted events
-          Object.keys(hooks).forEach((hook) => {
-            if (hooks[hook].mounted) {
-              document
-                .querySelectorAll(`[${constant.HookAttrPrefix}=${hook}]`)
-                .forEach((el) => {
-                  const pushEvent = (name: string, payload: any) => {
-                    const hookId = el.getAttribute(
-                      `${constant.HookAttrPrefix}-id`
-                    );
-
-                    socket.send(
-                      JSON.stringify([
-                        "hook:event",
-                        { id: hookId, name, payload },
-                      ])
-                    );
-                  };
-
-                  hooks[hook].mounted({ el, pushEvent });
-                });
-            }
-          });
-
           dom = parsed[1];
+
+          update(targetEl, dom, hooks, clientHookMap);
+
+          // mount client hooks and initialize clientHookMap after the first render
+          if (!clientHookMap) {
+            clientHookMap = processClientHookMount(socket, hooks);
+          }
 
           break;
 
         case "update":
           dom = applyPatch(dom, parsed[1], parsed[2]) as Element;
+
+          update(targetEl, dom, hooks, clientHookMap);
+
           break;
 
         case "error":
@@ -80,29 +76,49 @@ export function connect(path: String, opts: Opts) {
 
           break;
       }
-
-      morphdom(targetEl, renderDom(dom), {
-        onBeforeElUpdated: function (fromEl, toEl) {
-          if (toEl.hasAttribute(constant.IgnoreUpdate)) return false;
-
-          return true;
-        },
-        getNodeKey: function (node) {
-          if (node.nodeType == Node.ELEMENT_NODE) {
-            const el = node as Element;
-            if (el.hasAttribute(constant.KeyAttr)) {
-              return el.getAttribute(constant.KeyAttr);
-            }
-          }
-        },
-      });
     }
   });
 
   socket.addEventListener("close", function (event) {
+    processClientHookLifecycle("disconnected", hooks, clientHookMap, targetEl);
+
     topbar.show();
   });
 
   // wire up event handlers
   initEventHandlers(socket);
+}
+
+// update the target DOM element using a given JSON DOM
+function update(targetEl, dom, hooks, clientHookMap) {
+  morphdom(targetEl, renderDom(dom), {
+    onBeforeElUpdated: function (fromEl, toEl) {
+      if (toEl.hasAttribute(constant.IgnoreUpdate)) return false;
+
+      clientHookMap &&
+        processClientHookLifecycle("beforeUpdate", hooks, clientHookMap, toEl);
+
+      return true;
+    },
+    onElUpdated: function (el) {
+      clientHookMap &&
+        processClientHookLifecycle("updated", hooks, clientHookMap, el);
+    },
+    onNodeDiscarded: function (node) {
+      if (node.nodeType == Node.ELEMENT_NODE) {
+        const el = node as Element;
+
+        clientHookMap =
+          clientHookMap && processClientHookDestroyed(hooks, clientHookMap, el);
+      }
+    },
+    getNodeKey: function (node) {
+      if (node.nodeType == Node.ELEMENT_NODE) {
+        const el = node as Element;
+        if (el.hasAttribute(constant.KeyAttr)) {
+          return el.getAttribute(constant.KeyAttr);
+        }
+      }
+    },
+  });
 }
