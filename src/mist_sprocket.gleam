@@ -1,4 +1,5 @@
 import gleam/io
+import gleam/option.{None}
 import gleam/list
 import gleam/bit_string
 import gleam/bit_builder.{BitBuilder}
@@ -27,18 +28,16 @@ pub fn live(
   // if the request path ends with "live", then start a websocket connection
   case list.last(request.path_segments(req)) {
     Ok("live") -> {
-      let selector = process.new_selector()
-
       let id = unique.new()
 
       req
-      |> mist.websocket()
-      |> mist.with_state(Nil)
-      |> mist.selecting(selector)
-      |> mist.on_message(fn(state, conn, message) {
-        handle_ws_message(id, state, conn, message, ca, view)
-      })
-      |> mist.upgrade()
+      |> mist.websocket(
+        fn(state, conn, message) {
+          handle_ws_message(id, state, conn, message, ca, view)
+        },
+        fn() { #(Nil, None) },
+        fn() { Nil },
+      )
     }
 
     _ -> {
@@ -60,8 +59,13 @@ fn mist_response(response: Response(BitBuilder)) -> Response(ResponseData) {
 
 fn handle_ws_message(id, state: Nil, conn, message, ca, view) {
   let ws_send = fn(msg) {
-    let assert Ok(_) = mist.send_text_frame(conn, bit_string.from_string(msg))
-    Ok(Nil)
+    case mist.send_text_frame(conn, bit_string.from_string(msg)) {
+      Ok(_) -> Ok(Nil)
+      Error(_) -> {
+        logger.error("failed to send websocket message: " <> msg)
+        Ok(Nil)
+      }
+    }
   }
 
   case message {

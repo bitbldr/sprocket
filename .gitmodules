@@ -1,4 +1,4 @@
 [submodule "local/mist"]
 	path = local/mist
-	url = git@github.com:bitbldr/mist.git
-  branch = fix-websocket-assertion-crash
+	url = git@github.com:bitbldr/mist.github
+  branch = fix-warning

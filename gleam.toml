@@ -24,7 +24,8 @@ internal_modules = [
 [dependencies]
 gleam_stdlib = "~> 0.30"
 gleam_http = "~> 3.2"
-mist = "~> 0.13.2"
+#mist = "~> 0.13.2"
+mist = { path = "local/mist" }
 gleam_erlang = "~> 0.18"
 gleam_json = "~> 0.5"
 gleam_crypto = "~> 0.3"
