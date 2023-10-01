@@ -36,7 +36,7 @@ pub fn live(
           handle_ws_message(id, state, conn, message, ca, view)
         },
         fn() { #(Nil, None) },
-        fn() { Nil },
+        fn() { maybe_cleanup_sprocket(ca, id) },
       )
     }
 
@@ -77,19 +77,8 @@ fn handle_ws_message(id, state: Nil, conn, message, ca, view) {
     }
 
     mist.Closed | mist.Shutdown -> {
-      let spkt = cassette.pop_sprocket(ca, id)
-      case spkt {
-        Ok(sprocket) -> {
-          sprocket.stop(sprocket)
-          Ok(Nil)
-        }
-        Error(_) -> {
-          logger.error(
-            "failed to pop sprocket with id: " <> unique.to_string(id),
-          )
-          Ok(Nil)
-        }
-      }
+      maybe_cleanup_sprocket(ca, id)
+
       actor.Stop(process.Normal)
     }
     _ -> {
@@ -97,6 +86,21 @@ fn handle_ws_message(id, state: Nil, conn, message, ca, view) {
       io.debug(message)
 
       actor.continue(state)
+    }
+  }
+}
+
+// If the sprocket is still in the cassette, stop it. This can be called
+// either when the websocket received a CLOSED message or when connection is
+// terminated. In the latter case, the sprocket may already have been removed
+fn maybe_cleanup_sprocket(ca: Cassette, id: unique.Unique) {
+  let spkt = cassette.pop_sprocket(ca, id)
+  case spkt {
+    Ok(sprocket) -> {
+      sprocket.stop(sprocket)
+    }
+    Error(_) -> {
+      Nil
     }
   }
 }

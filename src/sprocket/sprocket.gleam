@@ -53,7 +53,17 @@ pub type Message {
 
 fn handle_message(message: Message, state: State) -> actor.Next(Message, State) {
   case message {
-    Shutdown -> actor.Stop(process.Normal)
+    Shutdown -> {
+      case state.rendered {
+        Some(rendered) -> {
+          cleanup_hooks(rendered)
+          Nil
+        }
+        _ -> Nil
+      }
+
+      actor.Stop(process.Normal)
+    }
 
     SetSelf(self) -> {
       actor.continue(State(..state, self: Some(self)))
@@ -298,6 +308,26 @@ pub fn render(actor) -> RenderedElement {
 /// Render the view and send an update Patch to the updater
 pub fn render_update(actor) -> Nil {
   actor.send(actor, RenderUpdate)
+}
+
+fn cleanup_hooks(rendered: RenderedElement) {
+  // cleanup hooks
+  build_hooks_map(rendered, map.new())
+  |> map.values()
+  |> list.each(fn(hook) {
+    case hook {
+      Effect(_, _, _, prev) -> {
+        case prev {
+          Some(EffectResult(Some(cleanup), _)) -> cleanup()
+          _ -> Nil
+        }
+      }
+
+      Reducer(_, _, cleanup) -> cleanup()
+
+      _ -> Nil
+    }
+  })
 }
 
 fn cleanup_disposed_hooks(
