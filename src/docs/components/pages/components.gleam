@@ -371,11 +371,11 @@ pub fn components_page(ctx: Context, _props: ComponentsPageProps) {
                       [],
                       list.map(
                         products,
-                        fn (product) {
-                          keyed(product.id, 
+                        fn (p) {
+                          keyed(p.id, 
                             component(
-                              product_card,
-                              ProductCardProps(product: product),
+                              product,
+                              ProductProps(product: p),
                             )
                           )
                         },
