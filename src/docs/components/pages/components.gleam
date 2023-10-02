@@ -27,8 +27,8 @@ pub fn components_page(ctx: Context, _props: ComponentsPageProps) {
             [],
             [
               text(
-                "Components are the 🍞 & 🧈 of Sprocket user interfaces. They let you encapsulate markup and functionality into independent and composable pieces.
-                This page will explore some key concepts of components and demonstrate how to use them to build rich, composible UIs.",
+                "Components let you encapsulate markup and functionality into independent and composable pieces.
+                This page will explore some key concepts of components and demonstrate how to use them to build rich user interfaces.",
               ),
             ],
           ),
