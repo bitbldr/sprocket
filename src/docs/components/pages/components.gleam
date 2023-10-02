@@ -113,10 +113,10 @@ pub fn components_page(ctx: Context, _props: ComponentsPageProps) {
             [],
             [
               text(
-                "To use this new component in a parent view, we can simply pass it into the ",
+                "To use this new component in a parent view, we can simply pass it into ",
               ),
               code_text([], "component"),
-              text(" function along with the props we want to pass in."),
+              text(" along with the props we want to pass in."),
             ],
           ),
           p(
@@ -283,12 +283,12 @@ pub fn components_page(ctx: Context, _props: ComponentsPageProps) {
             [],
             [
               text(
-                "Not all interfaces require state management or hooks. In those cases a stateless functional component can be used. Stateless functional components are simply regular 
-                functions that encapsulate markup and functionality into independent and composable pieces. The function is called directly from the render function without the ",
+                "Not every component will require state management or hooks. In these cases a stateless functional component can be used. Stateless functional components are simply regular 
+                functions that encapsulate markup and functionality into independent and composable pieces. The function is called directly from the render function (without using ",
               ),
               code_text([], "component"),
               text(
-                " element. Let's take a look at an example of a stateless functional component that renders a product card.",
+                "). Let's look at an example of a stateless functional component that renders a product card.",
               ),
             ],
           ),
