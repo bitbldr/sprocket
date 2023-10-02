@@ -24,12 +24,203 @@ pub type Product {
   )
 }
 
-pub type ProductCardProps {
-  ProductCardProps(product: Product, on_hide: fn(Int) -> Nil)
+pub type ProductProps {
+  ProductProps(product: Product, on_hide: fn(Int) -> Nil)
 }
 
-pub fn product_card(ctx: Context, props: ProductCardProps) {
-  let ProductCardProps(product, on_hide) = props
+pub fn product_card(
+  img_url,
+  name,
+  description,
+  qty,
+  price,
+  in_cart,
+  on_hide,
+  toggle_in_cart,
+) {
+  div(
+    [
+      class(
+        "flex flex-row bg-white border border-gray-200 rounded-lg shadow dark:bg-gray-800 dark:border-gray-700",
+      ),
+    ],
+    [
+      div(
+        [class("w-1/3 rounded-l-lg overflow-hidden")],
+        [
+          img([
+            class("object-cover h-52 w-full"),
+            src(img_url),
+            alt("product image"),
+          ]),
+        ],
+      ),
+      div(
+        [class("flex-1 flex flex-col p-5")],
+        [
+          div(
+            [class("flex-1 flex flex-row")],
+            [
+              div(
+                [class("flex-1")],
+                [
+                  h5_text(
+                    [
+                      class(
+                        "text-xl font-semibold tracking-tight text-gray-900 dark:text-white",
+                      ),
+                    ],
+                    name,
+                  ),
+                  div_text([class("py-2 text-gray-500")], description),
+                ],
+              ),
+              div(
+                [],
+                [
+                  div(
+                    [class("flex-1 flex flex-col text-right")],
+                    [
+                      div_text(
+                        [
+                          class(
+                            "text-xl font-bold text-gray-900 dark:text-white",
+                          ),
+                        ],
+                        "$" <> float.to_string(price),
+                      ),
+                      div_text([class("text-sm text-gray-500")], qty),
+                    ],
+                  ),
+                ],
+              ),
+            ],
+          ),
+          div(
+            [class("flex flex flex-row justify-end")],
+            [
+              button_text(
+                [
+                  class(
+                    "text-blue-700 hover:text-blue-800 hover:underline focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:text-blue-600 dark:hover:text-blue-700 dark:focus:ring-blue-800 mr-2",
+                  ),
+                  on_click(on_hide),
+                ],
+                "Not Interested",
+              ),
+              ..case in_cart {
+                True -> [
+                  button(
+                    [
+                      class(
+                        "text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-green-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800",
+                      ),
+                      on_click(toggle_in_cart),
+                    ],
+                    [
+                      i([class("fa-solid fa-check mr-2")], []),
+                      text("Added to Cart!"),
+                    ],
+                  ),
+                ]
+                False -> [
+                  button(
+                    [
+                      class(
+                        "text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800",
+                      ),
+                      on_click(toggle_in_cart),
+                    ],
+                    [
+                      i([class("fa-solid fa-cart-shopping mr-2")], []),
+                      text("Add to Cart"),
+                    ],
+                  ),
+                ]
+              }
+            ],
+          ),
+        ],
+      ),
+    ],
+  )
+}
+
+pub fn stateless_product_card(product: Product) {
+  let Product(
+    name: name,
+    description: description,
+    img_url: img_url,
+    qty: qty,
+    price: price,
+    ..,
+  ) = product
+  div(
+    [
+      class(
+        "flex flex-row bg-white border border-gray-200 rounded-lg shadow dark:bg-gray-800 dark:border-gray-700",
+      ),
+    ],
+    [
+      div(
+        [class("w-1/3 rounded-l-lg overflow-hidden")],
+        [
+          img([
+            class("object-cover h-52 w-full"),
+            src(img_url),
+            alt("product image"),
+          ]),
+        ],
+      ),
+      div(
+        [class("flex-1 flex flex-col p-5")],
+        [
+          div(
+            [class("flex-1 flex flex-row")],
+            [
+              div(
+                [class("flex-1")],
+                [
+                  h5_text(
+                    [
+                      class(
+                        "text-xl font-semibold tracking-tight text-gray-900 dark:text-white",
+                      ),
+                    ],
+                    name,
+                  ),
+                  div_text([class("py-2 text-gray-500")], description),
+                ],
+              ),
+              div(
+                [],
+                [
+                  div(
+                    [class("flex-1 flex flex-col text-right")],
+                    [
+                      div_text(
+                        [
+                          class(
+                            "text-xl font-bold text-gray-900 dark:text-white",
+                          ),
+                        ],
+                        "$" <> float.to_string(price),
+                      ),
+                      div_text([class("text-sm text-gray-500")], qty),
+                    ],
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ],
+      ),
+    ],
+  )
+}
+
+pub fn product(ctx: Context, props: ProductProps) {
+  let ProductProps(product, on_hide) = props
 
   use ctx, in_cart, set_in_cart <- state(ctx, False)
 
@@ -56,111 +247,15 @@ pub fn product_card(ctx: Context, props: ProductCardProps) {
   render(
     ctx,
     [
-      div(
-        [
-          class(
-            "flex flex-row bg-white border border-gray-200 rounded-lg shadow dark:bg-gray-800 dark:border-gray-700",
-          ),
-        ],
-        [
-          div(
-            [class("w-1/3 rounded-l-lg overflow-hidden")],
-            [
-              img([
-                class("object-cover h-52 w-full"),
-                src(img_url),
-                alt("product image"),
-              ]),
-            ],
-          ),
-          div(
-            [class("flex-1 flex flex-col p-5")],
-            [
-              div(
-                [class("flex-1 flex flex-row")],
-                [
-                  div(
-                    [class("flex-1")],
-                    [
-                      h5_text(
-                        [
-                          class(
-                            "text-xl font-semibold tracking-tight text-gray-900 dark:text-white",
-                          ),
-                        ],
-                        name,
-                      ),
-                      div_text([class("py-2 text-gray-500")], description),
-                    ],
-                  ),
-                  div(
-                    [],
-                    [
-                      div(
-                        [class("flex-1 flex flex-col text-right")],
-                        [
-                          div_text(
-                            [
-                              class(
-                                "text-xl font-bold text-gray-900 dark:text-white",
-                              ),
-                            ],
-                            "$" <> float.to_string(price),
-                          ),
-                          div_text([class("text-sm text-gray-500")], qty),
-                        ],
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              div(
-                [class("flex flex flex-row justify-end")],
-                [
-                  button_text(
-                    [
-                      class(
-                        "text-blue-700 hover:text-blue-800 hover:underline focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:text-blue-600 dark:hover:text-blue-700 dark:focus:ring-blue-800 mr-2",
-                      ),
-                      on_click(on_hide),
-                    ],
-                    "Not Interested",
-                  ),
-                  ..case in_cart {
-                    True -> [
-                      button(
-                        [
-                          class(
-                            "text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-green-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800",
-                          ),
-                          on_click(toggle_in_cart),
-                        ],
-                        [
-                          i([class("fa-solid fa-check mr-2")], []),
-                          text("Added to Cart!"),
-                        ],
-                      ),
-                    ]
-                    False -> [
-                      button(
-                        [
-                          class(
-                            "text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800",
-                          ),
-                          on_click(toggle_in_cart),
-                        ],
-                        [
-                          i([class("fa-solid fa-cart-shopping mr-2")], []),
-                          text("Add to Cart"),
-                        ],
-                      ),
-                    ]
-                  }
-                ],
-              ),
-            ],
-          ),
-        ],
+      product_card(
+        img_url,
+        name,
+        description,
+        qty,
+        price,
+        in_cart,
+        on_hide,
+        toggle_in_cart,
       ),
     ],
   )
@@ -208,20 +303,20 @@ pub fn product_list(ctx: Context, props: ProductListProps) {
           ul(
             [role("list"), class("flex flex-col")],
             products
-            |> list.filter_map(fn(product) {
-              case list.contains(hidden, product.id) {
+            |> list.filter_map(fn(p) {
+              case list.contains(hidden, p.id) {
                 True -> Error(Nil)
                 False ->
                   Ok(keyed(
-                    int.to_string(product.id),
+                    int.to_string(p.id),
                     li(
                       [class("py-3 mr-4")],
                       [
                         component(
-                          product_card,
-                          ProductCardProps(
-                            product: product,
-                            on_hide: fn(_) { dispatch(Hide(product.id)) },
+                          product,
+                          ProductProps(
+                            product: p,
+                            on_hide: fn(_) { dispatch(Hide(p.id)) },
                           ),
                         ),
                       ],

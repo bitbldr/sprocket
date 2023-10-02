@@ -5,7 +5,8 @@ import sprocket/html.{article, code_text, h1, h2, p, text}
 import docs/utils/codeblock.{codeblock}
 import docs/components/hello_button.{HelloButtonProps, hello_button}
 import docs/components/product_list.{
-  ProductListProps, example_coffee_products, product_list,
+  Product, ProductListProps, example_coffee_products, product_list,
+  stateless_product_card,
 }
 import docs/utils/common.{example}
 
@@ -25,7 +26,8 @@ pub fn components_page(ctx: Context, _props: ComponentsPageProps) {
             [],
             [
               text(
-                "Components let you encapsulate markup and functionality into independent and composable pieces. This page demonstrates how to use components to build a UI.",
+                "Components are the 🍞 & 🧈 of Sprocket user interfaces. They let you encapsulate markup and functionality into independent and composable pieces.
+                This page will explore some key concepts of components and demonstrate how to use them to build rich, composible UIs.",
               ),
             ],
           ),
@@ -275,6 +277,140 @@ pub fn components_page(ctx: Context, _props: ComponentsPageProps) {
               ),
             ],
           ),
+          h2([], [text("Stateless Functional Components")]),
+          p(
+            [],
+            [
+              text(
+                "Not everything requires state management or hooks, and in those cases you can use a stateless functional component. Stateless functional components are just regular 
+                functions that encapsulate markup and functionality into independent, reusable and composable pieces. The function is simply called from the component tree, without
+                using the ",
+              ),
+              code_text([], "component"),
+              text(
+                " element. Let's take a look at an example of a stateless functional component that renders a product card.",
+              ),
+            ],
+          ),
+          codeblock(
+            "gleam",
+            "
+              pub fn product_card(product: Product) {
+                let Product(
+                  name: name,
+                  description: description,
+                  img_url: img_url,
+                  qty: qty,
+                  price: price,
+                  ..,
+                ) = product
+
+                div(
+                  [
+                    class(
+                      \"flex flex-row bg-white border border-gray-200 rounded-lg shadow dark:bg-gray-800 dark:border-gray-700\",
+                    ),
+                  ],
+                  [
+                    div(
+                      [class(\"w-1/3 rounded-l-lg overflow-hidden\")],
+                      [
+                        img([
+                          class(\"object-cover h-52 w-full\"),
+                          src(img_url),
+                          alt(\"product image\"),
+                        ]),
+                      ],
+                    ),
+                    div(
+                      [class(\"flex-1 flex flex-col p-5\")],
+                      [
+                        div(
+                          [class(\"flex-1 flex flex-row\")],
+                          [
+                            div(
+                              [class(\"flex-1\")],
+                              [
+                                h5_text(
+                                  [
+                                    class(
+                                      \"text-xl font-semibold tracking-tight text-gray-900 dark:text-white\",
+                                    ),
+                                  ],
+                                  name,
+                                ),
+                                div_text([class(\"py-2 text-gray-500\")], description),
+                              ],
+                            ),
+                            div(
+                              [],
+                              [
+                                div(
+                                  [class(\"flex-1 flex flex-col text-right\")],
+                                  [
+                                    div_text(
+                                      [
+                                        class(
+                                          \"text-xl font-bold text-gray-900 dark:text-white\",
+                                        ),
+                                      ],
+                                      \"$\" <> float.to_string(price),
+                                    ),
+                                    div_text([class(\"text-sm text-gray-500\")], qty),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ],
+                )
+              }
+            ",
+          ),
+          p(
+            [],
+            [
+              text(
+                "To render this component, we  call it directly within render function:",
+              ),
+            ],
+          ),
+          codeblock(
+            "gleam",
+            "
+              pub fn product(ctx: Context, _props: ProductProps) {
+                let some_product = 
+                  Product(
+                    id: 2255,
+                    name: \"Eco-Friendly Bamboo Cutting Board\",
+                    description: \"This sustainable bamboo cutting board is perfect for slicing and dicing vegetables, fruits, and meats. The natural antibacterial properties of bamboo ensure a hygienic cooking experience.\",
+                    img_url: \"https://images.pexels.com/photos/6489734/pexels-photo-6489734.jpeg\",
+                    qty: \"12 x 8 inches\",
+                    price: 24.99,
+                  )
+                
+                render(
+                  ctx,
+                  [
+                    product_card(some_product),
+                  ],
+                )
+              }
+            ",
+          ),
+          example([
+            stateless_product_card(Product(
+              id: 2255,
+              name: "Eco-Friendly Bamboo Cutting Board",
+              description: "This sustainable bamboo cutting board is perfect for slicing and dicing vegetables, fruits, and meats. The natural antibacterial properties of bamboo ensure a hygienic cooking experience.",
+              img_url: "https://images.pexels.com/photos/6489734/pexels-photo-6489734.jpeg",
+              qty: "12 x 8 inches",
+              price: 24.99,
+            )),
+          ]),
         ],
       ),
     ],
