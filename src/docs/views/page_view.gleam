@@ -87,7 +87,7 @@ pub fn page_view(ctx: Context, props: PageViewProps) {
                   "Sprocket is a library for building real-time server components in Gleam.",
                 ),
               ]),
-              link([rel("stylesheet"), href("/app.css")]),
+              link([rel("stylesheet"), href("/docs/app.css")]),
               link([
                 rel("stylesheet"),
                 href(

@@ -12,11 +12,11 @@
       "sourceMap": false
     },
     "docs": {
-      "distDir": "priv/static",
+      "distDir": "priv/static/docs",
       "sourceMap": false
     },
     "standalone_counter": {
-      "distDir": "priv/static",
+      "distDir": "priv/static/standalone_counter",
       "sourceMap": false
     }
   },
@@ -42,8 +42,8 @@
     "docs:build": "parcel build client/src/docs/app.ts --target docs",
     "docs:watch": "parcel client/src/sprocket.ts client/src/docs/app.ts client/src/docs/standalone_counter.ts --no-hmr --dist-dir priv/static",
     "standalone_counter:build": "parcel build client/src/docs/standalone_counter.ts --target standalone_counter",
-    "tailwind:build": "npx tailwindcss -i ./app.css -o priv/static/app.css",
-    "tailwind:watch": "npx tailwindcss -i ./app.css -o priv/static/app.css --watch",
+    "tailwind:build": "npx tailwindcss -i ./app.css -o priv/static/docs/app.css",
+    "tailwind:watch": "npx tailwindcss -i ./app.css -o priv/static/docs/app.css --watch",
     "clean": "rm -rf build dist .parcel-cache priv/static/**",
     "watch": "gleam build && concurrently --kill-others \"gleam run -m docs\" \"yarn run docs:watch\" \"yarn run tailwind:watch\"",
     "test": "gleam test && yarn run client:test",
