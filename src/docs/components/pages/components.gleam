@@ -387,7 +387,7 @@ pub fn components_page(ctx: Context, _props: ComponentsPageProps) {
                 let some_product = 
                   Product(
                     id: 2255,
-                    name: \"Eco-Friendly Bamboo Cutting Board\",
+                    name: \"Bamboo Cutting Board\",
                     description: \"This sustainable bamboo cutting board is perfect for slicing and dicing vegetables, fruits, and meats. The natural antibacterial properties of bamboo ensure a hygienic cooking experience.\",
                     img_url: \"https://images.pexels.com/photos/6489734/pexels-photo-6489734.jpeg\",
                     qty: \"12 x 8 inches\",
@@ -414,7 +414,7 @@ pub fn components_page(ctx: Context, _props: ComponentsPageProps) {
               [
                 stateless_product_card(Product(
                   id: 2255,
-                  name: "Eco-Friendly Bamboo Cutting Board",
+                  name: "Bamboo Cutting Board",
                   description: "This sustainable bamboo cutting board is perfect for slicing and dicing vegetables, fruits, and meats. The natural antibacterial properties of bamboo ensure a hygienic cooking experience.",
                   img_url: "https://images.pexels.com/photos/6489734/pexels-photo-6489734.jpeg",
                   qty: "12 x 8 inches",
