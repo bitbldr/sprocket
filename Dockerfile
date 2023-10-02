@@ -20,6 +20,7 @@ RUN gleam deps download
 
 # # install node deps
 RUN yarn run client:build
+RUN yarn run docs:build
 RUN yarn run tailwind:build
 
 # # build release
