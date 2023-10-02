@@ -360,7 +360,7 @@ pub fn components_page(ctx: Context, _props: ComponentsPageProps) {
               }
 
               pub fn product_list(ctx: Context, props: ProductListProps) {
-                let ProductCardProps(products) = props
+                let ProductListProps(products) = props
 
                 // ignore the state management for now, we'll cover that in a later section
 
