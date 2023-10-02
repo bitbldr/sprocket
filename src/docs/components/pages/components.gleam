@@ -172,101 +172,7 @@ pub fn components_page(ctx: Context, _props: ComponentsPageProps) {
             [
               text(
                 "But our humble button isn't very interesting yet. Let's say we want to add some functionality to our button. We can do that by
-                implementing some events and state management via hooks, which we'll cover in the next couple sections.",
-              ),
-            ],
-          ),
-          h2([], [text("Dynamic Components and "), code_text([], "keyed")]),
-          p(
-            [],
-            [
-              text("Components can be conditionally rendered using "),
-              code_text([], "case"),
-              text(
-                " statements as seen above in the previous example, but also dynamically as a list of elements with any of Gleam's list functions such as ",
-              ),
-              code_text([], "list.map"),
-              text(" or "),
-              code_text([], "list.filter"),
-              text(". It's important to use the "),
-              code_text([], "keyed"),
-              text(
-                " function when rendering elements that may change so that the diffing algorithm can keep track of them and thier states across renders. Let's
-                take a look at an example of a component that renders a list of products, each with their own state.",
-              ),
-            ],
-          ),
-          codeblock(
-            "gleam",
-            "
-              type Product {
-                Product(
-                  id: Int,
-                  name: String,
-                  description: String,
-                  img_url: String,
-                  qty: String,
-                  price: Float,
-                )
-              }
-
-              pub type ProductListProps {
-                ProductListProps(products: List(Product))
-              }
-
-              pub fn product_list(ctx: Context, props: ProductListProps) {
-                let ProductCardProps(products) = props
-
-                // ignore the state management for now, we'll cover that in a later section
-
-                render(
-                  ctx,
-                  [
-                    div(
-                      [],
-                      list.map(
-                        products,
-                        fn (product) {
-                          keyed(product.id, 
-                            component(
-                              product_card,
-                              ProductCardProps(product: product),
-                            )
-                          )
-                        },
-                      ),
-                    ),
-                  ],
-                )
-              }
-            ",
-          ),
-          example([
-            component(
-              product_list,
-              ProductListProps(products: example_coffee_products()),
-            ),
-          ]),
-          p(
-            [],
-            [
-              text(
-                "As you can see, we've defined a component that takes a list of products as props, and then renders a list of product cards. Each product card has it's own
-                state (a boolean indicating whether an item is in the cart or not), and we can filter products from the list by clicking \"Not Interested\". Because we are using the ",
-              ),
-              code_text([], "keyed"),
-              text(
-                " function, the diffing algorithm can keep track of each product card and will reconcile elements that have changed position, keeping their state in-tact.",
-              ),
-            ],
-          ),
-          p(
-            [],
-            [
-              text("It's important to use the "),
-              code_text([], "keyed"),
-              text(
-                " function anytime you are dynamically rendering elements or a list of elements that may change.",
+                implementing some events and state management via hooks, which we'll cover in a bit.",
               ),
             ],
           ),
@@ -415,6 +321,100 @@ pub fn components_page(ctx: Context, _props: ComponentsPageProps) {
               ],
             ),
           ]),
+          h2([], [text("Dynamic Components and "), code_text([], "keyed")]),
+          p(
+            [],
+            [
+              text("Components can be conditionally rendered using "),
+              code_text([], "case"),
+              text(
+                " statements as seen above in the first example, but also dynamically as a list of elements with any of Gleam's list functions such as ",
+              ),
+              code_text([], "list.map"),
+              text(" or "),
+              code_text([], "list.filter"),
+              text(". It's important to use the "),
+              code_text([], "keyed"),
+              text(
+                " function when rendering elements that may change so that the diffing algorithm can keep track of them and thier states across renders. Let's
+                take a look at an example of a component that renders a list of products, each with their own state.",
+              ),
+            ],
+          ),
+          codeblock(
+            "gleam",
+            "
+              type Product {
+                Product(
+                  id: Int,
+                  name: String,
+                  description: String,
+                  img_url: String,
+                  qty: String,
+                  price: Float,
+                )
+              }
+
+              pub type ProductListProps {
+                ProductListProps(products: List(Product))
+              }
+
+              pub fn product_list(ctx: Context, props: ProductListProps) {
+                let ProductCardProps(products) = props
+
+                // ignore the state management for now, we'll cover that in a later section
+
+                render(
+                  ctx,
+                  [
+                    div(
+                      [],
+                      list.map(
+                        products,
+                        fn (product) {
+                          keyed(product.id, 
+                            component(
+                              product_card,
+                              ProductCardProps(product: product),
+                            )
+                          )
+                        },
+                      ),
+                    ),
+                  ],
+                )
+              }
+            ",
+          ),
+          example([
+            component(
+              product_list,
+              ProductListProps(products: example_coffee_products()),
+            ),
+          ]),
+          p(
+            [],
+            [
+              text(
+                "As you can see, we've defined a component that takes a list of products as props, and then renders a list of product cards. Each product card has it's own
+                state (a boolean indicating whether an item is in the cart or not), and we can filter products from the list by clicking \"Not Interested\". Because we are using the ",
+              ),
+              code_text([], "keyed"),
+              text(
+                " function, the diffing algorithm can keep track of each product card and will reconcile elements that have changed position, keeping their state in-tact.",
+              ),
+            ],
+          ),
+          p(
+            [],
+            [
+              text("It's important to use the "),
+              code_text([], "keyed"),
+              text(
+                " function anytime you are dynamically rendering elements or a list of elements that may change.",
+              ),
+            ],
+          ),
         ],
       ),
     ],

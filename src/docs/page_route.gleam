@@ -7,6 +7,7 @@ pub type Page {
 
 pub type PageRoute {
   Introduction
+  GettingStarted
   Components
   Events
   StateManagement
@@ -30,6 +31,7 @@ pub fn from_string(route: String) -> PageRoute {
 
   case route {
     "/" -> Introduction
+    "/getting_started" -> GettingStarted
     "/components" -> Components
     "/props_and_events" -> Events
     "/state" -> StateManagement
@@ -44,6 +46,7 @@ pub fn from_string(route: String) -> PageRoute {
 pub fn href(route: PageRoute) -> String {
   case route {
     Introduction -> "/"
+    GettingStarted -> "/getting_started"
     Components -> "/components"
     Events -> "/props_and_events"
     StateManagement -> "/state"

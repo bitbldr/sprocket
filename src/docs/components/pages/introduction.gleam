@@ -1,8 +1,7 @@
 import sprocket/context.{Context}
 import sprocket/component.{render}
-import sprocket/html.{a_text, article, div, h1, h2, li, p, span, text, ul}
-import sprocket/html/attributes.{class, href}
-import docs/utils/codeblock.{codeblock}
+import sprocket/html.{article, div, h1, h2, li, p, span, text, ul}
+import sprocket/html/attributes.{class}
 
 pub type IntroductionPageProps {
   IntroductionPageProps
@@ -186,56 +185,11 @@ pub fn introduction_page(ctx: Context, _props: IntroductionPageProps) {
               ),
             ],
           ),
-          h2([], [text("Getting Started")]),
           p(
             [],
             [
               text(
-                "
-                    Before diving in, lets make sure you have Gleam and the necessary dependencies installed on your system. If you haven't already, head over to the Gleam installation guide and follow the instructions for your operating system.
-                    ",
-              ),
-              text(
-                "
-                     Once you have Gleam installed, you can create a new project with the following command:
-                    ",
-              ),
-            ],
-          ),
-          codeblock("bash", "gleam new sprocket-demo"),
-          p(
-            [],
-            [
-              text(
-                "
-                    Then add sprocket as a dependency:
-                    ",
-              ),
-            ],
-          ),
-          codeblock("bash", "gleam add sprocket"),
-          p(
-            [],
-            [
-              text(
-                "If you wish to follow along with the same styles as this documentation, you can optionally add Tailwind CSS as well by following the instructions in the ",
-              ),
-              a_text(
-                [href("https://tailwindcss.com/docs/installation")],
-                "Tailwind CSS installation guide",
-              ),
-              text(" and taking a look at the configuration in the "),
-              a_text(
-                [href("https://github.com/bitbldr/sprocket")],
-                "docs repository on GitHub.",
-              ),
-            ],
-          ),
-          p(
-            [],
-            [
-              text(
-                "That's it! Now we can begin our journey to learning how to build real-time server-side components with Sprocket!",
+                "Continue to the next page to learn more about getting started with Sprocket.",
               ),
             ],
           ),

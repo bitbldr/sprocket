@@ -18,6 +18,9 @@ import docs/components/prev_next_nav.{PrevNextNavProps, prev_next_nav}
 import docs/components/pages/introduction.{
   IntroductionPageProps, introduction_page,
 }
+import docs/components/pages/getting_started.{
+  GettingStartedPageProps, getting_started_page,
+}
 import docs/components/pages/components.{ComponentsPageProps, components_page}
 import docs/components/pages/misc.{MiscPageProps, misc_page}
 import docs/components/pages/not_found.{NotFoundPageProps, not_found_page}
@@ -33,8 +36,8 @@ import docs/components/pages/under_the_hood.{
   UnderTheHoodProps, under_the_hood_page,
 }
 import docs/page_route.{
-  Components, Effects, Events, Hooks, Introduction, Misc, Page, PageRoute,
-  StateManagement, UnderTheHood, Unknown,
+  Components, Effects, Events, GettingStarted, Hooks, Introduction, Misc, Page,
+  PageRoute, StateManagement, UnderTheHood, Unknown,
 }
 
 pub type PageViewProps {
@@ -48,6 +51,7 @@ pub fn page_view(ctx: Context, props: PageViewProps) {
   let pages =
     [
       Page("Introduction", Introduction),
+      Page("Getting Started", GettingStarted),
       Page("Components", Components),
       Page("Props and Events", Events),
       Page("State Management", StateManagement),
@@ -163,6 +167,11 @@ pub fn page_view(ctx: Context, props: PageViewProps) {
                       case route {
                         Introduction ->
                           component(introduction_page, IntroductionPageProps)
+                        GettingStarted ->
+                          component(
+                            getting_started_page,
+                            GettingStartedPageProps,
+                          )
                         Components ->
                           component(components_page, ComponentsPageProps)
                         Events ->
