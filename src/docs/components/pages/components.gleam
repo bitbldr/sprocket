@@ -27,7 +27,7 @@ pub fn components_page(ctx: Context, _props: ComponentsPageProps) {
             [],
             [
               text(
-                "Components let you encapsulate markup and functionality into independent and composable pieces.
+                "Components are the fundamental building blocks that encapsulate markup and functionality into independent and composable pieces.
                 This page will explore some key concepts of components and demonstrate how to use them to build rich user interfaces.",
               ),
             ],
@@ -37,26 +37,18 @@ pub fn components_page(ctx: Context, _props: ComponentsPageProps) {
             [],
             [
               text(
-                "Components are the fundamental building blocks of your app, allowing you to create modular, reusable, and easy-to-maintain code.",
+                "A component is a function that takes a context and props as arguments and returns a list of child elements. Components may also
+                utilize hooks to manage state and effects, which we will cover in-depth a bit later",
               ),
             ],
           ),
           p(
             [],
             [
-              text(
-                "A component is a function that takes a context and props as arguments, and it may utilize hooks (we will cover hooks more in depth a
-                bit later) to manage state and effects, and returns a list of child elements.",
-              ),
-            ],
-          ),
-          p(
-            [],
-            [
-              text("Here is a simple example component we'll call "),
+              text("Let's create a simple example component called "),
               code_text([], "hello_button"),
               text(
-                " that renders a button. We'll also make use of some Tailwind CSS classes here to style our button, but you can use whichever style framework you prefer.",
+                " that takes an optional label and renders a button. We will use Tailwind CSS to style our button, but you can use any classes or style framework you prefer.",
               ),
             ],
           ),
@@ -97,7 +89,7 @@ pub fn components_page(ctx: Context, _props: ComponentsPageProps) {
             [],
             [
               text(
-                "As you can see, we've defined our component and it's props. The component takes a context and props as arguments, and then renders a button with the label passed in as a prop. If no label is passed in, the button will render with the default label of \"Click me!\".",
+                "As you can see, we've defined our component and it's prop types. The component takes context and props as arguments and renders a button. If no label is specified, the button will render with the default label of \"Click me!\".",
               ),
             ],
           ),
@@ -105,7 +97,7 @@ pub fn components_page(ctx: Context, _props: ComponentsPageProps) {
             [],
             [
               text(
-                "Because of Gleam's type system guarantees, components can be type checked at compile time, and the compiler will ensure that the component is given the correct props and that the component returns a valid view.",
+                "Because Gleam is statically typed, our component is guaranteed to receive the required props of the correct type. We can be confident that our component will render as expected without having to worry about a large category of errors occuring during runtime.",
               ),
             ],
           ),
