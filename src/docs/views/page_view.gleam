@@ -55,8 +55,8 @@ pub fn page_view(ctx: Context, props: PageViewProps) {
       Page("Components", Components),
       Page("Props and Events", Events),
       Page("State Management", StateManagement),
-      Page("Effects", Effects),
       Page("Hooks", Hooks),
+      Page("Effects", Effects),
       Page("Under the Hood", UnderTheHood),
       Page("Misc.", Misc),
     ]
@@ -184,8 +184,8 @@ pub fn page_view(ctx: Context, props: PageViewProps) {
                             state_management_page,
                             StateManagementPageProps,
                           )
-                        Effects -> component(effects_page, EffectsPageProps)
                         Hooks -> component(hooks_page, HooksPageProps)
+                        Effects -> component(effects_page, EffectsPageProps)
                         UnderTheHood ->
                           component(under_the_hood_page, UnderTheHoodProps)
                         Misc -> component(misc_page, MiscPageProps)

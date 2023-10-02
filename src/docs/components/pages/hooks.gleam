@@ -18,9 +18,9 @@ pub fn hooks_page(ctx: Context, _props: HooksPageProps) {
             [],
             [
               text(
-                "Hooks are a core concept in Sprocket. They are a way to implement stateful logic, produce and consume side-effects,
-                and couple a component to it's hierarchical context within the UI tree. They also make it easy to isolate and share
-                stateful logic across components.",
+                "Hooks are the essential mechanism that enable components to implement stateful logic, produce and consume side-effects,
+                and couple a component to it's hierarchical context within the UI tree. They also make it easy to abstract and reuse
+                stateful logic across different components.",
               ),
             ],
           ),
@@ -37,6 +37,10 @@ pub fn hooks_page(ctx: Context, _props: HooksPageProps) {
           h2([], [text("Memo Hooks")]),
           p([], [text("COMING SOON")]),
           h2([], [text("Channel Hooks")]),
+          p([], [text("COMING SOON")]),
+          h2([], [text("Context Hooks")]),
+          p([], [text("COMING SOON")]),
+          h2([], [text("Params Hooks")]),
           p([], [text("COMING SOON")]),
           h2([], [text("Portal Hooks")]),
           p([], [text("COMING SOON")]),

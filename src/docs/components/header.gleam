@@ -3,7 +3,7 @@ import gleam/string
 import sprocket/context.{Context}
 import sprocket/component.{component, render}
 import sprocket/html.{a, div, i, span, text}
-import sprocket/html/attributes.{class}
+import sprocket/html/attributes.{class, href}
 
 pub type MenuItem {
   MenuItem(label: String, href: String)
@@ -26,13 +26,21 @@ pub fn header(ctx: Context, props) {
           ),
         ],
         [
-          div(
-            [class("p-2 mx-2")],
+          a(
+            [href("/")],
             [
-              div([class("italic bold text-2xl")], [text("⚙️ Sprocket")]),
               div(
-                [class("text-gray-500 text-sm")],
-                [text("Real-time server components in Gleam ✨")],
+                [class("p-2 mx-2")],
+                [
+                  div(
+                    [class("italic bold text-2xl")],
+                    [text("⚙️ Sprocket")],
+                  ),
+                  div(
+                    [class("text-gray-500 text-sm")],
+                    [text("Real-time server components in Gleam ✨")],
+                  ),
+                ],
               ),
             ],
           ),

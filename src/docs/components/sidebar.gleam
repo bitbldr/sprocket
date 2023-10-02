@@ -102,7 +102,7 @@ fn link(ctx: Context, props: LinkProps) {
       a(
         [
           classes([
-            Some("block p-2 text-blue-500 hover:text-blue-700"),
+            Some("block p-2 text-blue-500 hover:text-blue-700 hover:underline"),
             maybe(is_active, "font-bold"),
           ]),
           attributes.href(href),

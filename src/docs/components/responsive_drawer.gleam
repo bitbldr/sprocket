@@ -56,9 +56,7 @@ pub fn responsive_drawer(ctx: Context, props) {
   let backdrop =
     div(
       [
-        class(
-          "absolute bg-gray-900 bg-opacity-50 dark:bg-opacity-80 inset-0 z-30",
-        ),
+        class("fixed bg-white/75 dark:bg-black/75 inset-0 z-30"),
         on_click(hide_drawer),
       ],
       [],
@@ -68,7 +66,7 @@ pub fn responsive_drawer(ctx: Context, props) {
     ctx,
     [
       div(
-        [classes([Some("relative flex-1 flex flex-row")])],
+        [classes([Some("flex-1 flex flex-row")])],
         [
           aside(
             [
@@ -86,7 +84,7 @@ pub fn responsive_drawer(ctx: Context, props) {
               div(
                 [
                   class(
-                    "h-full px-3 py-4 overflow-y-auto bg-gray-50 dark:bg-gray-800",
+                    "h-screen sticky top-0 px-3 py-4 overflow-y-auto bg-gray-100/75 dark:bg-gray-800/75 backdrop-blur-md",
                   ),
                 ],
                 [drawer],
@@ -94,7 +92,7 @@ pub fn responsive_drawer(ctx: Context, props) {
             ],
           ),
           div(
-            [class("relative flex-1 overflow-hidden")],
+            [class("w-0")],
             [
               button(
                 [
@@ -104,7 +102,7 @@ pub fn responsive_drawer(ctx: Context, props) {
                     sticky
                     top-2
                     inline-flex
-                    sm:hidden
+                    md:hidden
                     items-center
                     p-2
                     m-2
@@ -123,9 +121,9 @@ pub fn responsive_drawer(ctx: Context, props) {
                 ],
                 [i([class("fa-solid fa-bars")], [])],
               ),
-              content,
             ],
           ),
+          div([class("flex-1 overflow-hidden")], [content]),
           ..case show {
             True -> [backdrop]
             False -> []
