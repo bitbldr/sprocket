@@ -1,7 +1,8 @@
 import gleam/option.{None, Some}
 import sprocket/context.{Context}
 import sprocket/component.{component, render}
-import sprocket/html.{article, code_text, h1, h2, p, text}
+import sprocket/html/attributes.{class}
+import sprocket/html.{article, code_text, div, h1, h2, p, text}
 import docs/utils/codeblock.{codeblock}
 import docs/components/hello_button.{HelloButtonProps, hello_button}
 import docs/components/product_list.{
@@ -282,9 +283,8 @@ pub fn components_page(ctx: Context, _props: ComponentsPageProps) {
             [],
             [
               text(
-                "Not everything requires state management or hooks, and in those cases you can use a stateless functional component. Stateless functional components are just regular 
-                functions that encapsulate markup and functionality into independent, reusable and composable pieces. The function is simply called from the component tree, without
-                using the ",
+                "Not all interfaces require state management or hooks. In those cases a stateless functional component can be used. Stateless functional components are simply regular 
+                functions that encapsulate markup and functionality into independent and composable pieces. The function is called directly from the render function without the ",
               ),
               code_text([], "component"),
               text(
@@ -374,8 +374,10 @@ pub fn components_page(ctx: Context, _props: ComponentsPageProps) {
             [],
             [
               text(
-                "To render this component, we  call it directly within render function:",
+                "To render this component we call it directly from the render function, passing any arguments the function takes, which in this case is a ",
               ),
+              code_text([], "Product"),
+              text(" record."),
             ],
           ),
           codeblock(
@@ -395,21 +397,31 @@ pub fn components_page(ctx: Context, _props: ComponentsPageProps) {
                 render(
                   ctx,
                   [
-                    product_card(some_product),
+                    div(
+                      [class(\"flex flex-col\")],
+                      [
+                        product_card(some_product)
+                      ]
+                    ),
                   ],
                 )
               }
             ",
           ),
           example([
-            stateless_product_card(Product(
-              id: 2255,
-              name: "Eco-Friendly Bamboo Cutting Board",
-              description: "This sustainable bamboo cutting board is perfect for slicing and dicing vegetables, fruits, and meats. The natural antibacterial properties of bamboo ensure a hygienic cooking experience.",
-              img_url: "https://images.pexels.com/photos/6489734/pexels-photo-6489734.jpeg",
-              qty: "12 x 8 inches",
-              price: 24.99,
-            )),
+            div(
+              [class("flex flex-col")],
+              [
+                stateless_product_card(Product(
+                  id: 2255,
+                  name: "Eco-Friendly Bamboo Cutting Board",
+                  description: "This sustainable bamboo cutting board is perfect for slicing and dicing vegetables, fruits, and meats. The natural antibacterial properties of bamboo ensure a hygienic cooking experience.",
+                  img_url: "https://images.pexels.com/photos/6489734/pexels-photo-6489734.jpeg",
+                  qty: "12 x 8 inches",
+                  price: 24.99,
+                )),
+              ],
+            ),
           ]),
         ],
       ),
