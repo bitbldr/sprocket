@@ -11,7 +11,11 @@ window.addEventListener("DOMContentLoaded", () => {
     ?.getAttribute("content");
 
   if (csrfToken) {
-    let livePath = window.location.pathname.split("/").concat("live").join("/");
+    console.log(window.location.pathname.split("/"));
+    let livePath =
+      window.location.pathname === "/"
+        ? "/live"
+        : window.location.pathname.split("/").concat("live").join("/");
 
     connect(livePath, {
       csrfToken,
