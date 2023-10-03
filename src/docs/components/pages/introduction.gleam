@@ -164,32 +164,12 @@ pub fn introduction_page(ctx: Context, _props: IntroductionPageProps) {
               ),
             ],
           ),
-          h2([], [text("Who Should Read This Documentation?")]),
+          h2([], [text("Ready to get started?")]),
           p(
             [],
             [
               text(
-                "
-                    This documentation is tailored to developers and enthusiasts who are eager to explore the world of UI functional programming with Gleam. Whether you are a seasoned Erlang/Elixir developer looking to venture into Gleam or a newcomer to the Erlang ecosystem, this documentation will guide you through the process of building functional real-time server-side components with Sprocket.
-                  ",
-              ),
-            ],
-          ),
-          p(
-            [],
-            [
-              text(
-                "
-                    Familiarity with functional programming concepts and the Erlang ecosystem will be beneficial, but not mandatory, as this documentation aims to be accessible to developers from various backgrounds.
-                  ",
-              ),
-            ],
-          ),
-          p(
-            [],
-            [
-              text(
-                "Continue to the next page to learn more about getting started with Sprocket.",
+                "In the next section, we'll cover prerequisites and getting your Sprocket application up and running.",
               ),
             ],
           ),
