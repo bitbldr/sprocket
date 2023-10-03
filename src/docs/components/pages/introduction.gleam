@@ -63,9 +63,9 @@ pub fn introduction_page(ctx: Context, _props: IntroductionPageProps) {
             [
               text(
                 "
-                  Sprocket is based on a collection of existing patterns that empower developers to build real-time applications with ease, embracing the strengths of
-                  Gleam's type-safety and the Erlang Beam virtual machine's concurrency and fault-tolerance capabilities. It offers an expressive and
-                  intuitive syntax, making it effortless to reason about complex systems and craft maintainable codebases.
+                  Based on a collection of proven functional patterns that empower developers to build real-time applications with ease,
+                  Sprocket embraces the strengths of the Erlang Beam virtual machine's concurrency and fault-tolerance capabilities. It
+                  offers an expressive and intuitive syntax, making it easier to reason about complex systems and craft maintainable code.
                 ",
               ),
             ],
@@ -75,8 +75,8 @@ pub fn introduction_page(ctx: Context, _props: IntroductionPageProps) {
             [
               text(
                 "
-                  Bridging the gap between existing functional component libraries, type-safety, and real-time server renderd views,
-                  Sprocket enables developers to quickly construct server-side views without compromising on type-level guarantees and maintainability.
+                  Sprocket attempts to bridge the gap between existing functional component libraries, strong type-safety, and real-time server renderd views.
+                  The main goal is to enable developers to quickly construct server-side views without compromising on maintainability or static type correctness.
                   By leveraging the Erlang Beam VM, Sprocket enables high-throughput, fault-tolerant, and real-time server renderd applications that 
                   reduce the amount of code required to build web applications so you can focus on your business logic and ship faster.
                 ",
