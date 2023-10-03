@@ -28,6 +28,15 @@ pub fn introduction_page(ctx: Context, _props: IntroductionPageProps) {
               ),
             ],
           ),
+          p(
+            [class("italic")],
+            [
+              span([class("font-bold")], [text("Fun fact: ")]),
+              text(
+                "Sprocket is named after the humble bicycle gear that enables the wheels to spin effortlessly! Also, this documentation is completely powered by it!",
+              ),
+            ],
+          ),
           div(
             [
               class(
@@ -48,36 +57,26 @@ pub fn introduction_page(ctx: Context, _props: IntroductionPageProps) {
               div([class("ml-2")], [span([class("text-xl")], [text("🚧")])]),
             ],
           ),
-          h2([], [text("What is Sprocket?")]),
+          h2([], [text("Why Another Component Library?")]),
           p(
             [],
             [
               text(
                 "
-                      Sprocket is a library based on a collection of existing patterns that empower developers to build real-time applications with ease, embracing the strengths of
-                      Gleam's type-safety and the Erlang Beam virtual machine's concurrency and fault-tolerance capabilities. It offers an expressive and
-                      intuitive syntax, making it effortless to reason about complex systems and craft maintainable codebases.
-                    ",
+                  Sprocket is based on a collection of existing patterns that empower developers to build real-time applications with ease, embracing the strengths of
+                  Gleam's type-safety and the Erlang Beam virtual machine's concurrency and fault-tolerance capabilities. It offers an expressive and
+                  intuitive syntax, making it effortless to reason about complex systems and craft maintainable codebases.
+                ",
               ),
             ],
           ),
-          p(
-            [class("italic")],
-            [
-              span([class("font-bold")], [text("Fun fact: ")]),
-              text(
-                "Sprocket is named after the humble bicycle gear that enables the wheels to spin effortlessly! Also, this documentation is completely powered by it!",
-              ),
-            ],
-          ),
-          h2([], [text("Why Sprocket?")]),
           p(
             [],
             [
               text(
                 "
-                  Sprocket intends to bridge the gap between functional component views, type-safety, and the real-time server renderd
-                  applications while enabling developers to quickly construct server-side views without compromising on type-safety and maintainability.
+                  Bridging the gap between existing functional component libraries, type-safety, and real-time server renderd views,
+                  Sprocket enables developers to quickly construct server-side views without compromising on type-level guarantees and maintainability.
                   By leveraging the Erlang Beam VM, Sprocket enables high-throughput, fault-tolerant, and real-time server renderd applications that 
                   reduce the amount of code required to build web applications so you can focus on your business logic and ship faster.
                 ",
