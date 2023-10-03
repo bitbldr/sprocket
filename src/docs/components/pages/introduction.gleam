@@ -20,7 +20,7 @@ pub fn introduction_page(ctx: Context, _props: IntroductionPageProps) {
             [
               text(
                 "
-                    Sprocket is a real-time server-side component library for Gleam! In this guide, we'll
+                    Welcome to the official documentation for Sprocket, a real-time server-side component library for Gleam! In this guide, we'll
                     cover the core concepts of Sprocket, but some prerequisite knowledge of Gleam is recommended. Gleam is a type-safe functional language designed
                     to harness the power of the Erlang Beam virtual machine. Whether you are a Gleam enthusiast or new to this exciting language,
                     this documentation will serve as your roadmap to building highly scalable, robust, and efficient server-side component views for your web application.
