@@ -20,10 +20,10 @@ pub fn introduction_page(ctx: Context, _props: IntroductionPageProps) {
             [
               text(
                 "
-                    Welcome to the official documentation of Sprocket, a real-time server-side components library for Gleam! In this guide, we'll
+                    Sprocket is a real-time server-side component library for Gleam! In this guide, we'll
                     cover the core concepts of Sprocket, but some prerequisite knowledge of Gleam is recommended. Gleam is a type-safe functional language designed
-                    to harness the power of the Erlang Beam virtual machine. Whether you are a seasoned Gleam enthusiast or new to this exciting language,
-                    this documentation will serve as your roadmap to building highly scalable, robust, and efficient server-side components.
+                    to harness the power of the Erlang Beam virtual machine. Whether you are a Gleam enthusiast or new to this exciting language,
+                    this documentation will serve as your roadmap to building highly scalable, robust, and efficient server-side component views for your web application.
                     ",
               ),
             ],
@@ -54,7 +54,7 @@ pub fn introduction_page(ctx: Context, _props: IntroductionPageProps) {
             [
               text(
                 "
-                      Sprocket is a library based on existing patterns that empowers developers to build real-time applications with ease, embracing the strengths of
+                      Sprocket is a library based on a collection of existing patterns that empower developers to build real-time applications with ease, embracing the strengths of
                       Gleam's type-safety and the Erlang Beam virtual machine's concurrency and fault-tolerance capabilities. It offers an expressive and
                       intuitive syntax, making it effortless to reason about complex systems and craft maintainable codebases.
                     ",
@@ -76,11 +76,11 @@ pub fn introduction_page(ctx: Context, _props: IntroductionPageProps) {
             [
               text(
                 "
-                      Sprocket was born out of a vision to bridge the gap between functional component views, type-safety, and the real-time server renderd
-                      applications. With Sprocket, developers can quickly construct server-side live views without compromising on type-safety and maintainability.
-                      By leveraging the Erlang Beam VM, Sprocket enables high-throughput, fault-tolerant, and real-time server renderd applications that 
-                      reduce the amount of code required to build rich web applications.
-                    ",
+                  Sprocket intends to bridge the gap between functional component views, type-safety, and the real-time server renderd
+                  applications while enabling developers to quickly construct server-side views without compromising on type-safety and maintainability.
+                  By leveraging the Erlang Beam VM, Sprocket enables high-throughput, fault-tolerant, and real-time server renderd applications that 
+                  reduce the amount of code required to build web applications so you can focus on your business logic and ship faster.
+                ",
               ),
             ],
           ),
