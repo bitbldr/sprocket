@@ -4,7 +4,7 @@ import sprocket/html.{
   a_text, article, div, h1, h2, h3, li, ol, p, p_text, span_text, text,
 }
 import sprocket/html/attributes.{class, href, target}
-import docs/utils/codeblock.{codeblock}
+import docs/components/common.{codeblock}
 
 pub type GettingStartedPageProps {
   GettingStartedPageProps

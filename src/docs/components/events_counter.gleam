@@ -15,6 +15,7 @@ type Model =
 
 type Msg {
   UpdateCounter(Int)
+  ResetCounter
 }
 
 fn update(_model: Model, msg: Msg) -> Model {
@@ -22,6 +23,7 @@ fn update(_model: Model, msg: Msg) -> Model {
     UpdateCounter(count) -> {
       count
     }
+    ResetCounter -> 0
   }
 }
 
@@ -43,8 +45,8 @@ pub fn counter(ctx: Context, props: CounterProps) {
         [
           component(
             button,
-            ButtonProps(
-              class: Some("rounded-l"),
+            StyledButtonProps(
+              class: "rounded-l",
               label: "-",
               on_click: fn() { dispatch(UpdateCounter(count - 1)) },
             ),
@@ -55,7 +57,7 @@ pub fn counter(ctx: Context, props: CounterProps) {
               count: count,
               on_reset: Some(fn() {
                 case enable_reset {
-                  True -> dispatch(UpdateCounter(0))
+                  True -> dispatch(ResetCounter)
                   False -> Nil
                 }
               }),
@@ -63,8 +65,8 @@ pub fn counter(ctx: Context, props: CounterProps) {
           ),
           component(
             button,
-            ButtonProps(
-              class: Some("rounded-r"),
+            StyledButtonProps(
+              class: "rounded-r",
               label: "+",
               on_click: fn() { dispatch(UpdateCounter(count + 1)) },
             ),
@@ -76,16 +78,20 @@ pub fn counter(ctx: Context, props: CounterProps) {
 }
 
 pub type ButtonProps {
-  ButtonProps(class: Option(String), label: String, on_click: fn() -> Nil)
+  ButtonProps(label: String, on_click: fn() -> Nil)
+  StyledButtonProps(class: String, label: String, on_click: fn() -> Nil)
 }
 
 pub fn button(ctx: Context, props: ButtonProps) {
-  let ButtonProps(class, label, ..) = props
+  let #(class, label, on_click) = case props {
+    ButtonProps(label, on_click) -> #(None, label, on_click)
+    StyledButtonProps(class, label, on_click) -> #(Some(class), label, on_click)
+  }
 
   use ctx, on_click <- callback(
     ctx,
-    CallbackFn(props.on_click),
-    WithDeps([dep(props.on_click)]),
+    CallbackFn(on_click),
+    WithDeps([dep(on_click)]),
   )
 
   render(
@@ -114,13 +120,6 @@ pub type DisplayProps {
 pub fn display(ctx: Context, props: DisplayProps) {
   let DisplayProps(count: count, on_reset: on_reset) = props
 
-  // use ctx, on_reset <- callback(
-  //   ctx,
-  //   CallbackFn(option.unwrap(on_reset, fn() { Nil })),
-  //   WithDeps([]),
-  // )
-
-  // TODO: reafactor this hook to its own reusable module, doubleclick
   use ctx, client_doubleclick, _client_doubleclick_dispatch <- client(
     ctx,
     "DoubleClick",

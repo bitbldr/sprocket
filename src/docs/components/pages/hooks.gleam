@@ -1,6 +1,8 @@
 import sprocket/context.{Context}
-import sprocket/component.{render}
-import sprocket/html.{article, h1, h2, p, text}
+import sprocket/component.{component, render}
+import sprocket/html.{article, code_text, h1, h2, p, text}
+import docs/components/common.{codeblock, example}
+import docs/components/events_counter.{CounterProps, counter}
 
 pub type HooksPageProps {
   HooksPageProps
@@ -46,6 +48,57 @@ pub fn hooks_page(ctx: Context, _props: HooksPageProps) {
           p([], [text("COMING SOON")]),
           h2([], [text("Client Hooks")]),
           p([], [text("COMING SOON")]),
+          p(
+            [],
+            [
+              text(
+                "
+                  We can expand the ",
+              ),
+              code_text([], "display"),
+              text(" component to accept another optional prop called "),
+              code_text([], "on_reset"),
+              text(
+                " which will reset the count and re-render the component when the ",
+              ),
+              code_text([], "display"),
+              text(" component is double-clicked."),
+            ],
+          ),
+          codeblock(
+            "gleam",
+            "
+            pub type DisplayProps {
+              DisplayProps(count: Int, on_reset: Option(fn() -> Nil))
+            }
+
+            pub fn display(ctx: Context, props: DisplayProps) {
+              let DisplayProps(count: count, on_reset: on_reset) = props
+
+              use ctx, on_reset <- callback(
+                ctx,
+                CallbackFn(option.unwrap(on_reset, fn() { Nil })),
+                WithDeps([]),
+              )
+
+              render(
+                ctx,
+                [
+                  span(
+                    [
+                      attributes.on_doubleclick(on_reset),
+                      class(
+                        \"p-1 px-2 w-10 bg-white dark:bg-gray-900 border-t border-b dark:border-gray-500 align-center text-center\",
+                      ),
+                    ],
+                    [text(int.to_string(count))],
+                  ),
+                ],
+              )
+            }
+            ",
+          ),
+          example([component(counter, CounterProps(enable_reset: True))]),
           h2([], [text("Custom Hooks")]),
           p([], [text("COMING SOON")]),
         ],

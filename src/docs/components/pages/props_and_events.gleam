@@ -2,8 +2,7 @@ import sprocket/context.{Context}
 import sprocket/component.{component, render}
 import sprocket/html.{article, code_text, h1, p, span_text, text}
 import sprocket/html/attributes.{class}
-import docs/utils/codeblock.{codeblock}
-import docs/utils/common.{example}
+import docs/components/common.{codeblock, example}
 import docs/components/events_counter.{CounterProps, counter}
 
 pub type PropsAndEventsPageProps {
@@ -87,7 +86,7 @@ pub fn props_and_events_page(ctx: Context, _props: PropsAndEventsPageProps) {
               ),
               code_text([], "count"),
               text(
-                " prop has changed. We're using Tailwind CSS to style the components here, but you can use whichever style framework you prefer.
+                " prop has changed. We're using Tailwind CSS to style the components here, but you can use any classes or style framework you prefer.
                 ",
               ),
             ],
@@ -95,11 +94,23 @@ pub fn props_and_events_page(ctx: Context, _props: PropsAndEventsPageProps) {
           codeblock(
             "gleam",
             "
+            import gleam/int
+            import gleam/option.{None, Option, Some}
+            import sprocket/context.{Context}
+            import sprocket/hooks.{WithDeps, dep}
+            import sprocket/component.{component, render}
+            import sprocket/hooks/reducer.{reducer}
+            import sprocket/hooks/callback.{callback}
+            import sprocket/internal/identifiable_callback.{CallbackFn}
+            import sprocket/html.{div, span, text}
+            import sprocket/html/attributes.{class, classes}
+
             type Model =
               Int
 
             type Msg {
               UpdateCounter(Int)
+              ResetCounter
             }
 
             fn update(_model: Model, msg: Msg) -> Model {
@@ -107,6 +118,7 @@ pub fn props_and_events_page(ctx: Context, _props: PropsAndEventsPageProps) {
                 UpdateCounter(count) -> {
                   count
                 }
+                ResetCounter -> 0
               }
             }
 
@@ -114,7 +126,9 @@ pub fn props_and_events_page(ctx: Context, _props: PropsAndEventsPageProps) {
               CounterProps
             }
 
-            pub fn counter(ctx: Context, _props: CounterProps) {
+            pub fn counter(ctx: Context, props: CounterProps) {
+              let CounterProps(enable_reset: enable_reset) = props
+
               // Define a reducer to handle events and update the state
               use ctx, count, dispatch <- reducer(ctx, 0, update)
 
@@ -126,17 +140,28 @@ pub fn props_and_events_page(ctx: Context, _props: PropsAndEventsPageProps) {
                     [
                       component(
                         button,
-                        ButtonProps(
-                          class: Some(\"rounded-l\"),
+                        StyledButtonProps(
+                          class: \"rounded-l\",
                           label: \"-\",
                           on_click: fn() { dispatch(UpdateCounter(count - 1)) },
                         ),
                       ),
-                      component(display, DisplayProps(count: count)),
+                      component(
+                        display,
+                        DisplayProps(
+                          count: count,
+                          on_reset: Some(fn() {
+                            case enable_reset {
+                              True -> dispatch(ResetCounter)
+                              False -> Nil
+                            }
+                          }),
+                        ),
+                      ),
                       component(
                         button,
-                        ButtonProps(
-                          class: Some(\"rounded-r\"),
+                        StyledButtonProps(
+                          class: \"rounded-r\",
                           label: \"+\",
                           on_click: fn() { dispatch(UpdateCounter(count + 1)) },
                         ),
@@ -148,11 +173,15 @@ pub fn props_and_events_page(ctx: Context, _props: PropsAndEventsPageProps) {
             }
 
             pub type ButtonProps {
-              ButtonProps(class: Option(String), label: String, on_click: fn() -> Nil)
+              ButtonProps(label: String, on_click: fn() -> Nil)
+              StyledButtonProps(class: Option(String), label: String, on_click: fn() -> Nil)
             }
 
             pub fn button(ctx: Context, props: ButtonProps) {
-              let ButtonProps(class, label, ..) = props
+              let #(class, label, on_click) = case props {
+                ButtonProps(label, on_click) -> #(None, label, on_click)
+                StyledButtonProps(class, label, on_click) -> #(Some(class), label, on_click)
+              }
 
               use ctx, on_click <- callback(
                 ctx,
@@ -203,57 +232,6 @@ pub fn props_and_events_page(ctx: Context, _props: PropsAndEventsPageProps) {
             ",
           ),
           example([component(counter, CounterProps(enable_reset: False))]),
-          p(
-            [],
-            [
-              text(
-                "
-                  We can expand the ",
-              ),
-              code_text([], "display"),
-              text(" component to accept another optional prop called "),
-              code_text([], "on_reset"),
-              text(
-                " which will reset the count and re-render the component when the ",
-              ),
-              code_text([], "display"),
-              text(" component is double-clicked."),
-            ],
-          ),
-          codeblock(
-            "gleam",
-            "
-            pub type DisplayProps {
-              DisplayProps(count: Int, on_reset: Option(fn() -> Nil))
-            }
-
-            pub fn display(ctx: Context, props: DisplayProps) {
-              let DisplayProps(count: count, on_reset: on_reset) = props
-
-              use ctx, on_reset <- callback(
-                ctx,
-                CallbackFn(option.unwrap(on_reset, fn() { Nil })),
-                WithDeps([]),
-              )
-
-              render(
-                ctx,
-                [
-                  span(
-                    [
-                      attributes.on_doubleclick(on_reset),
-                      class(
-                        \"p-1 px-2 w-10 bg-white dark:bg-gray-900 border-t border-b dark:border-gray-500 align-center text-center\",
-                      ),
-                    ],
-                    [text(int.to_string(count))],
-                  ),
-                ],
-              )
-            }
-            ",
-          ),
-          example([component(counter, CounterProps(enable_reset: True))]),
           p(
             [],
             [

@@ -2,8 +2,7 @@ import sprocket/context.{Context}
 import sprocket/component.{component, render}
 import sprocket/html.{article, code_text, h1, h2, p, text}
 import docs/components/hello_button.{HelloButtonProps, hello_button}
-import docs/utils/common.{example}
-import docs/utils/codeblock.{codeblock}
+import docs/components/common.{codeblock, example}
 
 pub type StateManagementPageProps {
   StateManagementPageProps

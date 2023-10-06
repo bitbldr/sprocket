@@ -3,13 +3,12 @@ import sprocket/context.{Context}
 import sprocket/component.{component, render}
 import sprocket/html/attributes.{class}
 import sprocket/html.{article, code_text, div, h1, h2, i, p, span, text}
-import docs/utils/codeblock.{codeblock}
+import docs/components/common.{codeblock, example}
 import docs/components/example_button.{ExampleButtonProps, example_button}
 import docs/components/toggle_button.{ToggleButtonProps, toggle_button}
 import docs/components/product_list.{
   Product, ProductListProps, example_coffee_products, product_card, product_list,
 }
-import docs/utils/common.{example}
 
 pub type ComponentsPageProps {
   ComponentsPageProps
