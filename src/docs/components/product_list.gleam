@@ -1,7 +1,8 @@
 import gleam/int
 import gleam/list
 import gleam/float
-import sprocket/context.{Context}
+import gleam/option.{None, Option, Some}
+import sprocket/context.{Context, Element}
 import sprocket/component.{component, render}
 import sprocket/hooks.{OnMount, WithDeps, dep}
 import sprocket/hooks/reducer.{reducer}
@@ -28,125 +29,7 @@ pub type ProductProps {
   ProductProps(product: Product, on_hide: fn(Int) -> Nil)
 }
 
-pub fn product_card(
-  img_url,
-  name,
-  description,
-  qty,
-  price,
-  in_cart,
-  on_hide,
-  toggle_in_cart,
-) {
-  div(
-    [
-      class(
-        "flex flex-row bg-white border border-gray-200 rounded-lg shadow dark:bg-gray-800 dark:border-gray-700",
-      ),
-    ],
-    [
-      div(
-        [class("w-1/3 rounded-l-lg overflow-hidden")],
-        [
-          img([
-            class("object-cover h-52 w-full"),
-            src(img_url),
-            alt("product image"),
-          ]),
-        ],
-      ),
-      div(
-        [class("flex-1 flex flex-col p-5")],
-        [
-          div(
-            [class("flex-1 flex flex-row")],
-            [
-              div(
-                [class("flex-1")],
-                [
-                  h5_text(
-                    [
-                      class(
-                        "text-xl font-semibold tracking-tight text-gray-900 dark:text-white",
-                      ),
-                    ],
-                    name,
-                  ),
-                  div_text([class("py-2 text-gray-500")], description),
-                ],
-              ),
-              div(
-                [],
-                [
-                  div(
-                    [class("flex-1 flex flex-col text-right")],
-                    [
-                      div_text(
-                        [
-                          class(
-                            "text-xl font-bold text-gray-900 dark:text-white",
-                          ),
-                        ],
-                        "$" <> float.to_string(price),
-                      ),
-                      div_text([class("text-sm text-gray-500")], qty),
-                    ],
-                  ),
-                ],
-              ),
-            ],
-          ),
-          div(
-            [class("flex flex flex-row justify-end")],
-            [
-              button_text(
-                [
-                  class(
-                    "text-blue-700 hover:text-blue-800 hover:underline focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:text-blue-600 dark:hover:text-blue-700 dark:focus:ring-blue-800 mr-2",
-                  ),
-                  on_click(on_hide),
-                ],
-                "Not Interested",
-              ),
-              ..case in_cart {
-                True -> [
-                  button(
-                    [
-                      class(
-                        "text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-green-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800",
-                      ),
-                      on_click(toggle_in_cart),
-                    ],
-                    [
-                      i([class("fa-solid fa-check mr-2")], []),
-                      text("Added to Cart!"),
-                    ],
-                  ),
-                ]
-                False -> [
-                  button(
-                    [
-                      class(
-                        "text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800",
-                      ),
-                      on_click(toggle_in_cart),
-                    ],
-                    [
-                      i([class("fa-solid fa-cart-shopping mr-2")], []),
-                      text("Add to Cart"),
-                    ],
-                  ),
-                ]
-              }
-            ],
-          ),
-        ],
-      ),
-    ],
-  )
-}
-
-pub fn stateless_product_card(product: Product) {
+pub fn product_card(product: Product, actions: Option(List(Element))) {
   let Product(
     name: name,
     description: description,
@@ -166,7 +49,7 @@ pub fn stateless_product_card(product: Product) {
         [class("w-1/3 rounded-l-lg overflow-hidden")],
         [
           img([
-            class("object-cover h-52 w-full"),
+            class("object-cover h-56 w-full"),
             src(img_url),
             alt("product image"),
           ]),
@@ -213,6 +96,11 @@ pub fn stateless_product_card(product: Product) {
               ),
             ],
           ),
+          case actions {
+            None -> div([], [])
+            Some(actions) ->
+              div([class("flex flex flex-row justify-end")], actions)
+          },
         ],
       ),
     ],
@@ -242,20 +130,52 @@ pub fn product(ctx: Context, props: ProductProps) {
     OnMount,
   )
 
-  let Product(_id, name, description, img_url, qty, price) = product
-
   render(
     ctx,
     [
       product_card(
-        img_url,
-        name,
-        description,
-        qty,
-        price,
-        in_cart,
-        on_hide,
-        toggle_in_cart,
+        product,
+        Some([
+          button_text(
+            [
+              class(
+                "text-blue-700 hover:text-blue-800 hover:underline focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:text-blue-600 dark:hover:text-blue-700 dark:focus:ring-blue-800 mr-2",
+              ),
+              on_click(on_hide),
+            ],
+            "Not Interested",
+          ),
+          ..case in_cart {
+            True -> [
+              button(
+                [
+                  class(
+                    "text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-green-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800",
+                  ),
+                  on_click(toggle_in_cart),
+                ],
+                [
+                  i([class("fa-solid fa-check mr-2")], []),
+                  text("Added to Cart!"),
+                ],
+              ),
+            ]
+            False -> [
+              button(
+                [
+                  class(
+                    "text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800",
+                  ),
+                  on_click(toggle_in_cart),
+                ],
+                [
+                  i([class("fa-solid fa-cart-shopping mr-2")], []),
+                  text("Add to Cart"),
+                ],
+              ),
+            ]
+          }
+        ]),
       ),
     ],
   )
@@ -370,7 +290,7 @@ pub fn example_products() {
     Product(
       id: 2257,
       name: "Vintage Leather Messenger Bag",
-      description: "This classic leather messenger bag is a perfect blend of style and functionality. Handcrafted from genuine leather, it offers ample space for your laptop, documents, and other essentials. The adjustable shoulder strap provides comfort during travel, while the vintage design adds a touch of sophistication to your look.",
+      description: "Handcrafted from high quality vegan leather, this messenger bag is a perfect blend of style and functionality",
       img_url: "https://images.pexels.com/photos/1152077/pexels-photo-1152077.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2",
       qty: "1 bag",
       price: 89.99,
@@ -386,8 +306,8 @@ pub fn example_products() {
     Product(
       id: 2259,
       name: "Organic Aromatherapy Candle",
-      description: "Create a fresh ambiance with this organic aromatherapy candle. Hand-poured with pure essential oils, the fresh scent of citrus will brighten up your room. The natural soy wax ensures a clean and long-lasting burn, while the elegant glass jar adds a touch of luxury to any room.",
-      img_url: "https://images.pexels.com/photos/7260249/pexels-photo-7260249.jpeg",
+      description: "Create a fresh ambiance with this organic aromatherapy candle. Hand-poured with pure essential oils, the fresh scent of citrus will brighten up your room.",
+      img_url: "https://images.pexels.com/photos/7260249/pexels-photo-7260249.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2",
       qty: "1 candle",
       price: 19.99,
     ),

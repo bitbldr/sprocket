@@ -1,7 +1,7 @@
 import sprocket/context.{Context}
 import sprocket/component.{component, render}
 import sprocket/html.{article, code_text, h1, h2, p, text}
-import docs/components/say_hello.{SayHelloProps, say_hello}
+import docs/components/hello_button.{HelloButtonProps, hello_button}
 import docs/utils/common.{example}
 import docs/utils/codeblock.{codeblock}
 
@@ -32,7 +32,7 @@ pub fn state_management_page(ctx: Context, _props: StateManagementPageProps) {
             [],
             [
               text(
-                "Reducer functions are functions that take a state and message and return a new state. They are used to update state in response to events. Using our ",
+                "Reducer functions are functions that take a state and message and return a new state. They are used to update state in response to events. Let's create a ",
               ),
               code_text([], "hello_button"),
               text(
@@ -133,7 +133,7 @@ pub fn state_management_page(ctx: Context, _props: StateManagementPageProps) {
           codeblock(
             "gleam",
             "
-            use ctx, on_say_hello <- callback(
+            use ctx, on_hello_button <- callback(
               ctx,
               CallbackFn(fn() { dispatch(SayHello) }),
               WithDeps([]),
@@ -197,7 +197,7 @@ pub fn state_management_page(ctx: Context, _props: StateManagementPageProps) {
                 update,
               )
 
-              use ctx, on_say_hello <- callback(
+              use ctx, on_hello_button <- callback(
                 ctx,
                 CallbackFn(fn() { dispatch(SayHello) }),
                 WithDeps([]),
@@ -221,7 +221,7 @@ pub fn state_management_page(ctx: Context, _props: StateManagementPageProps) {
                       button(
                         [
                           class(\"p-2 bg-blue-500 hover:bg-blue-600 active:bg-blue-700 text-white rounded\"),
-                          on_click(on_say_hello),
+                          on_click(on_hello_button),
                         ],
                         [text(\"Say Hello!\")],
                       ),
@@ -270,7 +270,7 @@ pub fn state_management_page(ctx: Context, _props: StateManagementPageProps) {
             }
             ",
           ),
-          example([component(say_hello, SayHelloProps)]),
+          example([component(hello_button, HelloButtonProps)]),
           p(
             [],
             [

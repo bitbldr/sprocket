@@ -2,12 +2,12 @@ import gleam/option.{None, Some}
 import sprocket/context.{Context}
 import sprocket/component.{component, render}
 import sprocket/html/attributes.{class}
-import sprocket/html.{article, code_text, div, h1, h2, p, text}
+import sprocket/html.{article, code_text, div, h1, h2, i, p, span, text}
 import docs/utils/codeblock.{codeblock}
-import docs/components/hello_button.{HelloButtonProps, hello_button}
+import docs/components/example_button.{ExampleButtonProps, example_button}
+import docs/components/toggle_button.{ToggleButtonProps, toggle_button}
 import docs/components/product_list.{
-  Product, ProductListProps, example_coffee_products, product_list,
-  stateless_product_card,
+  Product, ProductListProps, example_coffee_products, product_card, product_list,
 }
 import docs/utils/common.{example}
 
@@ -32,21 +32,21 @@ pub fn components_page(ctx: Context, _props: ComponentsPageProps) {
               ),
             ],
           ),
-          h2([], [text("Components as Building Blocks")]),
+          h2([], [text("Stateful Components")]),
           p(
             [],
             [
               text(
-                "A component is a function that takes a context and props as arguments and returns a list of child elements. Components may also
-                utilize hooks to manage state and effects, which we will cover in-depth a bit later",
+                "A Stateful Component is a function that takes a context and props as arguments and returns a list of child elements. These components may also
+                utilize hooks to manage events, state and effects. Let's take a look at an example component.",
               ),
             ],
           ),
           p(
             [],
             [
-              text("Let's create a simple example component called "),
-              code_text([], "hello_button"),
+              text("We're going to create a simple component called "),
+              code_text([], "example_button"),
               text(
                 " that takes an optional label and renders a button. We will use Tailwind CSS to style our button, but you can use any classes or style framework you prefer.",
               ),
@@ -61,12 +61,12 @@ pub fn components_page(ctx: Context, _props: ComponentsPageProps) {
                 import sprocket/html.{button, text}
                 import sprocket/html/attributes.{class}
 
-                pub type HelloButtonProps {
-                  HelloButtonProps(label: Option(String))
+                pub type ExampleButtonProps {
+                  ExampleButtonProps(label: Option(String))
                 }
 
-                pub fn hello_button(ctx: Context, props: HelloButtonProps) {
-                  let HelloButtonProps(label) = props
+                pub fn example_button(ctx: Context, props: ExampleButtonProps) {
+                  let ExampleButtonProps(label) = props
 
                   render(
                     ctx,
@@ -145,7 +145,7 @@ pub fn components_page(ctx: Context, _props: ComponentsPageProps) {
                 ",
           ),
           p([], [text("Here is our rendered component:")]),
-          example([component(hello_button, HelloButtonProps(label: None))]),
+          example([component(example_button, ExampleButtonProps(label: None))]),
           p(
             [],
             [
@@ -159,12 +159,15 @@ pub fn components_page(ctx: Context, _props: ComponentsPageProps) {
             "
                 component(
                   button,
-                  ButtonProps(label: Some(\"Say Hello!\")),
+                  ButtonProps(label: Some(\"Add to Cart\")),
                 ),
                 ",
           ),
           example([
-            component(hello_button, HelloButtonProps(label: Some("Say Hello!"))),
+            component(
+              example_button,
+              ExampleButtonProps(label: Some("Add to Cart")),
+            ),
           ]),
           p([], [text("Excellent! Now our button has a proper label.")]),
           p(
@@ -172,28 +175,193 @@ pub fn components_page(ctx: Context, _props: ComponentsPageProps) {
             [
               text(
                 "But our humble button isn't very interesting yet. Let's say we want to add some functionality to our button. We can do that by
-                implementing some events and state management via hooks, which we'll cover in a bit.",
+                implementing some events and state management via hooks.",
               ),
             ],
           ),
-          h2([], [text("Stateless Functional Components")]),
           p(
             [],
             [
               text(
-                "Not every component will require state management or hooks. In these cases a stateless functional component can be used. Stateless functional components are simply regular 
-                functions that encapsulate markup and functionality into independent and composable pieces. The function is called directly from the render function (without using ",
+                "We'll cover events, state management and hooks in-depth a bit later. For now, we'll just add a simple state hook
+                and callback hook to our button component which will toggle the label when the button is clicked. We'll call our new component ",
               ),
-              code_text([], "component"),
+              code_text([], "toggle_button"),
+              text(" and instead of rendering a string label, we'll pass in a "),
+              code_text([], "render_label"),
               text(
-                "). Let's look at an example of a stateless functional component that renders a product card.",
+                " prop as a function that takes the current state of the toggle and renders the content of our button accordingly.",
               ),
             ],
           ),
           codeblock(
             "gleam",
             "
-              pub fn product_card(product: Product) {
+            import sprocket/context.{Context, Element}
+            import sprocket/component.{render}
+            import sprocket/html.{button}
+            import sprocket/html/attributes.{class, on_click}
+            import sprocket/hooks.{WithDeps, dep}
+            import sprocket/hooks/callback.{callback}
+            import sprocket/internal/identifiable_callback.{CallbackFn}
+            import sprocket/hooks/state.{state}
+
+            pub type ToggleButtonProps {
+              ToggleButtonProps(render_label: fn(Bool) -> Element)
+            }
+
+            pub fn toggle_button(ctx: Context, props: ToggleButtonProps) {
+              let ToggleButtonProps(render_label) = props
+
+              // add a state hook to track the active state, we'll cover hooks in more detail later
+              use ctx, is_active, set_active <- state(ctx, False)
+
+              // add a callback hook to toggle the active state
+              use ctx, on_toggle_active <- callback(
+                ctx,
+                CallbackFn(fn() {
+                  set_active(!is_active)
+                  Nil
+                }),
+                WithDeps([dep(is_active)]),
+              )
+
+              render(
+                ctx,
+                [
+                  button(
+                    [
+                      class(case is_active {
+                        True ->
+                          \"rounded-lg text-white px-3 py-2 bg-green-700 hover:bg-green-800 active:bg-green-900\"
+                        False ->
+                          \"rounded-lg text-white px-3 py-2 bg-blue-500 hover:bg-blue-600 active:bg-blue-700\"
+                      }),
+                      on_click(on_toggle_active),
+                    ],
+                    [render_label(is_active)],
+                  ),
+                ],
+              )
+            }
+            ",
+          ),
+          p(
+            [],
+            [
+              text("We've added a "),
+              code_text([], "state"),
+              text(" hook to track the active state of our button and a "),
+              code_text([], "callback"),
+              text(
+                " hook to toggle the active state when the button is clicked. We've also added a ",
+              ),
+              code_text([], "render_label"),
+              text(
+                " prop to our component to allow us to customize the label of our toggle button depending on whether the toggle is active or inactive.",
+              ),
+            ],
+          ),
+          p([], [text("Now let's use our new component in a parent view.")]),
+          codeblock(
+            "gleam",
+            "
+            pub type PageViewProps {
+              PageViewProps
+            }
+
+            pub fn page_view(ctx: Context, _props: PageViewProps) {
+              render(
+                ctx,
+                [
+                  div(
+                    [],
+                    [
+                      component(
+                        toggle_button,
+                        ToggleButtonProps(render_label: fn(toggle) {
+                          case toggle {
+                            True ->
+                              span(
+                                [],
+                                [
+                                  i([class(\"fa-solid fa-check mr-2\")], []),
+                                  text(\"Added to Cart!\"),
+                                ],
+                              )
+                            False ->
+                              span(
+                                [],
+                                [
+                                  i([class(\"fa-solid fa-cart-shopping mr-2\")], []),
+                                  text(\"Add to Cart\"),
+                                ],
+                              )
+                          }
+                        }),
+                      ),
+                    ],
+                  ),
+                ],
+              )
+            }
+            ",
+          ),
+          p([], [text("Here is our rendered stateful component:")]),
+          example([
+            component(
+              toggle_button,
+              ToggleButtonProps(render_label: fn(toggle) {
+                case toggle {
+                  True ->
+                    span(
+                      [],
+                      [
+                        i([class("fa-solid fa-check mr-2")], []),
+                        text("Added to Cart!"),
+                      ],
+                    )
+                  False ->
+                    span(
+                      [],
+                      [
+                        i([class("fa-solid fa-cart-shopping mr-2")], []),
+                        text("Add to Cart"),
+                      ],
+                    )
+                }
+              }),
+            ),
+          ]),
+          h2([], [text("Stateless Functional Components")]),
+          p(
+            [],
+            [
+              text(
+                "Not every component will require state management or hooks. In these cases a stateless functional component can be used. Stateless functional components are simply regular 
+                functions that encapsulate markup and functionality into independent and composable pieces. The function is called directly from the render function (opposed to wrapping it in ",
+              ),
+              code_text([], "component"),
+              text(
+                " as seen previously with stateful components). Let's look at an example of a stateless functional component that renders a product card.",
+              ),
+            ],
+          ),
+          codeblock(
+            "gleam",
+            "
+              type Product {
+                Product(
+                  id: Int,
+                  name: String,
+                  description: String,
+                  img_url: String,
+                  qty: String,
+                  price: Float,
+                )
+              }
+
+              pub fn product_card(product: Product, actions: Option(List(Element)) {
                 let Product(
                   name: name,
                   description: description,
@@ -261,6 +429,11 @@ pub fn components_page(ctx: Context, _props: ComponentsPageProps) {
                             ),
                           ],
                         ),
+                        case actions {
+                          None -> div([], [])
+                          Some(actions) ->
+                            div([class(\"flex flex flex-row justify-end\")], actions)
+                        },
                       ],
                     ),
                   ],
@@ -275,7 +448,11 @@ pub fn components_page(ctx: Context, _props: ComponentsPageProps) {
                 "To render this component we call it directly from the render function, passing any arguments the function takes, which in this case is a ",
               ),
               code_text([], "Product"),
-              text(" record."),
+              text(
+                " record and an optional list of actions, which we will leave as ",
+              ),
+              code_text([], "None"),
+              text(" for now."),
             ],
           ),
           codeblock(
@@ -298,7 +475,7 @@ pub fn components_page(ctx: Context, _props: ComponentsPageProps) {
                     div(
                       [class(\"flex flex-col\")],
                       [
-                        product_card(some_product)
+                        product_card(some_product, None)
                       ]
                     ),
                   ],
@@ -310,17 +487,157 @@ pub fn components_page(ctx: Context, _props: ComponentsPageProps) {
             div(
               [class("flex flex-col")],
               [
-                stateless_product_card(Product(
-                  id: 2255,
-                  name: "Bamboo Cutting Board",
-                  description: "This sustainable bamboo cutting board is perfect for slicing and dicing vegetables, fruits, and meats. The natural antibacterial properties of bamboo ensure a hygienic cooking experience.",
-                  img_url: "https://images.pexels.com/photos/6489734/pexels-photo-6489734.jpeg",
-                  qty: "12 x 8 inches",
-                  price: 24.99,
-                )),
+                product_card(
+                  Product(
+                    id: 2255,
+                    name: "Bamboo Cutting Board",
+                    description: "This sustainable bamboo cutting board is perfect for slicing and dicing vegetables, fruits, and meats. The natural antibacterial properties of bamboo ensure a hygienic cooking experience.",
+                    img_url: "https://images.pexels.com/photos/6489734/pexels-photo-6489734.jpeg",
+                    qty: "12 x 8 inches",
+                    price: 24.99,
+                  ),
+                  None,
+                ),
               ],
             ),
           ]),
+          p(
+            [],
+            [
+              text(
+                "You may have noticed that we are using a few functions named after HTML elements such as ",
+              ),
+              code_text([], "div"),
+              text(" and "),
+              code_text([], "img"),
+              text(
+                ". These are Stateless Functional Components that are provided by the Sprocket HTML module and are used to render HTML elements. You can find a full list of available functions in the ",
+              ),
+              code_text([], "sprocket/html"),
+              text(" module."),
+            ],
+          ),
+          h2([], [text("Components as Building Blocks")]),
+          p(
+            [],
+            [
+              text(
+                "Components are the fundamental building blocks of Sprocket applications. They can be composed together to create rich user interfaces. Let's take a look at an example of a view that uses the ",
+              ),
+              code_text([], "toggle_button"),
+              text(" and the "),
+              code_text([], "product_card"),
+              text(
+                " components we defined earlier to create a simple product component.",
+              ),
+            ],
+          ),
+          codeblock(
+            "gleam",
+            "
+              pub fn product(ctx: Context, _props: PageViewProps) {
+                render(
+                  ctx,
+                  [
+                    div(
+                      [class(\"flex flex-col\")],
+                      [
+                        product_card(
+                          Product(
+                            id: 2259,
+                            name: \"Organic Aromatherapy Candle\",
+                            description: \"Create a fresh ambiance with this organic aromatherapy candle. Hand-poured with pure essential oils, the fresh scent of citrus will brighten up your room.\",
+                            img_url: \"https://images.pexels.com/photos/7260249/pexels-photo-7260249.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2\",
+                            qty: \"1 candle\",
+                            price: 19.99,
+                          ),
+                          Some([
+                            component(
+                              toggle_button,
+                              ToggleButtonProps(render_label: fn(toggle) {
+                                case toggle {
+                                  True ->
+                                    span(
+                                      [],
+                                      [
+                                        i([class(\"fa-solid fa-check mr-2\")], []),
+                                        text(\"Added to Cart!\"),
+                                      ],
+                                    )
+                                  False ->
+                                    span(
+                                      [],
+                                      [
+                                        i([class(\"fa-solid fa-cart-shopping mr-2\")], []),
+                                        text(\"Add to Cart\"),
+                                      ],
+                                    )
+                                }
+                              }),
+                            ),
+                          ]),
+                        ),
+                      ],
+                    ),
+                  ],
+                )
+              }
+            ",
+          ),
+          example([
+            div(
+              [class("flex flex-col")],
+              [
+                product_card(
+                  Product(
+                    id: 2259,
+                    name: "Organic Aromatherapy Candle",
+                    description: "Create a fresh ambiance with this organic aromatherapy candle. Hand-poured with pure essential oils, the fresh scent of citrus will brighten up your room.",
+                    img_url: "https://images.pexels.com/photos/7260249/pexels-photo-7260249.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2",
+                    qty: "1 candle",
+                    price: 19.99,
+                  ),
+                  Some([
+                    component(
+                      toggle_button,
+                      ToggleButtonProps(render_label: fn(toggle) {
+                        case toggle {
+                          True ->
+                            span(
+                              [],
+                              [
+                                i([class("fa-solid fa-check mr-2")], []),
+                                text("Added to Cart!"),
+                              ],
+                            )
+                          False ->
+                            span(
+                              [],
+                              [
+                                i([class("fa-solid fa-cart-shopping mr-2")], []),
+                                text("Add to Cart"),
+                              ],
+                            )
+                        }
+                      }),
+                    ),
+                  ]),
+                ),
+              ],
+            ),
+          ]),
+          p(
+            [],
+            [
+              text("As you can see, we've composed our stateless "),
+              code_text([], "product_card"),
+              text(" component with our stateful "),
+              code_text([], "toggle_button"),
+              text(
+                " to create a somewhat trivial product listing. But this is the power of components. They can be combined to create rich user interfaces.",
+              ),
+            ],
+          ),
           h2([], [text("Dynamic Components and "), code_text([], "keyed")]),
           p(
             [],
@@ -328,15 +645,21 @@ pub fn components_page(ctx: Context, _props: ComponentsPageProps) {
               text("Components can be conditionally rendered using "),
               code_text([], "case"),
               text(
-                " statements as seen above in the first example, but also dynamically as a list of elements with any of Gleam's list functions such as ",
+                " statements as seen in some of the previous examples, but they can also be dynamically rendered as a list of elements using any of Gleam's list functions such as ",
               ),
               code_text([], "list.map"),
               text(" or "),
               code_text([], "list.filter"),
-              text(". It's important to use the "),
+              text("."),
+            ],
+          ),
+          p(
+            [],
+            [
+              text("It's important to use "),
               code_text([], "keyed"),
               text(
-                " function when rendering elements that may change so that the diffing algorithm can keep track of them and thier states across renders. Let's
+                " when rendering elements that may change so that the diffing algorithm can keep track of them and thier states across renders. Let's
                 take a look at an example of a component that renders a list of products, each with their own state.",
               ),
             ],
@@ -344,17 +667,6 @@ pub fn components_page(ctx: Context, _props: ComponentsPageProps) {
           codeblock(
             "gleam",
             "
-              type Product {
-                Product(
-                  id: Int,
-                  name: String,
-                  description: String,
-                  img_url: String,
-                  qty: String,
-                  price: Float,
-                )
-              }
-
               pub type ProductListProps {
                 ProductListProps(products: List(Product))
               }

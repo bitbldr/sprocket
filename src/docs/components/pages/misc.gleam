@@ -13,7 +13,7 @@ import sprocket/hooks/reducer.{reducer}
 import docs/components/clock.{ClockProps, clock}
 import docs/components/analog_clock.{AnalogClockProps, analog_clock}
 import docs/components/counter.{CounterProps, counter}
-import docs/components/say_hello.{SayHelloProps, say_hello}
+import docs/components/hello_button.{HelloButtonProps, hello_button}
 
 type Msg {
   NoOp
@@ -94,7 +94,7 @@ pub fn misc_page(ctx: Context, _props: MiscPageProps) {
                 ],
               ),
               component(counter, CounterProps(initial: Some(0))),
-              component(say_hello, SayHelloProps),
+              component(hello_button, HelloButtonProps),
             ],
           ),
         ],
