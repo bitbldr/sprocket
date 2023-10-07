@@ -1,4 +1,4 @@
-FROM ghcr.io/gleam-lang/gleam:v0.30.0-erlang-alpine as builder
+FROM ghcr.io/gleam-lang/gleam:v0.31.0-erlang-alpine as builder
 
 RUN apk add --update nodejs npm elixir
 
@@ -29,7 +29,7 @@ RUN gleam export erlang-shipment
 RUN mv build/erlang-shipment /app
 
 # FROM erlang:24.0.1-alpine
-FROM ghcr.io/gleam-lang/gleam:v0.30.0-erlang-alpine
+FROM ghcr.io/gleam-lang/gleam:v0.31.0-erlang-alpine
 
 WORKDIR /app
 RUN chown nobody /app
