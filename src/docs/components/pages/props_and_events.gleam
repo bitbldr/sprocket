@@ -22,7 +22,7 @@ pub fn props_and_events_page(ctx: Context, _props: PropsAndEventsPageProps) {
             [
               text(
                 "
-                  Props and events in Sprocket are how components communicate with each other. Props are how components communicate
+                  Props and events are used by components to communicate with each other. Props are how components communicate
                   with their children, and events are how components communicate with their parents in the component hierarchy.
                 ",
               ),
