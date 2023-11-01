@@ -150,11 +150,13 @@ fn handle_message(message: Message, state: State) -> actor.Next(Message, State) 
             |> context.reset_for_render
             |> live_render(view, None, Some(prev_rendered))
 
-          let update =
-            timer.timed_operation(
-              "CREATE PATCH",
-              fn() { patch.create(prev_rendered, rendered) },
-            )
+          // let update =
+          //   timer.timed_operation(
+          //     "CREATE PATCH",
+          //     fn() { patch.create(prev_rendered, rendered) },
+          //   )
+
+          let update = patch.create(prev_rendered, rendered)
 
           // send the rendered update using updater
           case updater.send(update) {
