@@ -56,7 +56,12 @@ fn handle_message(message: Message, state: State) -> actor.Next(Message, State) 
       let spkt =
         list.find(
           state.sprockets,
-          fn(s) { unique.equals(sprocket.get_id(s), id) },
+          fn(s) {
+            case sprocket.get_id(s) {
+              Ok(spkt_id) -> unique.equals(spkt_id, id)
+              Error(_) -> False
+            }
+          },
         )
 
       process.send(reply_with, spkt)
@@ -68,7 +73,12 @@ fn handle_message(message: Message, state: State) -> actor.Next(Message, State) 
       let sprocket =
         list.find(
           state.sprockets,
-          fn(s) { unique.equals(sprocket.get_id(s), id) },
+          fn(s) {
+            case sprocket.get_id(s) {
+              Ok(spkt_id) -> unique.equals(spkt_id, id)
+              Error(_) -> False
+            }
+          },
         )
 
       process.send(reply_with, sprocket)
@@ -157,7 +167,7 @@ type Payload {
   EmptyPayload(nothing: Option(String))
 }
 
-pub fn live_message(
+pub fn client_message(
   ca: Cassette,
   id: Unique,
   view: Element,

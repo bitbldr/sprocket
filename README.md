@@ -144,9 +144,9 @@ pub fn example_view(ctx: Context, _props: ExampleViewProps) {
 
 To get started with Sprocket, follow the instructions below:
 
-1. Clone the Sprocket repository:
+1. Clone the Sprocket starter repository:
 ```sh
-git clone https://github.com/bitbldr/sprocket.git
+git clone https://github.com/bitbldr/sprocket-starter.git
 ```
 
 2. Install the required dependencies:
@@ -160,7 +160,7 @@ yarn
 yarn run watch
 ```
 
-4. Open your web browser and visit [http://localhost:3000](http://localhost:3000) to see the docs sample app.
+4. Open your web browser and visit [http://localhost:3000](http://localhost:3000) to see the starter app.
 
 
 ## Installation

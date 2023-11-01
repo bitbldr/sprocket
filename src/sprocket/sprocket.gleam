@@ -150,7 +150,11 @@ fn handle_message(message: Message, state: State) -> actor.Next(Message, State) 
             |> context.reset_for_render
             |> live_render(view, None, Some(prev_rendered))
 
-          let update = patch.create(prev_rendered, rendered)
+          let update =
+            timer.timed_operation(
+              "CREATE PATCH",
+              fn() { patch.create(prev_rendered, rendered) },
+            )
 
           // send the rendered update using updater
           case updater.send(update) {
@@ -280,9 +284,13 @@ pub fn stop(actor) {
   actor.send(actor, Shutdown)
 }
 
+// pub fn get_id(actor) -> Result(Unique, CallError(Unique)) {
 /// Returns true if the actor matches a given websocket connection
-pub fn get_id(actor) -> Unique {
-  actor.call(actor, GetId(_), call_timeout())
+pub fn get_id(actor) -> Result(Unique, Nil) {
+  case process.try_call(actor, GetId(_), call_timeout()) {
+    Ok(id) -> Ok(id)
+    Error(_) -> Error(Nil)
+  }
 }
 
 /// Get the previously rendered view from the actor
