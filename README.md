@@ -149,18 +149,18 @@ To get started with Sprocket, follow the instructions below:
 git clone https://github.com/bitbldr/sprocket-starter.git
 ```
 
-2. Install the required dependencies:
+1. Install the required dependencies:
 ```sh
 gleam deps download
 yarn
 ```
 
-3. Start the development server:
+1. Start the development server:
 ```sh
 yarn run watch
 ```
 
-4. Open your web browser and visit [http://localhost:3000](http://localhost:3000) to see the starter app.
+1. Open your web browser and visit [http://localhost:3000](http://localhost:3000) to see the starter app.
 
 
 ## Installation
@@ -171,14 +171,15 @@ This package can be added to your Gleam project:
 gleam add sprocket
 ```
 
-and its documentation can be found at <https://hexdocs.pm/sprocket>.
+For getting started with Sprocket, refer to the [Official Docs](https://sprocket.live).
+Here you will find detailed examples and tutorials. These docs are
+build with sprocket, which also make them an excellent reference implementation [github.com/bitbldr/sprocket_docs](https://github.com/bitbldr/sprocket_docs).
 
 
-## Documentation
+## API Documentation
 
-Documentation for Sprocket can be found at the [docs sample app](https://sprocket.live).
-It provides detailed information on how to use Sprocket, including module descriptions, API 
-references, and examples.
+API documentation can be found at <https://hexdocs.pm/sprocket>.
+
 
 ## Roadmap
 
