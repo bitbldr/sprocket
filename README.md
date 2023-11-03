@@ -146,7 +146,7 @@ To get started with Sprocket, follow the instructions below:
 
 1. Clone the Sprocket starter repository:
 ```sh
-git clone https://github.com/bitbldr/sprocket-starter.git
+git clone https://github.com/bitbldr/sprocket_starter.git
 ```
 
 1. Install the required dependencies:
