@@ -28,6 +28,7 @@
   },
   "dependencies": {
     "morphdom": "^2.7.0",
+    "reconnecting-websocket": "^4.4.0",
     "topbar": "^2.0.1"
   }
 }

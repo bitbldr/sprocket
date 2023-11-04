@@ -1,5 +1,6 @@
 import morphdom from "morphdom";
 import topbar from "topbar";
+import ReconnectingWebSocket from "reconnecting-websocket";
 import { renderDom } from "./render";
 import { applyPatch } from "./patch";
 import { initEventHandlers } from "./events";
@@ -22,7 +23,9 @@ export function connect(path: String, opts: Opts) {
   const hooks = opts.hooks || {};
 
   let ws_protocol = location.protocol === "https:" ? "wss:" : "ws:";
-  const socket = new WebSocket(ws_protocol + "//" + location.host + path);
+  const socket = new ReconnectingWebSocket(
+    ws_protocol + "//" + location.host + path
+  );
 
   let dom: Record<string, any>;
   let clientHookMap: Record<string, any>;

@@ -1,3 +1,4 @@
+import ReconnectingWebSocket from "reconnecting-websocket";
 import { constant } from "./constants";
 
 export type PushEvent = (event: string, payload: any) => void;
@@ -19,7 +20,7 @@ export type ClientHookSpec = {
 };
 
 export function processClientHookMount(
-  socket: WebSocket,
+  socket: ReconnectingWebSocket,
   hooks: Record<string, ClientHookSpec>
 ): Record<string, ClientHook> {
   // handle hook lifecycle mounted events, return a clientHookMap
