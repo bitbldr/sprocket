@@ -8,7 +8,7 @@ import sprocket/hooks.{WithDeps, dep}
 import sprocket/hooks/state.{state}
 import sprocket/hooks/callback.{callback}
 import sprocket/internal/identifiable_callback.{CallbackFn}
-import test_helpers.{ClickEvent, live, render_event, render_html}
+import sprocket/test_helpers.{ClickEvent, live, render_event, render_html}
 
 type TestCounterProps {
   TestCounterProps
