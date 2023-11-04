@@ -1,7 +1,9 @@
 import gleam/int
 import gleam/list
 import gleam/option.{None, Option, Some}
+import gleam/erlang/process.{Subject}
 import gleam/dynamic.{Dynamic}
+import ids/cuid
 import sprocket/html/attributes.{Attribute}
 import sprocket/internal/identifiable_callback.{CallbackFn,
   IdentifiableCallback}
@@ -53,10 +55,15 @@ pub type Context {
     render_update: fn() -> Nil,
     update_hook: fn(Unique, fn(Hook) -> Hook) -> Nil,
     dispatch_event: fn(Unique, String, Option(String)) -> Result(Nil, Nil),
+    cuid_channel: Subject(cuid.Message),
   )
 }
 
-pub fn new(view: Element, dispatcher: Option(Dispatcher)) -> Context {
+pub fn new(
+  view: Element,
+  cuid_channel: Subject(cuid.Message),
+  dispatcher: Option(Dispatcher),
+) -> Context {
   Context(
     view: view,
     wip: ComponentWip(hooks: ordered_map.new(), index: 0, is_first_render: True),
@@ -70,6 +77,7 @@ pub fn new(view: Element, dispatcher: Option(Dispatcher)) -> Context {
         None -> Error(Nil)
       }
     },
+    cuid_channel: cuid_channel,
   )
 }
 

@@ -5,6 +5,7 @@ import gleam/option.{None, Option, Some}
 import gleam/json
 import gleam/erlang/process.{Subject}
 import gleam/otp/actor
+import ids/cuid
 import sprocket/sprocket.{Sprocket}
 import sprocket/context.{Dispatcher, Element, Updater}
 import sprocket/render.{RenderedElement}
@@ -23,7 +24,12 @@ pub type Cassette =
   Subject(Message)
 
 pub type State {
-  State(sprockets: List(Sprocket), debug: Bool, csrf_validator: CSRFValidator)
+  State(
+    sprockets: List(Sprocket),
+    debug: Bool,
+    csrf_validator: CSRFValidator,
+    cuid_channel: Subject(cuid.Message),
+  )
 }
 
 pub type Message {
@@ -114,6 +120,7 @@ pub fn start(
   csrf_validator: CSRFValidator,
   opts: Option(CassetteOpts),
 ) -> Cassette {
+  let assert Ok(cuid_channel) = cuid.start()
   let assert Ok(ca) =
     actor.start(
       State(
@@ -121,6 +128,7 @@ pub fn start(
         debug: option.map(opts, fn(opts) { opts.debug })
         |> option.unwrap(False),
         csrf_validator: csrf_validator,
+        cuid_channel: cuid_channel,
       ),
       handle_message,
     )
@@ -153,10 +161,16 @@ pub fn pop_sprocket(ca: Cassette, ws: Unique) {
   process.call(ca, PopSprocket(_, ws), call_timeout())
 }
 
+fn get_cuid_channel(ca: Cassette) {
+  case get_state(ca) {
+    State(cuid_channel: cuid_channel, ..) -> cuid_channel
+  }
+}
+
 /// Validates a CSRF token.
 fn validate_csrf(ca: Cassette, csrf: String) {
   case get_state(ca) {
-    State(_, _, csrf_validator) -> csrf_validator(csrf)
+    State(csrf_validator: csrf_validator, ..) -> csrf_validator(csrf)
   }
 }
 
@@ -286,7 +300,14 @@ fn connect(
       Ok(Nil)
     })
 
-  let sprocket = sprocket.start(id, view, Some(updater), Some(dispatcher))
+  let sprocket =
+    sprocket.start(
+      id,
+      view,
+      get_cuid_channel(ca),
+      Some(updater),
+      Some(dispatcher),
+    )
   push_sprocket(ca, sprocket)
 
   logger.info("Sprocket connected! " <> unique.to_string(id))

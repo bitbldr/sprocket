@@ -12,7 +12,7 @@ pub fn client(
     #(Context, List(Element)),
 ) -> #(Context, List(Element)) {
   // define the client hook initializer
-  let init = fn() { Client(unique.new(), name, handle_event) }
+  let init = fn() { Client(unique.cuid(ctx.cuid_channel), name, handle_event) }
 
   // get the existing client hook or initialize it
   let #(ctx, Client(id, _name, _handle_event), index) =

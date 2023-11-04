@@ -3,6 +3,7 @@ import gleam/map.{Map}
 import gleam/otp/actor
 import gleam/erlang/process.{Subject}
 import gleam/option.{None, Option, Some}
+import ids/cuid
 import sprocket/internal/logger
 import sprocket/internal/constants.{call_timeout}
 import sprocket/context.{
@@ -255,6 +256,7 @@ fn handle_message(message: Message, state: State) -> actor.Next(Message, State) 
 pub fn start(
   id: Unique,
   view: Element,
+  cuid_channel: Subject(cuid.Message),
   updater: Option(Updater(Patch)),
   dispatcher: Option(Dispatcher),
 ) {
@@ -264,7 +266,7 @@ pub fn start(
         id: id,
         self: None,
         cancel_shutdown: None,
-        ctx: context.new(view, dispatcher),
+        ctx: context.new(view, cuid_channel, dispatcher),
         updater: updater,
         rendered: None,
       ),

@@ -16,7 +16,7 @@ pub fn callback(
   cb: fn(Context, IdentifiableCallback) -> #(ctx, List(Element)),
 ) -> #(ctx, List(Element)) {
   let init_callback = fn() {
-    Callback(unique.new(), callback_fn, trigger, None)
+    Callback(unique.cuid(ctx.cuid_channel), callback_fn, trigger, None)
   }
 
   let #(ctx, Callback(id, _callback_fn, _trigger, prev), index) =

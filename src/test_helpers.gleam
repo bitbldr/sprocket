@@ -1,6 +1,7 @@
 import gleam/io
 import gleam/list
 import gleam/option.{None, Some}
+import ids/cuid
 import sprocket/sprocket.{Sprocket}
 import sprocket/context
 import sprocket/internal/identifiable_callback.{CallbackFn}
@@ -10,7 +11,8 @@ import sprocket/internal/render/html as sprocket_render_html
 import sprocket/internal/utils/unique
 
 pub fn live(view) {
-  sprocket.start(unique.new(), view, None, None)
+  let assert Ok(cuid_channel) = cuid.start()
+  sprocket.start(unique.uuid(), view, cuid_channel, None, None)
 }
 
 pub fn render_html(spkt) {

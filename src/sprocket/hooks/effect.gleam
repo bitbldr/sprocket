@@ -10,7 +10,9 @@ pub fn effect(
   cb: fn(Context) -> #(Context, List(Element)),
 ) -> #(Context, List(Element)) {
   // define the initial effect function that will only run on the first render
-  let init = fn() { Effect(unique.new(), effect_fn, trigger, None) }
+  let init = fn() {
+    Effect(unique.cuid(ctx.cuid_channel), effect_fn, trigger, None)
+  }
 
   // get the previous effect result, if one exists
   let #(ctx, Effect(id, _effect_fn, _trigger, prev), index) =

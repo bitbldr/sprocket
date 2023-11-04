@@ -11,7 +11,9 @@ pub fn state(
 ) -> #(Context, List(Element)) {
   let Context(render_update: render_update, update_hook: update_hook, ..) = ctx
 
-  let init_state = fn() { hooks.State(unique.new(), dynamic.from(initial)) }
+  let init_state = fn() {
+    hooks.State(unique.cuid(ctx.cuid_channel), dynamic.from(initial))
+  }
 
   let assert #(ctx, hooks.State(hook_id, value), _index) =
     context.fetch_or_init_hook(ctx, init_state)

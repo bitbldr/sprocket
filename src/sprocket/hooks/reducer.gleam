@@ -54,7 +54,7 @@ pub fn reducer(
       )
 
     hooks.Reducer(
-      unique.new(),
+      unique.cuid(ctx.cuid_channel),
       dynamic.from(reducer_actor),
       fn() { process.send(reducer_actor, Shutdown) },
     )

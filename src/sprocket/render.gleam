@@ -2,6 +2,7 @@ import gleam/io
 import gleam/list
 import gleam/option.{None, Option, Some}
 import gleam/dynamic.{Dynamic}
+import ids/cuid
 import sprocket/html/attributes.{Attribute, ClientHook, Event}
 import sprocket/context.{
   AbstractFunctionalComponent, Component, ComponentHooks, ComponentWip, Context,
@@ -48,8 +49,10 @@ pub type RenderResult(a) {
 // Internally this function uses live_render with a placeholder ctx to render the tree,
 // but then discards the ctx and returns the result.
 pub fn render(el: Element, renderer: Renderer(r)) -> r {
+  let assert Ok(cuid_channel) = cuid.start()
+
   let RenderResult(rendered: rendered, ..) =
-    live_render(context.new(el, None), el, None, None)
+    live_render(context.new(el, cuid_channel, None), el, None, None)
 
   renderer.render(rendered)
 }
@@ -102,14 +105,6 @@ pub fn live_render(
     SafeHtml(html) -> safe_html(ctx, html)
     Raw(text) -> raw(ctx, text)
   }
-}
-
-/// Renders the given element into a stateless RenderedElement tree.
-pub fn render_element(el: Element) {
-  let RenderResult(rendered: rendered, ..) =
-    live_render(context.new(el, None), el, None, None)
-
-  rendered
 }
 
 fn element(
