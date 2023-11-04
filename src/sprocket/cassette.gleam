@@ -308,6 +308,7 @@ fn connect(
       Some(updater),
       Some(dispatcher),
     )
+
   push_sprocket(ca, sprocket)
 
   logger.info("Sprocket connected! " <> unique.to_string(id))
