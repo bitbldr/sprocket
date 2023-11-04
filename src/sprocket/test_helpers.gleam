@@ -7,7 +7,7 @@ import sprocket/context
 import sprocket/internal/identifiable_callback.{CallbackFn}
 import sprocket/render.{RenderedAttribute,
   RenderedElement, RenderedEventHandler}
-import sprocket/internal/render/html as sprocket_render_html
+import sprocket_html/render as html_render
 import sprocket/internal/utils/unique
 
 pub fn live(view) {
@@ -16,7 +16,7 @@ pub fn live(view) {
 }
 
 pub fn render_html(spkt) {
-  let renderer = sprocket_render_html.renderer()
+  let renderer = html_render.renderer()
 
   let html =
     sprocket.render(spkt)

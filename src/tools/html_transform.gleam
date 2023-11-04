@@ -18,9 +18,9 @@ import glint/flag
 /// ```
 /// 
 /// Example:
-/// > gleam run -m tools/html_transform -- --template=elements src/sprocket/html/svg/source/elements
+/// > gleam run -m tools/html_transform -- --template=elements src/sprocket_html/svg/source/elements
 /// 
-/// Will create a file src/sprocket/html/svg.gleam
+/// Will create a file src/sprocket_html/svg.gleam
 /// 
 pub fn main() {
   glint.new()

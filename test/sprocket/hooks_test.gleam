@@ -4,8 +4,8 @@ import gleam/option.{None}
 import gleeunit/should
 import sprocket/context.{Context}
 import sprocket/component.{component}
-import sprocket/html.{button, text}
-import sprocket/html/attributes.{id, on_click}
+import sprocket_html/elements.{button, text}
+import sprocket_html/attributes.{id, on_click}
 import sprocket/hooks.{OnMount, OnUpdate, WithDeps, dep}
 import sprocket/hooks/reducer.{reducer}
 import sprocket/hooks/effect.{effect}

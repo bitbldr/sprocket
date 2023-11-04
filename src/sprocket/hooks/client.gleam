@@ -1,7 +1,7 @@
 import gleam/option.{Option}
 import sprocket/context.{Context, Element}
 import sprocket/hooks.{Client, ClientDispatcher, ClientEventHandler}
-import sprocket/html/attributes.{Attribute, client_hook}
+import sprocket_html/attributes.{Attribute, client_hook}
 import sprocket/internal/utils/unique
 
 pub fn client(

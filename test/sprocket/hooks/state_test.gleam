@@ -2,8 +2,8 @@ import gleam/int
 import gleam/string
 import sprocket/context.{Context}
 import sprocket/component.{component}
-import sprocket/html.{button, text}
-import sprocket/html/attributes.{id, on_click}
+import sprocket_html/elements.{button, text}
+import sprocket_html/attributes.{id, on_click}
 import sprocket/hooks.{WithDeps, dep}
 import sprocket/hooks/state.{state}
 import sprocket/hooks/callback.{callback}

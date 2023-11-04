@@ -16,9 +16,8 @@ links = [{ title = "Website", href = "https://sprocket.live" }]
 # Items in this list are "globs" that are matched against module names. See:
 # https://docs.rs/glob/latest/glob/struct.Pattern.html
 internal_modules = [
-  "docs",
-  "docs/*",
   "sprocket/internal/*",
+  "tools/*",
 ]
 
 [dependencies]

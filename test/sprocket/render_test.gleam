@@ -3,8 +3,8 @@ import gleam/option.{None, Some}
 import gleeunit/should
 import sprocket/context.{Context}
 import sprocket/component.{component, render}
-import sprocket/html.{a, text}
-import sprocket/html/attributes.{classes}
+import sprocket_html/elements.{a, text}
+import sprocket_html/attributes.{classes}
 import sprocket/hooks.{WithDeps}
 import sprocket/hooks/callback.{callback}
 import sprocket/internal/identifiable_callback.{CallbackFn}
