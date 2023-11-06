@@ -14,6 +14,12 @@ import sprocket/internal/identifiable_callback.{CallbackFn,
 import sprocket/internal/utils/unique
 import sprocket/html/attributes.{Attribute, client_hook}
 
+/// Callback Hook
+/// -------------
+/// Creates a callback that can be triggered from DOM event attributes. The callback
+/// function will be called with the event payload. This hook ensures that the callback
+/// identifier remains stable preventing unnecessary id changes across renders. The
+/// callback function is memoized and recomputed based on the trigger type.
 pub fn callback(
   ctx: Context,
   callback_fn: CallbackFn,
@@ -87,6 +93,11 @@ fn replace_callback(
   CallbackResult(callback_fn, deps)
 }
 
+/// Client Hook
+/// -----------
+/// Creates a client hook that can be used to facilitate communication with a client
+/// (such as a web browser). The client hook functionality is defined by the client
+/// and is typically used to send or receive messages to/from the client.
 pub fn client(
   ctx: Context,
   name: String,
@@ -114,6 +125,10 @@ pub fn client(
   cb(ctx, bind_hook_attr, dispatch_event)
 }
 
+/// Effect Hook
+/// -----------
+/// Creates an effect hook that will run the given effect function when the hook is
+/// triggered. The effect function is memoized and recomputed based on the trigger type.
 pub fn effect(
   ctx: Context,
   effect_fn: fn() -> EffectCleanup,
@@ -145,6 +160,12 @@ type StateOrDispatchReducer(model, msg) {
   DispatchReducer(r: Reducer(model, msg), m: msg)
 }
 
+/// Reducer Hook
+/// ------------
+/// Creates a reducer hook that can be used to manage state. The reducer hook will
+/// return the current state of the reducer and a dispatch function that can be used
+/// to update the reducer's state. Dispatching a message to the reducer will result
+/// in a re-render of the component.
 pub fn reducer(
   ctx: Context,
   initial: model,
@@ -207,6 +228,11 @@ pub fn reducer(
   cb(ctx, state, dispatch)
 }
 
+/// State Hook
+/// ----------
+/// Creates a state hook that can be used to manage state. The state hook will return
+/// the current state and a setter function that can be used to update the state. Setting
+/// the state will result in a re-render of the component.
 pub fn state(
   ctx: Context,
   initial: a,
