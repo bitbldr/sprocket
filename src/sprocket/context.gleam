@@ -4,7 +4,7 @@ import gleam/option.{None, Option, Some}
 import gleam/erlang/process.{Subject}
 import gleam/dynamic.{Dynamic}
 import ids/cuid
-import sprocket_html/attributes.{Attribute}
+import sprocket/html/attributes.{Attribute}
 import sprocket/internal/identifiable_callback.{CallbackFn,
   IdentifiableCallback}
 import sprocket/internal/utils/ordered_map.{OrderedMap}

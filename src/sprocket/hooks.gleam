@@ -12,7 +12,7 @@ import sprocket/internal/exceptions.{throw_on_unexpected_hook_result}
 import sprocket/internal/identifiable_callback.{CallbackFn,
   IdentifiableCallback}
 import sprocket/internal/utils/unique
-import sprocket_html/attributes.{Attribute, client_hook}
+import sprocket/html/attributes.{Attribute, client_hook}
 
 pub fn callback(
   ctx: Context,

@@ -3,7 +3,7 @@ import gleam/list
 import gleam/option.{None, Option, Some}
 import gleam/dynamic.{Dynamic}
 import ids/cuid
-import sprocket_html/attributes.{Attribute, ClientHook, Event}
+import sprocket/html/attributes.{Attribute, ClientHook, Event}
 import sprocket/context.{
   AbstractFunctionalComponent, Component, ComponentHooks, ComponentWip, Context,
   Debug, Element, IgnoreUpdate, Keyed, Raw, SafeHtml,

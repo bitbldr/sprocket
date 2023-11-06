@@ -7,7 +7,7 @@ import sprocket/context
 import sprocket/internal/identifiable_callback.{CallbackFn}
 import sprocket/render.{RenderedAttribute,
   RenderedElement, RenderedEventHandler}
-import sprocket_html/render as html_render
+import sprocket/html/render as html_render
 import sprocket/internal/utils/unique
 
 pub fn live(view) {
