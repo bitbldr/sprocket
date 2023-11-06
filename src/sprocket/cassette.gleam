@@ -7,9 +7,8 @@ import gleam/erlang/process.{Subject}
 import gleam/otp/actor
 import ids/cuid
 import sprocket/sprocket.{Sprocket}
-import sprocket/context.{Dispatcher, Element, Updater}
+import sprocket/context.{Client, Dispatcher, Element, Updater}
 import sprocket/render.{RenderedElement}
-import sprocket/hooks.{Client}
 import sprocket/internal/render/json as json_renderer
 import sprocket/internal/patch.{Patch}
 import sprocket/internal/identifiable_callback.{CallbackFn, CallbackWithValueFn}

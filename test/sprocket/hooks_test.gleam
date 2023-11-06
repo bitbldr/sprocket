@@ -2,14 +2,11 @@ import gleam/int
 import gleam/string
 import gleam/option.{None}
 import gleeunit/should
-import sprocket/context.{Context}
+import sprocket/context.{Context, OnMount, OnUpdate, WithDeps, dep}
 import sprocket/component.{component}
 import sprocket_html/elements.{button, text}
 import sprocket_html/attributes.{id, on_click}
-import sprocket/hooks.{OnMount, OnUpdate, WithDeps, dep}
-import sprocket/hooks/reducer.{reducer}
-import sprocket/hooks/effect.{effect}
-import sprocket/hooks/callback.{callback}
+import sprocket/hooks.{callback, effect, reducer}
 import sprocket/internal/identifiable_callback.{CallbackFn}
 import sprocket/test_helpers.{ClickEvent, live, render_event, render_html}
 

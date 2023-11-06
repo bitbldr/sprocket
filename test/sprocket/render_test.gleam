@@ -1,12 +1,11 @@
 import gleam/dynamic
 import gleam/option.{None, Some}
 import gleeunit/should
-import sprocket/context.{Context}
+import sprocket/context.{Context, WithDeps}
 import sprocket/component.{component, render}
 import sprocket_html/elements.{a, text}
 import sprocket_html/attributes.{classes}
-import sprocket/hooks.{WithDeps}
-import sprocket/hooks/callback.{callback}
+import sprocket/hooks.{callback}
 import sprocket/internal/identifiable_callback.{CallbackFn}
 import sprocket/render.{
   RenderedAttribute, RenderedComponent, RenderedElement, RenderedEventHandler,

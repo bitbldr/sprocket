@@ -7,11 +7,9 @@ import ids/cuid
 import sprocket/internal/logger
 import sprocket/internal/constants.{call_timeout}
 import sprocket/context.{
-  ComponentHooks, Context, Dispatcher, Element, EventHandler, Updater,
-}
-import sprocket/hooks.{
-  Callback, Changed, Effect, EffectCleanup, EffectResult, Hook, HookDependencies,
-  HookTrigger, OnMount, OnUpdate, Reducer, Unchanged, WithDeps, compare_deps,
+  Callback, Changed, ComponentHooks, Context, Dispatcher, Effect, EffectCleanup,
+  EffectResult, Element, EventHandler, Hook, HookDependencies, HookTrigger,
+  OnMount, OnUpdate, Reducer, Unchanged, Updater, WithDeps, compare_deps,
 }
 import sprocket/render.{
   RenderResult, RenderedComponent, RenderedElement, live_render,
@@ -234,7 +232,7 @@ fn handle_message(message: Message, state: State) -> actor.Next(Message, State) 
               rendered,
               fn(hook) {
                 case hook {
-                  hooks.Client(i, _, _) -> unique.equals(i, id)
+                  context.Client(i, _, _) -> unique.equals(i, id)
                   _ -> False
                 }
               },
@@ -395,10 +393,10 @@ fn build_hooks_map(
               Reducer(id, _, _) -> {
                 map.insert(acc, id, hook)
               }
-              hooks.State(id, _) -> {
+              context.State(id, _) -> {
                 map.insert(acc, id, hook)
               }
-              hooks.Client(id, _, _) -> {
+              context.Client(id, _, _) -> {
                 map.insert(acc, id, hook)
               }
             }
@@ -651,7 +649,7 @@ fn update_hook_state(
           fn(hook) {
             case hook {
               // this operation is only applicable to State hooks
-              hooks.State(id, _) -> {
+              context.State(id, _) -> {
                 case id == hook_id {
                   True -> update(hook)
                   False -> hook
