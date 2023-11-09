@@ -4,7 +4,6 @@ import gleam/option.{None, Some}
 import ids/cuid
 import sprocket/sprocket.{Sprocket}
 import sprocket/context
-import sprocket/internal/identifiable_callback.{CallbackFn}
 import sprocket/render.{RenderedAttribute,
   RenderedElement, RenderedEventHandler}
 import sprocket/html/render as html_render
@@ -79,24 +78,7 @@ pub fn render_event(spkt: Sprocket, event: Event, html_id: String) {
               case sprocket.get_handler(spkt, event_id) {
                 Ok(context.EventHandler(_, handler)) -> {
                   // call the event handler
-                  case handler {
-                    CallbackFn(cb) -> {
-                      cb()
-                    }
-                    // CallbackWithValueFn(cb) -> {
-                    //   case event.value {
-                    //     Some(value) -> cb(value)
-                    //     _ -> {
-                    //       logger.error("Error decoding event value:")
-                    //       io.debug(event)
-                    //       panic
-                    //     }
-                    //   }
-                    // }
-                    _ -> {
-                      todo
-                    }
-                  }
+                  handler(None)
                 }
                 _ -> Nil
               }

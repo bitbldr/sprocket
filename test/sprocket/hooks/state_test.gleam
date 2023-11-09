@@ -5,7 +5,6 @@ import sprocket/component.{component}
 import sprocket/html/elements.{button, text}
 import sprocket/html/attributes.{id, on_click}
 import sprocket/hooks.{callback, state}
-import sprocket/internal/identifiable_callback.{CallbackFn}
 import sprocket/test_helpers.{ClickEvent, live, render_event, render_html}
 
 type TestCounterProps {
@@ -19,12 +18,12 @@ fn inc_reset_on_button_click_using_state(ctx: Context, _props) {
   // Define event handlers
   use ctx, on_increment <- callback(
     ctx,
-    CallbackFn(fn() { set_count(count + 1) }),
+    fn(_) { set_count(count + 1) },
     WithDeps([dep(count)]),
   )
   use ctx, on_reset <- callback(
     ctx,
-    CallbackFn(fn() { set_count(0) }),
+    fn(_) { set_count(0) },
     WithDeps([dep(count)]),
   )
 

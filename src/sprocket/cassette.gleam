@@ -11,7 +11,7 @@ import sprocket/context.{Client, Dispatcher, Element, Updater}
 import sprocket/render.{RenderedElement}
 import sprocket/internal/render/json as json_renderer
 import sprocket/internal/patch.{Patch}
-import sprocket/internal/identifiable_callback.{CallbackFn, CallbackWithValueFn}
+import sprocket/internal/identifiable_callback
 import sprocket/internal/logger
 import sprocket/internal/constants.{call_timeout}
 import sprocket/internal/utils/unique.{Unique}
@@ -212,27 +212,11 @@ pub fn client_message(
           case sprocket.get_handler(sprocket, event_id) {
             Ok(context.EventHandler(_, handler)) -> {
               // call the event handler
-              case handler {
-                CallbackFn(cb) -> {
-                  cb()
-
-                  Ok(Nil)
-                }
-                CallbackWithValueFn(cb) -> {
-                  case value {
-                    Some(value) -> {
-                      cb(value)
-
-                      Ok(Nil)
-                    }
-                    _ -> {
-                      logger.error("Error: expected a value but got None")
-                      io.debug(value)
-                      panic
-                    }
-                  }
-                }
-              }
+              handler(option.map(
+                value,
+                fn(value) { identifiable_callback.from_string(value) },
+              ))
+              |> Ok
             }
             _ -> Ok(Nil)
           }

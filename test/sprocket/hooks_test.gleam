@@ -139,12 +139,12 @@ fn inc_reset_on_button_click_counter(ctx: Context, _props) {
   // Define event handlers
   use ctx, on_increment <- callback(
     ctx,
-    CallbackFn(fn() { dispatch(UpdateCount(count + 1)) }),
+    fn(_) { dispatch(UpdateCount(count + 1)) },
     WithDeps([dep(count)]),
   )
   use ctx, on_reset <- callback(
     ctx,
-    CallbackFn(fn() { dispatch(ResetCount) }),
+    fn(_) { dispatch(ResetCount) },
     WithDeps([dep(count)]),
   )
 

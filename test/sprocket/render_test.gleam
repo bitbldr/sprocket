@@ -6,7 +6,6 @@ import sprocket/component.{component, render}
 import sprocket/html/elements.{a, text}
 import sprocket/html/attributes.{classes}
 import sprocket/hooks.{callback}
-import sprocket/internal/identifiable_callback.{CallbackFn}
 import sprocket/render.{
   RenderedAttribute, RenderedComponent, RenderedElement, RenderedEventHandler,
   RenderedText,
@@ -20,7 +19,7 @@ type TestProps {
 fn test_component(ctx: Context, props: TestProps) {
   let TestProps(title: title, href: _href, is_active: is_active) = props
 
-  use ctx, on_click <- callback(ctx, CallbackFn(fn() { todo }), WithDeps([]))
+  use ctx, on_click <- callback(ctx, fn(_) { todo }, WithDeps([]))
 
   render(
     ctx,
