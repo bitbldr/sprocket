@@ -9,10 +9,10 @@ import sprocket/context.{
   HookTrigger, OnMount, OnUpdate, Unchanged, WithDeps, compare_deps,
 }
 import sprocket/internal/exceptions.{throw_on_unexpected_hook_result}
-import sprocket/internal/identifiable_callback.{CallbackFn,
-  IdentifiableCallback}
 import sprocket/internal/utils/unique
-import sprocket/html/attributes.{Attribute, client_hook}
+import sprocket/html/attributes.{
+  Attribute, CallbackFn, IdentifiableCallback, client_hook,
+}
 
 /// Callback Hook
 /// -------------

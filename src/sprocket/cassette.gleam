@@ -8,10 +8,10 @@ import gleam/otp/actor
 import ids/cuid
 import sprocket/sprocket.{Sprocket}
 import sprocket/context.{Client, Dispatcher, Element, Updater}
+import sprocket/html/attributes.{callback_param_from_string}
 import sprocket/render.{RenderedElement}
 import sprocket/internal/render/json as json_renderer
 import sprocket/internal/patch.{Patch}
-import sprocket/internal/identifiable_callback
 import sprocket/internal/logger
 import sprocket/internal/constants.{call_timeout}
 import sprocket/internal/utils/unique.{Unique}
@@ -214,7 +214,7 @@ pub fn client_message(
               // call the event handler
               handler(option.map(
                 value,
-                fn(value) { identifiable_callback.from_string(value) },
+                fn(value) { callback_param_from_string(value) },
               ))
               |> Ok
             }

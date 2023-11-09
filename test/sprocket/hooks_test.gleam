@@ -7,7 +7,6 @@ import sprocket/component.{component}
 import sprocket/html/elements.{button, text}
 import sprocket/html/attributes.{id, on_click}
 import sprocket/hooks.{callback, effect, reducer}
-import sprocket/internal/identifiable_callback.{CallbackFn}
 import sprocket/test_helpers.{ClickEvent, live, render_event, render_html}
 
 type Model {

@@ -2,12 +2,26 @@ import gleam/list
 import gleam/string_builder
 import gleam/option.{None, Option, Some}
 import gleam/dynamic.{Dynamic}
-import sprocket/internal/identifiable_callback.{IdentifiableCallback}
 import sprocket/internal/utils/unique.{Unique}
+
+pub type CallbackFn =
+  fn(Option(CallbackParam)) -> Nil
+
+pub type CallbackParam {
+  CallbackString(value: String)
+}
+
+pub type IdentifiableCallback {
+  IdentifiableCallback(id: Unique, cb: CallbackFn)
+}
+
+pub fn callback_param_from_string(value: String) -> CallbackParam {
+  CallbackString(value)
+}
 
 pub type Attribute {
   Attribute(name: String, value: Dynamic)
-  Event(name: String, identifiable_cb: IdentifiableCallback)
+  Event(name: String, cb: IdentifiableCallback)
   ClientHook(id: Unique, name: String)
 }
 
@@ -15,28 +29,28 @@ pub fn attribute(name: String, value: any) -> Attribute {
   Attribute(name, dynamic.from(value))
 }
 
-pub fn event(name: String, identifiable_cb: IdentifiableCallback) -> Attribute {
-  Event(name, identifiable_cb)
+pub fn event(name: String, cb: IdentifiableCallback) -> Attribute {
+  Event(name, cb)
 }
 
 pub fn client_hook(id: Unique, name: String) -> Attribute {
   ClientHook(id, name)
 }
 
-pub fn on_click(identifiable_cb: IdentifiableCallback) -> Attribute {
-  event("click", identifiable_cb)
+pub fn on_click(cb: IdentifiableCallback) -> Attribute {
+  event("click", cb)
 }
 
-pub fn on_doubleclick(identifiable_cb: IdentifiableCallback) -> Attribute {
-  event("doubleclick", identifiable_cb)
+pub fn on_doubleclick(cb: IdentifiableCallback) -> Attribute {
+  event("doubleclick", cb)
 }
 
-pub fn on_change(identifiable_cb: IdentifiableCallback) -> Attribute {
-  event("change", identifiable_cb)
+pub fn on_change(cb: IdentifiableCallback) -> Attribute {
+  event("change", cb)
 }
 
-pub fn on_input(identifiable_cb: IdentifiableCallback) -> Attribute {
-  event("input", identifiable_cb)
+pub fn on_input(cb: IdentifiableCallback) -> Attribute {
+  event("input", cb)
 }
 
 pub fn media(value: String) -> Attribute {
