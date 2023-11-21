@@ -1,17 +1,19 @@
-import gleam/option.{None, Option, Some}
+import gleam/option.{type Option, None, Some}
 import gleam/dynamic
 import gleam/otp/actor
-import gleam/erlang/process.{Subject}
+import gleam/erlang/process.{type Subject}
 import sprocket/internal/constants.{call_timeout}
 import sprocket/context.{
-  Callback, CallbackResult, Changed, Client, ClientDispatcher,
-  ClientEventHandler, Context, Effect, EffectCleanup, Element, HookDependencies,
-  HookTrigger, OnMount, OnUpdate, Unchanged, WithDeps, compare_deps,
+  type CallbackResult, type ClientDispatcher, type ClientEventHandler,
+  type Context, type EffectCleanup, type Element, type HookDependencies,
+  type HookTrigger, Callback, CallbackResult, Changed, Client, Context, Effect,
+  OnMount, OnUpdate, Unchanged, WithDeps, compare_deps,
 }
 import sprocket/internal/exceptions.{throw_on_unexpected_hook_result}
 import sprocket/internal/utils/unique
 import sprocket/html/attributes.{
-  Attribute, CallbackFn, IdentifiableCallback, client_hook,
+  type Attribute, type CallbackFn, type IdentifiableCallback,
+  IdentifiableCallback, client_hook,
 }
 
 /// Callback Hook

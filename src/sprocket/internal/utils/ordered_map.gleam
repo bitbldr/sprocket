@@ -1,5 +1,5 @@
 import gleam/list
-import gleam/map.{Map}
+import gleam/map.{type Map}
 
 pub type KeyedItem(k, a) {
   KeyedItem(key: k, value: a)

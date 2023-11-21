@@ -1,6 +1,6 @@
 import gleam/int
 import gleam/string
-import sprocket/context.{Context, WithDeps, dep}
+import sprocket/context.{type Context, WithDeps, dep}
 import sprocket/component.{component}
 import sprocket/html/elements.{button, text}
 import sprocket/html/attributes.{id, on_click}

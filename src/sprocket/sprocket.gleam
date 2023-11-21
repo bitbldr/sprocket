@@ -1,22 +1,27 @@
 import gleam/list
-import gleam/map.{Map}
+import gleam/map.{type Map}
 import gleam/otp/actor
-import gleam/erlang/process.{Subject}
-import gleam/option.{None, Option, Some}
+import gleam/erlang/process.{type Subject}
+import gleam/option.{type Option, None, Some}
 import ids/cuid
 import sprocket/internal/logger
 import sprocket/internal/constants.{call_timeout}
 import sprocket/context.{
-  Callback, Changed, ComponentHooks, Context, Dispatcher, Effect, EffectCleanup,
-  EffectResult, Element, EventHandler, Hook, HookDependencies, HookTrigger,
-  OnMount, OnUpdate, Reducer, Unchanged, Updater, WithDeps, compare_deps,
+  type ComponentHooks, type Context, type Dispatcher, type EffectCleanup,
+  type EffectResult, type Element, type EventHandler, type Hook,
+  type HookDependencies, type HookTrigger, type Updater, Callback, Changed,
+  Context, Effect, EffectResult, EventHandler, OnMount, OnUpdate, Reducer,
+  Unchanged, WithDeps, compare_deps,
 }
 import sprocket/render.{
-  RenderResult, RenderedComponent, RenderedElement, live_render,
+  type RenderedElement, RenderResult, RenderedComponent, RenderedElement,
+  live_render,
 }
-import sprocket/internal/patch.{Patch}
-import sprocket/internal/utils/ordered_map.{KeyedItem, OrderedMapIter}
-import sprocket/internal/utils/unique.{Unique}
+import sprocket/internal/patch.{type Patch}
+import sprocket/internal/utils/ordered_map.{
+  type KeyedItem, type OrderedMapIter, KeyedItem,
+}
+import sprocket/internal/utils/unique.{type Unique}
 import sprocket/internal/exceptions.{throw_on_unexpected_hook_result}
 import sprocket/internal/utils/timer.{interval}
 

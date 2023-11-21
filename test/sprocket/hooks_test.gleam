@@ -2,7 +2,7 @@ import gleam/int
 import gleam/string
 import gleam/option.{None}
 import gleeunit/should
-import sprocket/context.{Context, OnMount, OnUpdate, WithDeps, dep}
+import sprocket/context.{type Context, OnMount, OnUpdate, WithDeps, dep}
 import sprocket/component.{component}
 import sprocket/html/elements.{button, text}
 import sprocket/html/attributes.{id, on_click}

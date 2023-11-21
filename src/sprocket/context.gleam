@@ -1,12 +1,15 @@
 import gleam/int
 import gleam/list
-import gleam/option.{None, Option, Some}
-import gleam/erlang/process.{Subject}
-import gleam/dynamic.{Dynamic}
+import gleam/option.{type Option, None, Some}
+import gleam/erlang/process.{type Subject}
+import gleam/dynamic.{type Dynamic}
 import ids/cuid
-import sprocket/html/attributes.{Attribute, CallbackFn, IdentifiableCallback}
-import sprocket/internal/utils/ordered_map.{OrderedMap}
-import sprocket/internal/utils/unique.{Unique}
+import sprocket/html/attributes.{
+  type Attribute, type CallbackFn, type IdentifiableCallback,
+  IdentifiableCallback,
+}
+import sprocket/internal/utils/ordered_map.{type OrderedMap}
+import sprocket/internal/utils/unique.{type Unique}
 import sprocket/internal/logger
 import sprocket/internal/exceptions.{throw_on_unexpected_deps_mismatch}
 

@@ -2,10 +2,11 @@ import gleam/io
 import gleam/list
 import gleam/option.{None, Some}
 import ids/cuid
-import sprocket/sprocket.{Sprocket}
+import sprocket/sprocket.{type Sprocket}
 import sprocket/context
-import sprocket/render.{RenderedAttribute,
-  RenderedElement, RenderedEventHandler}
+import sprocket/render.{
+  type RenderedElement, RenderedAttribute, RenderedElement, RenderedEventHandler,
+}
 import sprocket/html/render as html_render
 import sprocket/internal/utils/unique
 

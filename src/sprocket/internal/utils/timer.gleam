@@ -1,7 +1,7 @@
 import gleam/string
 import gleam/int
-import gleam/otp/actor.{Next}
-import gleam/erlang/process.{Subject}
+import gleam/otp/actor.{type Next}
+import gleam/erlang/process.{type Subject}
 import sprocket/internal/logger
 
 type TimerInterval =

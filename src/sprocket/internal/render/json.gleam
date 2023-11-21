@@ -1,11 +1,12 @@
 import gleam/int
 import gleam/list
 import gleam/string
-import gleam/option.{None, Option, Some}
-import gleam/json.{Json}
+import gleam/option.{type Option, None, Some}
+import gleam/json.{type Json}
 import sprocket/render.{
-  RenderedAttribute, RenderedClientHook, RenderedComponent, RenderedElement,
-  RenderedEventHandler, RenderedText, Renderer,
+  type RenderedAttribute, type RenderedElement, type Renderer, RenderedAttribute,
+  RenderedClientHook, RenderedComponent, RenderedElement, RenderedEventHandler,
+  RenderedText, Renderer,
 }
 import sprocket/internal/constants.{
   ClientHookAttrPrefix, EventAttrPrefix, KeyAttr, constant,

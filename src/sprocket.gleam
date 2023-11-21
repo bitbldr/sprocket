@@ -1,7 +1,7 @@
-import gleam/option.{Option}
+import gleam/option.{type Option}
 import sprocket/sprocket
-import sprocket/context.{Element}
-import sprocket/cassette.{Cassette, CassetteOpts}
+import sprocket/context.{type Element}
+import sprocket/cassette.{type Cassette, type CassetteOpts}
 import sprocket/internal/utils/unique
 
 pub type SprocketOptions {

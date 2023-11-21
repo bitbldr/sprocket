@@ -1,20 +1,20 @@
 import gleam/io
 import gleam/list
-import gleam/dynamic.{Dynamic, field, optional_field}
-import gleam/option.{None, Option, Some}
+import gleam/dynamic.{type Dynamic, field, optional_field}
+import gleam/option.{type Option, None, Some}
 import gleam/json
-import gleam/erlang/process.{Subject}
+import gleam/erlang/process.{type Subject}
 import gleam/otp/actor
 import ids/cuid
-import sprocket/sprocket.{Sprocket}
-import sprocket/context.{Client, Dispatcher, Element, Updater}
+import sprocket/sprocket.{type Sprocket}
+import sprocket/context.{type Element, Client, Dispatcher, Updater}
 import sprocket/html/attributes.{callback_param_from_string}
-import sprocket/render.{RenderedElement}
+import sprocket/render.{type RenderedElement}
 import sprocket/internal/render/json as json_renderer
-import sprocket/internal/patch.{Patch}
+import sprocket/internal/patch.{type Patch}
 import sprocket/internal/logger
 import sprocket/internal/constants.{call_timeout}
-import sprocket/internal/utils/unique.{Unique}
+import sprocket/internal/utils/unique.{type Unique}
 
 pub type CSRFValidator =
   fn(String) -> Result(Nil, Nil)

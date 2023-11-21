@@ -1,10 +1,12 @@
 import gleam/list
-import gleam/option.{None, Option, Some}
-import gleam/dynamic.{Dynamic}
+import gleam/option.{type Option, None, Some}
+import gleam/dynamic.{type Dynamic}
 import gleam/string
 import gleam/string_builder
-import sprocket/context.{Debug, Element, IgnoreUpdate, Keyed, Raw, SafeHtml}
-import sprocket/html/attributes.{Attribute}
+import sprocket/context.{
+  type Element, Debug, Element, IgnoreUpdate, Keyed, Raw, SafeHtml,
+}
+import sprocket/html/attributes.{type Attribute}
 
 pub fn el(tag: String, attrs: List(Attribute), children: List(Element)) {
   Element(tag, attrs, children)

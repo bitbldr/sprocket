@@ -1,4 +1,4 @@
-import gleam/dynamic.{Dynamic}
+import gleam/dynamic.{type Dynamic}
 
 pub type Level {
   Emergency

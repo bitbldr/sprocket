@@ -4,7 +4,7 @@ import gleam/regex
 import gleam/string
 import gleam/erlang.{start_arguments}
 import gleam/erlang/file
-import glint.{CommandInput}
+import glint.{type CommandInput}
 import glint/flag
 
 /// A very fragile script to transform a file of html tags into sprocket element/attribute functions

@@ -1,8 +1,8 @@
 import gleam/list
 import gleam/string_builder
-import gleam/option.{None, Option, Some}
-import gleam/dynamic.{Dynamic}
-import sprocket/internal/utils/unique.{Unique}
+import gleam/option.{type Option, None, Some}
+import gleam/dynamic.{type Dynamic}
+import sprocket/internal/utils/unique.{type Unique}
 
 pub type CallbackFn =
   fn(Option(CallbackParam)) -> Nil

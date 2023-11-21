@@ -1,9 +1,10 @@
 import gleam/list
-import gleam/option.{None, Option, Some}
-import gleam/string_builder.{StringBuilder}
+import gleam/option.{type Option, None, Some}
+import gleam/string_builder.{type StringBuilder}
 import sprocket/render.{
-  RenderedAttribute, RenderedClientHook, RenderedComponent, RenderedElement,
-  RenderedEventHandler, RenderedText, Renderer, traverse,
+  type RenderedAttribute, type RenderedElement, type Renderer, RenderedAttribute,
+  RenderedClientHook, RenderedComponent, RenderedElement, RenderedEventHandler,
+  RenderedText, Renderer, traverse,
 }
 import sprocket/internal/constants.{
   ClientHookAttrPrefix, EventAttrPrefix, KeyAttr, constant,

@@ -1,5 +1,5 @@
-import gleam/erlang/process.{Subject}
-import ids/cuid.{Message}
+import gleam/erlang/process.{type Subject}
+import ids/cuid.{type Message}
 import ids/uuid
 
 pub opaque type Unique {

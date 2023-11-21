@@ -20,9 +20,10 @@ internal_modules = [
   "sprocket/sprocket",
   "tools/*",
 ]
+gleam = ">= 0.32.0"
 
 [dependencies]
-gleam_stdlib = "~> 0.31"
+gleam_stdlib = "~> 0.32"
 gleam_http = "~> 3.5"
 gleam_erlang = "~> 0.22"
 gleam_json = "~> 0.6"

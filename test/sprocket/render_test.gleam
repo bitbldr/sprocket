@@ -1,7 +1,7 @@
 import gleam/dynamic
 import gleam/option.{None, Some}
 import gleeunit/should
-import sprocket/context.{Context, WithDeps}
+import sprocket/context.{type Context, WithDeps}
 import sprocket/component.{component, render}
 import sprocket/html/elements.{a, text}
 import sprocket/html/attributes.{classes}

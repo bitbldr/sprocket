@@ -1,4 +1,4 @@
-import gleam/map.{Map}
+import gleam/map.{type Map}
 
 /// Takes a string and a map of interpolations and returns a new string with the
 /// interpolations applied.
