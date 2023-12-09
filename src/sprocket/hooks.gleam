@@ -271,13 +271,6 @@ fn maybe_trigger_update(
   }
 }
 
-// fn replace_callback(
-//   callback_fn: CallbackFn,
-//   deps: Option(HookDependencies),
-// ) -> CallbackResult {
-//   CallbackResult(callback_fn, deps)
-// }
-
 /// Handler Hook
 /// -------------
 /// Creates a handler callback that can be triggered from DOM event attributes. The callback
