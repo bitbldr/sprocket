@@ -4,162 +4,55 @@ import gleam/otp/actor
 import gleam/erlang/process.{type Subject}
 import sprocket/internal/constants.{call_timeout}
 import sprocket/context.{
-  type CallbackResult, type ClientDispatcher, type ClientEventHandler,
-  type Context, type EffectCleanup, type Element, type HookDependencies,
-  type HookTrigger, Callback, CallbackResult, Changed, Client, Context, Effect,
-  OnMount, OnUpdate, Unchanged, WithDeps, compare_deps,
+  type Attribute, type ClientDispatcher, type ClientEventHandler, type Context,
+  type EffectCleanup, type Element, type HandlerFn, type HookDependencies,
+  type HookTrigger, type IdentifiableHandler, Callback, CallbackResult, Changed,
+  Client, ClientHook, Context, Effect, Handler, IdentifiableHandler, OnMount,
+  OnUpdate, Unchanged, WithDeps, compare_deps,
 }
 import sprocket/internal/exceptions.{throw_on_unexpected_hook_result}
 import sprocket/internal/utils/unique
-import sprocket/html/attributes.{
-  type Attribute, type CallbackFn, type IdentifiableCallback,
-  IdentifiableCallback, client_hook,
-}
 
-/// Callback Hook
-/// -------------
-/// Creates a callback that can be triggered from DOM event attributes. The callback
-/// function will be called with the event payload. This hook ensures that the callback
-/// identifier remains stable preventing unnecessary id changes across renders. The
-/// callback function is memoized and recomputed based on the trigger type.
-pub fn callback(
+/// State Hook
+/// ----------
+/// Creates a state hook that can be used to manage state. The state hook will return
+/// the current state and a setter function that can be used to update the state. Setting
+/// the state will result in a re-render of the component.
+pub fn state(
   ctx: Context,
-  callback_fn: CallbackFn,
-  trigger: HookTrigger,
-  cb: fn(Context, IdentifiableCallback) -> #(ctx, List(Element)),
-) -> #(ctx, List(Element)) {
-  let init_callback = fn() {
-    Callback(unique.cuid(ctx.cuid_channel), callback_fn, trigger, None)
+  initial: a,
+  cb: fn(Context, a, fn(a) -> Nil) -> #(Context, List(Element)),
+) -> #(Context, List(Element)) {
+  let Context(render_update: render_update, update_hook: update_hook, ..) = ctx
+
+  let init_state = fn() {
+    context.State(unique.cuid(ctx.cuid_channel), dynamic.from(initial))
   }
 
-  let #(ctx, Callback(id, _callback_fn, _trigger, prev), index) =
-    context.fetch_or_init_hook(ctx, init_callback)
+  let assert #(ctx, context.State(hook_id, value), _index) =
+    context.fetch_or_init_hook(ctx, init_state)
 
-  let result = maybe_update_callback(callback_fn, trigger, prev)
-
-  let ctx =
-    context.update_hook(
-      ctx,
-      Callback(id, result.callback, trigger, Some(result)),
-      index,
-    )
-
-  cb(ctx, IdentifiableCallback(id, result.callback))
-}
-
-fn maybe_update_callback(
-  callback_fn: CallbackFn,
-  trigger: HookTrigger,
-  prev: Option(CallbackResult),
-) -> CallbackResult {
-  case trigger {
-    // Only compute callback on the first render. This is a convience for WithDeps([]).
-    OnMount -> {
-      replace_callback(callback_fn, Some([]))
-    }
-
-    // Recompute callback on every update
-    OnUpdate -> {
-      replace_callback(callback_fn, None)
-    }
-
-    // Only compute callback on the first render and when the dependencies change
-    WithDeps(deps) -> {
-      case prev {
-        Some(
-          CallbackResult(callback: _, deps: Some(prev_deps)) as prev_callback_result,
-        ) -> {
-          case compare_deps(prev_deps, deps) {
-            Changed(_) -> replace_callback(callback_fn, Some(deps))
-            Unchanged -> prev_callback_result
+  // create a dispatch function for updating the reducer's state and triggering a render update
+  let setter = fn(value) -> Nil {
+    update_hook(
+      hook_id,
+      fn(hook) {
+        case hook {
+          context.State(id, _) if id == hook_id ->
+            context.State(id, dynamic.from(value))
+          _ -> {
+            // this should never happen and could be an indication that a hook is being
+            // used incorrectly
+            throw_on_unexpected_hook_result(hook)
           }
         }
+      },
+    )
 
-        Some(prev_callback_result) -> prev_callback_result
-
-        None -> replace_callback(callback_fn, Some(deps))
-
-        _ -> {
-          // this should never occur and means that a hook was dynamically added
-          throw_on_unexpected_hook_result(#("handle_callback", prev))
-        }
-      }
-    }
-  }
-}
-
-fn replace_callback(
-  callback_fn: CallbackFn,
-  deps: Option(HookDependencies),
-) -> CallbackResult {
-  CallbackResult(callback_fn, deps)
-}
-
-/// Client Hook
-/// -----------
-/// Creates a client hook that can be used to facilitate communication with a client
-/// (such as a web browser). The client hook functionality is defined by the client
-/// and is typically used to send or receive messages to/from the client.
-pub fn client(
-  ctx: Context,
-  name: String,
-  handle_event: Option(ClientEventHandler),
-  cb: fn(Context, fn() -> Attribute, ClientDispatcher) ->
-    #(Context, List(Element)),
-) -> #(Context, List(Element)) {
-  // define the client hook initializer
-  let init = fn() { Client(unique.cuid(ctx.cuid_channel), name, handle_event) }
-
-  // get the existing client hook or initialize it
-  let #(ctx, Client(id, _name, _handle_event), index) =
-    context.fetch_or_init_hook(ctx, init)
-
-  // update the effect hook, combining with the previous result
-  let ctx = context.update_hook(ctx, Client(id, name, handle_event), index)
-
-  let bind_hook_attr = fn() { client_hook(id, name) }
-
-  // callback to dispatch an event to the client
-  let dispatch_event = fn(name: String, payload: Option(String)) {
-    context.dispatch_event(ctx, id, name, payload)
+    render_update()
   }
 
-  cb(ctx, bind_hook_attr, dispatch_event)
-}
-
-/// Effect Hook
-/// -----------
-/// Creates an effect hook that will run the given effect function when the hook is
-/// triggered. The effect function is memoized and recomputed based on the trigger type.
-pub fn effect(
-  ctx: Context,
-  effect_fn: fn() -> EffectCleanup,
-  trigger: HookTrigger,
-  cb: fn(Context) -> #(Context, List(Element)),
-) -> #(Context, List(Element)) {
-  // define the initial effect function that will only run on the first render
-  let init = fn() {
-    Effect(unique.cuid(ctx.cuid_channel), effect_fn, trigger, None)
-  }
-
-  // get the previous effect result, if one exists
-  let #(ctx, Effect(id, _effect_fn, _trigger, prev), index) =
-    context.fetch_or_init_hook(ctx, init)
-
-  // update the effect hook, combining with the previous result
-  let ctx =
-    context.update_hook(ctx, Effect(id, effect_fn, trigger, prev), index)
-
-  cb(ctx)
-}
-
-type Reducer(model, msg) =
-  fn(model, msg) -> model
-
-type StateOrDispatchReducer(model, msg) {
-  Shutdown
-  StateReducer(reply_with: Subject(model))
-  DispatchReducer(r: Reducer(model, msg), m: msg)
+  cb(ctx, dynamic.unsafe_coerce(value), setter)
 }
 
 /// Reducer Hook
@@ -230,44 +123,210 @@ pub fn reducer(
   cb(ctx, state, dispatch)
 }
 
-/// State Hook
-/// ----------
-/// Creates a state hook that can be used to manage state. The state hook will return
-/// the current state and a setter function that can be used to update the state. Setting
-/// the state will result in a re-render of the component.
-pub fn state(
+/// Effect Hook
+/// -----------
+/// Creates an effect hook that will run the given effect function when the hook is
+/// triggered. The effect function is memoized and recomputed based on the trigger type.
+pub fn effect(
   ctx: Context,
-  initial: a,
-  cb: fn(Context, a, fn(a) -> Nil) -> #(Context, List(Element)),
+  effect_fn: fn() -> EffectCleanup,
+  trigger: HookTrigger,
+  cb: fn(Context) -> #(Context, List(Element)),
 ) -> #(Context, List(Element)) {
-  let Context(render_update: render_update, update_hook: update_hook, ..) = ctx
-
-  let init_state = fn() {
-    context.State(unique.cuid(ctx.cuid_channel), dynamic.from(initial))
+  // define the initial effect function that will only run when the hook is first created
+  let init = fn() {
+    Effect(unique.cuid(ctx.cuid_channel), effect_fn, trigger, None)
   }
 
-  let assert #(ctx, context.State(hook_id, value), _index) =
-    context.fetch_or_init_hook(ctx, init_state)
+  // get the previous effect result, if one exists
+  let #(ctx, Effect(id, _effect_fn, _trigger, prev), index) =
+    context.fetch_or_init_hook(ctx, init)
 
-  // create a dispatch function for updating the reducer's state and triggering a render update
-  let setter = fn(value) -> Nil {
-    update_hook(
-      hook_id,
-      fn(hook) {
-        case hook {
-          context.State(id, _) if id == hook_id ->
-            context.State(id, dynamic.from(value))
-          _ -> {
-            // this should never happen and could be an indication that a hook is being
-            // used incorrectly
-            throw_on_unexpected_hook_result(hook)
-          }
-        }
+  // update the effect hook, combining with the previous result
+  let ctx =
+    context.update_hook(ctx, Effect(id, effect_fn, trigger, prev), index)
+
+  cb(ctx)
+}
+
+type Reducer(model, msg) =
+  fn(model, msg) -> model
+
+type StateOrDispatchReducer(model, msg) {
+  Shutdown
+  StateReducer(reply_with: Subject(model))
+  DispatchReducer(r: Reducer(model, msg), m: msg)
+}
+
+/// Memo Hook
+/// ---------
+/// Creates a memo hook that can be used to memoize the result of a function. The memo
+/// hook will return the result of the function and will only recompute the result when
+/// the dependencies change.
+pub fn memo(
+  ctx: Context,
+  memo_fn: fn() -> a,
+  trigger: HookTrigger,
+  cb: fn(Context, a) -> #(Context, List(Element)),
+) -> #(Context, List(Element)) {
+  let #(ctx, context.Memo(id, current_memoized, prev), index) =
+    context.fetch_or_init_hook(
+      ctx,
+      fn() {
+        context.Memo(
+          unique.cuid(ctx.cuid_channel),
+          dynamic.from(memo_fn()),
+          None,
+        )
       },
     )
 
-    render_update()
+  let #(memoized, deps) =
+    maybe_trigger_update(
+      trigger,
+      prev
+      |> option.then(fn(prev) { prev.deps }),
+      current_memoized,
+      fn() { dynamic.from(memo_fn()) },
+    )
+
+  let ctx =
+    context.update_hook(
+      ctx,
+      context.Memo(id, memoized, Some(context.MemoResult(deps))),
+      index,
+    )
+
+  cb(ctx, dynamic.unsafe_coerce(memoized))
+}
+
+/// Callback Hook
+/// -------------
+/// Creates a callback that can be triggered from DOM event attributes. The callback
+/// function will be called with the event payload. This hook ensures that the callback
+/// identifier remains stable preventing unnecessary id changes across renders. The
+/// callback function is memoized and recomputed based on the trigger type.
+pub fn callback(
+  ctx: Context,
+  callback_fn: fn() -> Nil,
+  trigger: HookTrigger,
+  cb: fn(Context, fn() -> Nil) -> #(ctx, List(Element)),
+) -> #(ctx, List(Element)) {
+  let #(ctx, Callback(id, current_callback_fn, prev), index) =
+    context.fetch_or_init_hook(
+      ctx,
+      fn() { Callback(unique.cuid(ctx.cuid_channel), callback_fn, None) },
+    )
+
+  let #(callback_fn, deps) =
+    maybe_trigger_update(
+      trigger,
+      prev
+      |> option.then(fn(prev) { prev.deps }),
+      current_callback_fn,
+      fn() { callback_fn },
+    )
+
+  let ctx =
+    context.update_hook(
+      ctx,
+      Callback(id, callback_fn, Some(CallbackResult(deps))),
+      index,
+    )
+
+  cb(ctx, callback_fn)
+}
+
+fn maybe_trigger_update(
+  trigger: HookTrigger,
+  prev: Option(HookDependencies),
+  value: a,
+  updater: fn() -> a,
+) -> #(a, Option(HookDependencies)) {
+  case trigger {
+    // Only compute callback on the initial render. This is a convience for WithDeps([]).
+    OnMount -> {
+      #(updater(), Some([]))
+    }
+
+    // Recompute callback on every update
+    OnUpdate -> {
+      #(updater(), None)
+    }
+
+    // Only compute callback on the initial render and when the dependencies change
+    WithDeps(deps) -> {
+      case prev {
+        Some(prev_deps) -> {
+          case compare_deps(prev_deps, deps) {
+            Changed(new_deps) -> #(updater(), Some(new_deps))
+            Unchanged -> #(value, prev)
+          }
+        }
+
+        // initial render
+        None -> #(updater(), Some(deps))
+      }
+    }
+  }
+}
+
+// fn replace_callback(
+//   callback_fn: CallbackFn,
+//   deps: Option(HookDependencies),
+// ) -> CallbackResult {
+//   CallbackResult(callback_fn, deps)
+// }
+
+/// Handler Hook
+/// -------------
+/// Creates a handler callback that can be triggered from DOM event attributes. The callback
+/// function will be called with the event payload. This hook ensures that the handler
+/// identifier remains stable preventing unnecessary id changes across renders.
+pub fn handler(
+  ctx: Context,
+  handler_fn: HandlerFn,
+  cb: fn(Context, IdentifiableHandler) -> #(ctx, List(Element)),
+) -> #(ctx, List(Element)) {
+  let #(ctx, Handler(id, _handler_fn), index) =
+    context.fetch_or_init_hook(
+      ctx,
+      fn() { Handler(unique.cuid(ctx.cuid_channel), handler_fn) },
+    )
+
+  let ctx = context.update_hook(ctx, Handler(id, handler_fn), index)
+
+  cb(ctx, IdentifiableHandler(id, handler_fn))
+}
+
+/// Client Hook
+/// -----------
+/// Creates a client hook that can be used to facilitate communication with a client
+/// (such as a web browser). The client hook functionality is defined by the client
+/// and is typically used to send or receive messages to/from the client.
+pub fn client(
+  ctx: Context,
+  name: String,
+  handle_event: Option(ClientEventHandler),
+  cb: fn(Context, fn() -> Attribute, ClientDispatcher) ->
+    #(Context, List(Element)),
+) -> #(Context, List(Element)) {
+  // define the client hook initializer
+  let init = fn() { Client(unique.cuid(ctx.cuid_channel), name, handle_event) }
+
+  // get the existing client hook or initialize it
+  let #(ctx, Client(id, _name, _handle_event), index) =
+    context.fetch_or_init_hook(ctx, init)
+
+  // update the effect hook, combining with the previous result
+  let ctx = context.update_hook(ctx, Client(id, name, handle_event), index)
+
+  let bind_hook_attr = fn() { ClientHook(id, name) }
+
+  // callback to dispatch an event to the client
+  let dispatch_event = fn(name: String, payload: Option(String)) {
+    context.dispatch_event(ctx, id, name, payload)
   }
 
-  cb(ctx, dynamic.unsafe_coerce(value), setter)
+  cb(ctx, bind_hook_attr, dispatch_event)
 }

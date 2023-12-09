@@ -3,11 +3,10 @@ import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/dynamic.{type Dynamic}
 import ids/cuid
-import sprocket/html/attributes.{type Attribute, Attribute, ClientHook, Event}
 import sprocket/context.{
-  type AbstractFunctionalComponent, type ComponentHooks, type Context,
-  type Element, Component, ComponentWip, Context, Debug, Element, IgnoreUpdate,
-  Keyed, Raw, SafeHtml,
+  type AbstractFunctionalComponent, type Attribute, type ComponentHooks,
+  type Context, type Element, Attribute, ClientHook, Component, ComponentWip,
+  Context, Debug, Element, Event, IgnoreUpdate, Keyed, Raw, SafeHtml,
 }
 import sprocket/internal/utils/unique
 import sprocket/internal/utils/ordered_map

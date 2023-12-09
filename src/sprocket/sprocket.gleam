@@ -8,10 +8,10 @@ import sprocket/internal/logger
 import sprocket/internal/constants.{call_timeout}
 import sprocket/context.{
   type ComponentHooks, type Context, type Dispatcher, type EffectCleanup,
-  type EffectResult, type Element, type EventHandler, type Hook,
-  type HookDependencies, type HookTrigger, type Updater, Callback, Changed,
-  Context, Effect, EffectResult, EventHandler, OnMount, OnUpdate, Reducer,
-  Unchanged, WithDeps, compare_deps,
+  type EffectResult, type Element, type Hook, type HookDependencies,
+  type HookTrigger, type IdentifiableHandler, type Updater, Callback, Changed,
+  Context, Effect, EffectResult, Handler, IdentifiableHandler, Memo, OnMount,
+  OnUpdate, Reducer, Unchanged, WithDeps, compare_deps,
 }
 import sprocket/render.{
   type RenderedElement, RenderResult, RenderedComponent, RenderedElement,
@@ -51,7 +51,10 @@ pub type Message {
   RenderUpdate
   SetUpdateHook(fn(Unique, fn(Hook) -> Hook) -> Nil)
   UpdateHook(Unique, fn(Hook) -> Hook)
-  GetEventHandler(reply_with: Subject(Result(EventHandler, Nil)), id: Unique)
+  GetEventHandler(
+    reply_with: Subject(Result(IdentifiableHandler, Nil)),
+    id: Unique,
+  )
   GetClientHook(reply_with: Subject(Result(Hook, Nil)), id: Unique)
 }
 
@@ -219,7 +222,7 @@ fn handle_message(message: Message, state: State) -> actor.Next(Message, State) 
         list.find(
           state.ctx.handlers,
           fn(h) {
-            let EventHandler(i, _) = h
+            let IdentifiableHandler(i, _) = h
             i == id
           },
         )
@@ -389,7 +392,13 @@ fn build_hooks_map(
           fn(acc, hook) {
             let KeyedItem(_, hook) = hook
             case hook {
-              Callback(id, _, _, _) -> {
+              Callback(id, _, _) -> {
+                map.insert(acc, id, hook)
+              }
+              Memo(id, _, _) -> {
+                map.insert(acc, id, hook)
+              }
+              Handler(id, _) -> {
                 map.insert(acc, id, hook)
               }
               Effect(id, _, _, _) -> {

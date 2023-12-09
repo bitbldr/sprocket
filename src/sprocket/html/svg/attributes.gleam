@@ -1,4 +1,5 @@
-import sprocket/html/attributes.{type Attribute, attribute}
+import sprocket/html/attributes.{attribute}
+import sprocket/context.{type Attribute}
 
 /// The [SVG `accent-height` attribute](https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/accent-height)
 pub fn accent_height(value: String) -> Attribute {

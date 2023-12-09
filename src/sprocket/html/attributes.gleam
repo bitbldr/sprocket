@@ -1,56 +1,43 @@
 import gleam/list
 import gleam/string_builder
 import gleam/option.{type Option, None, Some}
-import gleam/dynamic.{type Dynamic}
+import gleam/dynamic
+import sprocket/context.{
+  type Attribute, type CallbackParam, type IdentifiableHandler, Attribute,
+  CallbackString, ClientHook, Event, IdentifiableHandler,
+}
 import sprocket/internal/utils/unique.{type Unique}
-
-pub type CallbackFn =
-  fn(Option(CallbackParam)) -> Nil
-
-pub type CallbackParam {
-  CallbackString(value: String)
-}
-
-pub type IdentifiableCallback {
-  IdentifiableCallback(id: Unique, cb: CallbackFn)
-}
 
 pub fn callback_param_from_string(value: String) -> CallbackParam {
   CallbackString(value)
-}
-
-pub type Attribute {
-  Attribute(name: String, value: Dynamic)
-  Event(name: String, cb: IdentifiableCallback)
-  ClientHook(id: Unique, name: String)
 }
 
 pub fn attribute(name: String, value: any) -> Attribute {
   Attribute(name, dynamic.from(value))
 }
 
-pub fn event(name: String, cb: IdentifiableCallback) -> Attribute {
-  Event(name, cb)
+pub fn event(name: String, handler: IdentifiableHandler) -> Attribute {
+  Event(name, handler)
 }
 
 pub fn client_hook(id: Unique, name: String) -> Attribute {
   ClientHook(id, name)
 }
 
-pub fn on_click(cb: IdentifiableCallback) -> Attribute {
-  event("click", cb)
+pub fn on_click(handler: IdentifiableHandler) -> Attribute {
+  event("click", handler)
 }
 
-pub fn on_doubleclick(cb: IdentifiableCallback) -> Attribute {
-  event("doubleclick", cb)
+pub fn on_doubleclick(handler: IdentifiableHandler) -> Attribute {
+  event("doubleclick", handler)
 }
 
-pub fn on_change(cb: IdentifiableCallback) -> Attribute {
-  event("change", cb)
+pub fn on_change(handler: IdentifiableHandler) -> Attribute {
+  event("change", handler)
 }
 
-pub fn on_input(cb: IdentifiableCallback) -> Attribute {
-  event("input", cb)
+pub fn on_input(handler: IdentifiableHandler) -> Attribute {
+  event("input", handler)
 }
 
 pub fn media(value: String) -> Attribute {

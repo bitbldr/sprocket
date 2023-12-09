@@ -77,7 +77,7 @@ pub fn render_event(spkt: Sprocket, event: Event, html_id: String) {
           case rendered_event_handler {
             Ok(RenderedEventHandler(_kind, event_id)) -> {
               case sprocket.get_handler(spkt, event_id) {
-                Ok(context.EventHandler(_, handler)) -> {
+                Ok(context.IdentifiableHandler(_, handler)) -> {
                   // call the event handler
                   handler(None)
                 }

@@ -210,7 +210,7 @@ pub fn client_message(
       case get_sprocket(ca, id) {
         Ok(sprocket) -> {
           case sprocket.get_handler(sprocket, event_id) {
-            Ok(context.EventHandler(_, handler)) -> {
+            Ok(context.IdentifiableHandler(_, handler)) -> {
               // call the event handler
               handler(option.map(
                 value,

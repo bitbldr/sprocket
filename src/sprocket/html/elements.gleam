@@ -4,9 +4,9 @@ import gleam/dynamic.{type Dynamic}
 import gleam/string
 import gleam/string_builder
 import sprocket/context.{
-  type Element, Debug, Element, IgnoreUpdate, Keyed, Raw, SafeHtml,
+  type Attribute, type Element, Debug, Element, IgnoreUpdate, Keyed, Raw,
+  SafeHtml,
 }
-import sprocket/html/attributes.{type Attribute}
 
 pub fn el(tag: String, attrs: List(Attribute), children: List(Element)) {
   Element(tag, attrs, children)

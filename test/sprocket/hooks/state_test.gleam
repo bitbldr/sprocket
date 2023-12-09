@@ -1,10 +1,10 @@
 import gleam/int
 import gleam/string
-import sprocket/context.{type Context, WithDeps, dep}
+import sprocket/context.{type Context}
 import sprocket/component.{component}
 import sprocket/html/elements.{button, text}
 import sprocket/html/attributes.{id, on_click}
-import sprocket/hooks.{callback, state}
+import sprocket/hooks.{handler, state}
 import sprocket/test_helpers.{ClickEvent, live, render_event, render_html}
 
 type TestCounterProps {
@@ -16,16 +16,8 @@ fn inc_reset_on_button_click_using_state(ctx: Context, _props) {
   use ctx, count, set_count <- state(ctx, 0)
 
   // Define event handlers
-  use ctx, on_increment <- callback(
-    ctx,
-    fn(_) { set_count(count + 1) },
-    WithDeps([dep(count)]),
-  )
-  use ctx, on_reset <- callback(
-    ctx,
-    fn(_) { set_count(0) },
-    WithDeps([dep(count)]),
-  )
+  use ctx, on_increment <- handler(ctx, fn(_) { set_count(count + 1) })
+  use ctx, on_reset <- handler(ctx, fn(_) { set_count(0) })
 
   let current_count = int.to_string(count)
 

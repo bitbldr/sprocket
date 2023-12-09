@@ -4,14 +4,27 @@ import gleam/option.{type Option, None, Some}
 import gleam/erlang/process.{type Subject}
 import gleam/dynamic.{type Dynamic}
 import ids/cuid
-import sprocket/html/attributes.{
-  type Attribute, type CallbackFn, type IdentifiableCallback,
-  IdentifiableCallback,
-}
 import sprocket/internal/utils/ordered_map.{type OrderedMap}
 import sprocket/internal/utils/unique.{type Unique}
 import sprocket/internal/logger
 import sprocket/internal/exceptions.{throw_on_unexpected_deps_mismatch}
+
+pub type HandlerFn =
+  fn(Option(CallbackParam)) -> Nil
+
+pub type CallbackParam {
+  CallbackString(value: String)
+}
+
+pub type IdentifiableHandler {
+  IdentifiableHandler(id: Unique, handler_fn: HandlerFn)
+}
+
+pub type Attribute {
+  Attribute(name: String, value: Dynamic)
+  Event(name: String, handler: IdentifiableHandler)
+  ClientHook(id: Unique, name: String)
+}
 
 pub type AbstractFunctionalComponent =
   fn(Context, Dynamic) -> #(Context, List(Element))
@@ -27,10 +40,6 @@ pub type Element {
   IgnoreUpdate(element: Element)
   SafeHtml(html: String)
   Raw(text: String)
-}
-
-pub type EventHandler {
-  EventHandler(id: Unique, handler: CallbackFn)
 }
 
 pub type Updater(r) {
@@ -66,7 +75,11 @@ pub type EffectResult {
 }
 
 pub type CallbackResult {
-  CallbackResult(callback: CallbackFn, deps: Option(HookDependencies))
+  CallbackResult(deps: Option(HookDependencies))
+}
+
+pub type MemoResult {
+  MemoResult(deps: Option(HookDependencies))
 }
 
 pub type ClientDispatcher =
@@ -76,18 +89,15 @@ pub type ClientEventHandler =
   fn(String, Option(Dynamic), ClientDispatcher) -> Nil
 
 pub type Hook {
-  Callback(
-    id: Unique,
-    callback: CallbackFn,
-    trigger: HookTrigger,
-    prev: Option(CallbackResult),
-  )
+  Callback(id: Unique, callback: fn() -> Nil, prev: Option(CallbackResult))
+  Memo(id: Unique, value: Dynamic, prev: Option(MemoResult))
   Effect(
     id: Unique,
     effect: fn() -> EffectCleanup,
     trigger: HookTrigger,
     prev: Option(EffectResult),
   )
+  Handler(id: Unique, handler_fn: HandlerFn)
   Reducer(id: Unique, reducer: Dynamic, cleanup: fn() -> Nil)
   State(id: Unique, value: Dynamic)
   Client(id: Unique, name: String, handle_event: Option(ClientEventHandler))
@@ -134,7 +144,7 @@ pub type Context {
   Context(
     view: Element,
     wip: ComponentWip,
-    handlers: List(EventHandler),
+    handlers: List(IdentifiableHandler),
     render_update: fn() -> Nil,
     update_hook: fn(Unique, fn(Hook) -> Hook) -> Nil,
     dispatch_event: fn(Unique, String, Option(String)) -> Result(Nil, Nil),
@@ -232,22 +242,22 @@ pub fn update_hook(ctx: Context, hook: Hook, index: Int) -> Context {
 
 pub fn push_event_handler(
   ctx: Context,
-  identifiable_cb: IdentifiableCallback,
+  identifiable_cb: IdentifiableHandler,
 ) -> #(Context, Unique) {
-  let IdentifiableCallback(id, cb) = identifiable_cb
+  let IdentifiableHandler(id, cb) = identifiable_cb
 
-  #(Context(..ctx, handlers: [EventHandler(id, cb), ..ctx.handlers]), id)
+  #(Context(..ctx, handlers: [IdentifiableHandler(id, cb), ..ctx.handlers]), id)
 }
 
 pub fn get_event_handler(
   ctx: Context,
   id: Unique,
-) -> #(Context, Result(EventHandler, Nil)) {
+) -> #(Context, Result(IdentifiableHandler, Nil)) {
   let handler =
     list.find(
       ctx.handlers,
       fn(h) {
-        let EventHandler(i, _) = h
+        let IdentifiableHandler(i, _) = h
         i == id
       },
     )

@@ -1,11 +1,11 @@
 import gleam/dynamic
 import gleam/option.{None, Some}
 import gleeunit/should
-import sprocket/context.{type Context, WithDeps}
+import sprocket/context.{type Context}
 import sprocket/component.{component, render}
 import sprocket/html/elements.{a, text}
 import sprocket/html/attributes.{classes}
-import sprocket/hooks.{callback}
+import sprocket/hooks.{handler}
 import sprocket/render.{
   RenderedAttribute, RenderedComponent, RenderedElement, RenderedEventHandler,
   RenderedText,
@@ -19,7 +19,7 @@ type TestProps {
 fn test_component(ctx: Context, props: TestProps) {
   let TestProps(title: title, href: _href, is_active: is_active) = props
 
-  use ctx, on_click <- callback(ctx, fn(_) { todo }, WithDeps([]))
+  use ctx, handle_click <- handler(ctx, fn(_) { Nil })
 
   render(
     ctx,
@@ -34,7 +34,7 @@ fn test_component(ctx: Context, props: TestProps) {
             },
           ]),
           attributes.href("#"),
-          attributes.on_click(on_click),
+          attributes.on_click(handle_click),
         ],
         [text(title)],
       ),

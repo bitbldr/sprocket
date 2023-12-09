@@ -1,5 +1,4 @@
-import sprocket/html/attributes.{type Attribute}
-import sprocket/context.{type Element}
+import sprocket/context.{type Attribute, type Element}
 import sprocket/html/elements.{el}
 
 /// The [SVG `<a>` element](https://developer.mozilla.org/en-US/docs/Web/SVG/Element/a)
