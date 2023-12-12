@@ -356,16 +356,16 @@ fn update_to_json(update: Patch, debug: Bool) -> String {
 fn hook_event_to_json(
   id: String,
   event: String,
-  value: Option(String),
+  payload: Option(String),
 ) -> String {
   json.preprocessed_array([
     json.string("hook:event"),
-    case value {
-      Some(value) ->
+    case payload {
+      Some(payload) ->
         json.object([
           #("id", json.string(id)),
           #("kind", json.string(event)),
-          #("value", json.string(value)),
+          #("payload", json.string(payload)),
         ])
       None ->
         json.object([#("id", json.string(id)), #("kind", json.string(event))])
