@@ -3,8 +3,8 @@ import gleam/option.{None, Some}
 import gleeunit/should
 import sprocket/context.{type Context}
 import sprocket/component.{component, render}
-import sprocket/html/elements.{a, text}
-import sprocket/html/attributes.{classes}
+import sprocket/html/elements.{a, div, text}
+import sprocket/html/attributes.{class, classes}
 import sprocket/hooks.{handler}
 import sprocket/render.{
   RenderedAttribute, RenderedComponent, RenderedElement, RenderedEventHandler,
@@ -81,4 +81,97 @@ pub fn basic_render_test() {
     href: "/",
     is_active: True,
   )))
+}
+
+type TitleContext {
+  TitleContext(title: String)
+}
+
+fn test_component_with_context_title(ctx: Context, props: TestProps) {
+  let TestProps(href: _href, is_active: is_active, ..) = props
+
+  use ctx, TitleContext(context_title) <- hooks.consumer(ctx, "title")
+
+  use ctx, handle_click <- handler(ctx, fn(_) { Nil })
+
+  render(
+    ctx,
+    [
+      a(
+        [
+          classes([
+            Some("block p-2 text-blue-500 hover:text-blue-700"),
+            case is_active {
+              True -> Some("font-bold")
+              False -> None
+            },
+          ]),
+          attributes.href("#"),
+          attributes.on_click(handle_click),
+        ],
+        [text(context_title)],
+      ),
+    ],
+  )
+}
+
+pub fn renders_component_with_context_provider_test() {
+  let rendered =
+    render.render(
+      div(
+        [class("first div")],
+        [
+          context.provider(
+            "title",
+            TitleContext(title: "A different title"),
+            div(
+              [class("second div")],
+              [
+                component(
+                  test_component_with_context_title,
+                  TestProps(title: "Home", href: "/", is_active: True),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+      identity.renderer(),
+    )
+
+  let assert RenderedElement(
+    tag: "div",
+    key: None,
+    attrs: [RenderedAttribute("class", "first div")],
+    children: [
+      RenderedElement(
+        tag: "div",
+        key: None,
+        attrs: [RenderedAttribute("class", "second div")],
+        children: [
+          RenderedComponent(
+            _fc,
+            _key,
+            _props,
+            _hooks,
+            [
+              RenderedElement(
+                tag: "a",
+                key: None,
+                attrs: [
+                  RenderedAttribute(
+                    "class",
+                    "block p-2 text-blue-500 hover:text-blue-700 font-bold",
+                  ),
+                  RenderedAttribute("href", "#"),
+                  RenderedEventHandler("click", _),
+                ],
+                children: [RenderedText("A different title")],
+              ),
+            ],
+          ),
+        ],
+      ),
+    ],
+  ) = rendered
 }

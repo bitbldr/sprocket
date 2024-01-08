@@ -176,7 +176,7 @@ fn validate_csrf(ca: Cassette, csrf: String) {
 type Payload {
   JoinPayload(csrf_token: String)
   EventPayload(kind: String, id: String, value: Option(String))
-  HookEventPayload(id: String, event: String, value: Option(Dynamic))
+  HookEventPayload(id: String, event: String, payload: Option(Dynamic))
   EmptyPayload(nothing: Option(String))
 }
 
@@ -224,7 +224,7 @@ pub fn client_message(
         _ -> Error(Nil)
       }
     }
-    Ok(#("hook:event", HookEventPayload(hook_id, name, value))) -> {
+    Ok(#("hook:event", HookEventPayload(hook_id, name, payload))) -> {
       logger.info("Hook Event: " <> hook_id <> " " <> name)
 
       case get_sprocket(ca, id) {
@@ -238,14 +238,16 @@ pub fn client_message(
 
               option.map(
                 handle_event,
-                fn(handle_event) { handle_event(name, value, reply_dispatcher) },
+                fn(handle_event) {
+                  handle_event(name, payload, reply_dispatcher)
+                },
               )
 
               Ok(Nil)
             }
             _ -> {
               logger.error("Error: no client hook defined for id: " <> hook_id)
-              io.debug(value)
+              io.debug(payload)
               panic
             }
           }
@@ -331,7 +333,7 @@ fn decode_hook_event(data: Dynamic) {
       HookEventPayload,
       field("id", dynamic.string),
       field("name", dynamic.string),
-      optional_field("value", dynamic.dynamic),
+      optional_field("payload", dynamic.dynamic),
     ),
   )
 }

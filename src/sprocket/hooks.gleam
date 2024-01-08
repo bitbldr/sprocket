@@ -1,5 +1,6 @@
 import gleam/option.{type Option, None, Some}
 import gleam/dynamic
+import gleam/map
 import gleam/otp/actor
 import gleam/erlang/process.{type Subject}
 import sprocket/internal/constants.{call_timeout}
@@ -12,6 +13,7 @@ import sprocket/context.{
 }
 import sprocket/internal/exceptions.{throw_on_unexpected_hook_result}
 import sprocket/internal/utils/unique
+import sprocket/internal/logger
 
 /// State Hook
 /// ----------
@@ -53,6 +55,15 @@ pub fn state(
   }
 
   cb(ctx, dynamic.unsafe_coerce(value), setter)
+}
+
+type Reducer(model, msg) =
+  fn(model, msg) -> model
+
+type StateOrDispatchReducer(model, msg) {
+  Shutdown
+  StateReducer(reply_with: Subject(model))
+  DispatchReducer(r: Reducer(model, msg), m: msg)
 }
 
 /// Reducer Hook
@@ -123,6 +134,31 @@ pub fn reducer(
   cb(ctx, state, dispatch)
 }
 
+pub fn consumer(
+  ctx: Context,
+  key: String,
+  cb: fn(Context, a) -> #(Context, List(Element)),
+) -> #(Context, List(Element)) {
+  let value = case map.get(ctx.providers, key) {
+    Ok(v) -> {
+      dynamic.unsafe_coerce(v)
+    }
+    _ -> {
+      logger.error(
+        "
+        No provider found with key: " <> key <> "
+
+        When using a consumer hook, you must include a parent provider with the same key.
+        ",
+      )
+
+      panic
+    }
+  }
+
+  cb(ctx, value)
+}
+
 /// Effect Hook
 /// -----------
 /// Creates an effect hook that will run the given effect function when the hook is
@@ -147,15 +183,6 @@ pub fn effect(
     context.update_hook(ctx, Effect(id, effect_fn, trigger, prev), index)
 
   cb(ctx)
-}
-
-type Reducer(model, msg) =
-  fn(model, msg) -> model
-
-type StateOrDispatchReducer(model, msg) {
-  Shutdown
-  StateReducer(reply_with: Subject(model))
-  DispatchReducer(r: Reducer(model, msg), m: msg)
 }
 
 /// Memo Hook

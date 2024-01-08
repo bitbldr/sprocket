@@ -169,7 +169,7 @@ fn handle_message(message: Message, state: State) -> actor.Next(Message, State) 
           case updater.send(update) {
             Ok(_) -> Nil
             Error(_) -> {
-              logger.error("Failed to send update patch!")
+              logger.error("Failed to send patch update!")
               Nil
             }
           }

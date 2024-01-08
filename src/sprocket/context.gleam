@@ -1,5 +1,6 @@
 import gleam/int
 import gleam/list
+import gleam/map.{Map}
 import gleam/option.{type Option, None, Some}
 import gleam/erlang/process.{type Subject}
 import gleam/dynamic.{type Dynamic}
@@ -38,6 +39,7 @@ pub type Element {
   Debug(id: String, meta: Option(Dynamic), element: Element)
   Keyed(key: String, element: Element)
   IgnoreUpdate(element: Element)
+  Provider(key: String, value: Dynamic, element: Element)
   SafeHtml(html: String)
   Raw(text: String)
 }
@@ -149,7 +151,12 @@ pub type Context {
     update_hook: fn(Unique, fn(Hook) -> Hook) -> Nil,
     dispatch_event: fn(Unique, String, Option(String)) -> Result(Nil, Nil),
     cuid_channel: Subject(cuid.Message),
+    providers: Map(String, Dynamic),
   )
+}
+
+pub fn provider(key: String, value: v, element: Element) -> Element {
+  Provider(key, dynamic.from(value), element)
 }
 
 pub fn new(
@@ -171,6 +178,7 @@ pub fn new(
       }
     },
     cuid_channel: cuid_channel,
+    providers: map.new(),
   )
 }
 

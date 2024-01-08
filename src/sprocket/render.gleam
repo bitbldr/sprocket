@@ -1,12 +1,13 @@
 import gleam/io
 import gleam/list
+import gleam/map
 import gleam/option.{type Option, None, Some}
 import gleam/dynamic.{type Dynamic}
 import ids/cuid
 import sprocket/context.{
   type AbstractFunctionalComponent, type Attribute, type ComponentHooks,
   type Context, type Element, Attribute, ClientHook, Component, ComponentWip,
-  Context, Debug, Element, Event, IgnoreUpdate, Keyed, Raw, SafeHtml,
+  Context, Debug, Element, Event, IgnoreUpdate, Keyed, Provider, Raw, SafeHtml,
 }
 import sprocket/internal/utils/unique
 import sprocket/internal/utils/ordered_map
@@ -101,6 +102,15 @@ pub fn live_render(
           |> RenderResult(ctx, _)
         }
       }
+    }
+    Provider(provider_key, value, el) -> {
+      let ctx =
+        Context(
+          ..ctx,
+          providers: map.insert(ctx.providers, provider_key, value),
+        )
+
+      live_render(ctx, el, key, prev)
     }
     SafeHtml(html) -> safe_html(ctx, html)
     Raw(text) -> raw(ctx, text)
@@ -230,6 +240,9 @@ fn component(
 fn get_key(el: Element) -> Option(String) {
   case el {
     Keyed(key, _) -> Some(key)
+    Debug(_, _, el) -> get_key(el)
+    IgnoreUpdate(el) -> get_key(el)
+    Provider(_, _, el) -> get_key(el)
     _ -> None
   }
 }
@@ -318,6 +331,9 @@ fn maybe_matching_el(
       }
     }
     _, Debug(_, _, el) -> maybe_matching_el(prev_child, el)
+    _, Keyed(_, el) -> maybe_matching_el(prev_child, el)
+    _, IgnoreUpdate(el) -> maybe_matching_el(prev_child, el)
+    _, Provider(_, _, el) -> maybe_matching_el(prev_child, el)
     _, _ -> None
   }
 }
