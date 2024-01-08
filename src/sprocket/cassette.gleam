@@ -142,7 +142,7 @@ pub fn stop(ca: Cassette) {
 
 /// Get the current state of the cassette. Mostly intended for unit tests and debugging.
 pub fn get_state(ca: Cassette) {
-  process.call(ca, GetState(_), call_timeout())
+  process.call(ca, GetState(_), call_timeout)
 }
 
 /// Pushes a sprocket to the cassette.
@@ -152,12 +152,12 @@ pub fn push_sprocket(ca: Cassette, sprocket: Sprocket) {
 
 /// Gets a sprocket from the cassette.
 pub fn get_sprocket(ca: Cassette, ws: Unique) {
-  process.call(ca, GetSprocket(_, ws), call_timeout())
+  process.call(ca, GetSprocket(_, ws), call_timeout)
 }
 
 /// Pops a sprocket from the cassette.
 pub fn pop_sprocket(ca: Cassette, ws: Unique) {
-  process.call(ca, PopSprocket(_, ws), call_timeout())
+  process.call(ca, PopSprocket(_, ws), call_timeout)
 }
 
 fn get_cuid_channel(ca: Cassette) {

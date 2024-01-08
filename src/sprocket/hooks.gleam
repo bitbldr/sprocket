@@ -122,7 +122,7 @@ pub fn reducer(
   let reducer_actor = dynamic.unsafe_coerce(dyn_reducer_actor)
 
   // get the current state of the reducer
-  let state = process.call(reducer_actor, StateReducer(_), call_timeout())
+  let state = process.call(reducer_actor, StateReducer(_), call_timeout)
 
   // create a dispatch function for updating the reducer's state and triggering a render update
   let dispatch = fn(msg) -> Nil {

@@ -15,7 +15,4 @@ pub fn constant(c: Const) -> String {
   }
 }
 
-pub fn call_timeout() -> Int {
-  1000
-}
-// pub const call_timeout = 1000
+pub const call_timeout = 1000

@@ -297,7 +297,7 @@ pub fn stop(actor) {
 // pub fn get_id(actor) -> Result(Unique, CallError(Unique)) {
 /// Returns true if the actor matches a given websocket connection
 pub fn get_id(actor) -> Result(Unique, Nil) {
-  case process.try_call(actor, GetId(_), call_timeout()) {
+  case process.try_call(actor, GetId(_), call_timeout) {
     Ok(id) -> Ok(id)
     Error(_) -> Error(Nil)
   }
@@ -305,22 +305,22 @@ pub fn get_id(actor) -> Result(Unique, Nil) {
 
 /// Get the previously rendered view from the actor
 pub fn get_rendered(actor) {
-  actor.call(actor, GetRendered(_), call_timeout())
+  actor.call(actor, GetRendered(_), call_timeout)
 }
 
 /// Get the event handler for a given id
 pub fn get_handler(actor, id: String) {
-  actor.call(actor, GetEventHandler(_, unique.from_string(id)), call_timeout())
+  actor.call(actor, GetEventHandler(_, unique.from_string(id)), call_timeout)
 }
 
 /// Get the client hook for a given id
 pub fn get_client_hook(actor, id: String) {
-  actor.call(actor, GetClientHook(_, unique.from_string(id)), call_timeout())
+  actor.call(actor, GetClientHook(_, unique.from_string(id)), call_timeout)
 }
 
 /// Render the view
 pub fn render(actor) -> RenderedElement {
-  actor.call(actor, Render(_), call_timeout())
+  actor.call(actor, Render(_), call_timeout)
 }
 
 /// Render the view and send an update Patch to the updater
