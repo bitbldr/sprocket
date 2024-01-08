@@ -6,9 +6,7 @@ import sprocket/render.{
   RenderedClientHook, RenderedComponent, RenderedElement, RenderedEventHandler,
   RenderedText, Renderer, traverse,
 }
-import sprocket/internal/constants.{
-  ClientHookAttrPrefix, EventAttrPrefix, KeyAttr, constant,
-}
+import sprocket/internal/constants
 
 pub fn renderer() -> Renderer(String) {
   Renderer(render: fn(el) { string_builder.to_string(render(el)) })
@@ -46,7 +44,7 @@ fn element(
               acc,
               string_builder.from_strings([
                 " ",
-                constant(EventAttrPrefix),
+                constants.event_attr_prefix,
                 "-",
                 kind,
                 "=\"",
@@ -60,11 +58,11 @@ fn element(
               acc,
               string_builder.from_strings([
                 " ",
-                constant(ClientHookAttrPrefix),
+                constants.client_hook_attr_prefix,
                 "=\"",
                 name,
                 "\" ",
-                constant(ClientHookAttrPrefix),
+                constants.client_hook_attr_prefix,
                 "-id=\"",
                 id,
                 "\"",
@@ -79,7 +77,7 @@ fn element(
     Some(k) ->
       string_builder.append_builder(
         rendered_attrs,
-        string_builder.from_strings([" ", constant(KeyAttr), "=\"", k, "\""]),
+        string_builder.from_strings([" ", constants.key_attr, "=\"", k, "\""]),
       )
     None -> rendered_attrs
   }

@@ -8,9 +8,7 @@ import sprocket/render.{
   RenderedClientHook, RenderedComponent, RenderedElement, RenderedEventHandler,
   RenderedText, Renderer,
 }
-import sprocket/internal/constants.{
-  ClientHookAttrPrefix, EventAttrPrefix, KeyAttr, constant,
-}
+import sprocket/internal/constants
 
 pub fn renderer() -> Renderer(Json) {
   Renderer(render: fn(el) { render(el) })
@@ -41,7 +39,7 @@ fn element(
         RenderedEventHandler(kind, id) -> {
           [
             #(
-              string.concat([constant(EventAttrPrefix), "-", kind]),
+              string.concat([constants.event_attr_prefix, "-", kind]),
               json.string(id),
             ),
           ]
@@ -49,11 +47,11 @@ fn element(
         RenderedClientHook(name, id) -> {
           [
             #(
-              string.concat([constant(ClientHookAttrPrefix)]),
+              string.concat([constants.client_hook_attr_prefix]),
               json.string(name),
             ),
             #(
-              string.concat([constant(ClientHookAttrPrefix), "-id"]),
+              string.concat([constants.client_hook_attr_prefix, "-id"]),
               json.string(id),
             ),
           ]
@@ -62,7 +60,7 @@ fn element(
     })
 
   let attrs = case key {
-    Some(k) -> list.append(attrs, [#(constant(KeyAttr), json.string(k))])
+    Some(k) -> list.append(attrs, [#(constants.key_attr, json.string(k))])
     None -> attrs
   }
 

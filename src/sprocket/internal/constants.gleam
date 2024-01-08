@@ -1,18 +1,11 @@
-// TODO: Convert to gleam const
-pub type Const {
-  KeyAttr
-  EventAttrPrefix
-  IgnoreUpdateAttr
-  ClientHookAttrPrefix
-}
+// Constants used in the library
 
-pub fn constant(c: Const) -> String {
-  case c {
-    KeyAttr -> "spkt-key"
-    EventAttrPrefix -> "spkt-event"
-    IgnoreUpdateAttr -> "spkt-ignore-update"
-    ClientHookAttrPrefix -> "spkt-hook"
-  }
-}
+pub const key_attr = "spkt-key"
+
+pub const event_attr_prefix = "spkt-event"
+
+pub const ignore_update_attr = "spkt-ignore-update"
+
+pub const client_hook_attr_prefix = "spkt-hook"
 
 pub const call_timeout = 1000

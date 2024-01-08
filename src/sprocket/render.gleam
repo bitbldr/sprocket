@@ -12,7 +12,7 @@ import sprocket/context.{
 import sprocket/internal/utils/unique
 import sprocket/internal/utils/ordered_map
 import sprocket/internal/logger
-import sprocket/internal/constants.{IgnoreUpdateAttr, constant}
+import sprocket/internal/constants
 
 pub type RenderedAttribute {
   RenderedAttribute(name: String, value: String)
@@ -85,7 +85,7 @@ pub fn live_render(
           // just return the previous rendered element with the ignore attribute
           prev
           |> append_attribute(RenderedAttribute(
-            constant(IgnoreUpdateAttr),
+            constants.ignore_update_attr,
             "true",
           ))
           |> RenderResult(ctx, _)
@@ -96,7 +96,7 @@ pub fn live_render(
 
           rendered
           |> append_attribute(RenderedAttribute(
-            constant(IgnoreUpdateAttr),
+            constants.ignore_update_attr,
             "true",
           ))
           |> RenderResult(ctx, _)
