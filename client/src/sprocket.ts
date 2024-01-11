@@ -1,7 +1,7 @@
-import morphdom from "morphdom";
 import topbar from "topbar";
 import ReconnectingWebSocket from "reconnecting-websocket";
-import { renderDom } from "./render";
+import { init, attributesModule, VNode, toVNode } from "snabbdom";
+import { render } from "./render";
 import { applyPatch } from "./patch";
 import { initEventHandlers } from "./events";
 import { constant } from "./constants";
@@ -10,6 +10,12 @@ import {
   processClientHookLifecycle,
   processClientHookDestroyed,
 } from "./hooks";
+
+const patchDOM = init([attributesModule], undefined, {
+  experimental: {
+    fragments: true,
+  },
+});
 
 type Opts = {
   csrfToken: string;
@@ -28,6 +34,7 @@ export function connect(path: String, opts: Opts) {
   );
 
   let dom: Record<string, any>;
+  let oldVNode: VNode;
   let clientHookMap: Record<string, any>;
 
   topbar.config({ barColors: { 0: "#29d" }, barThickness: 2 });
@@ -51,7 +58,7 @@ export function connect(path: String, opts: Opts) {
 
           dom = parsed[1];
 
-          update(targetEl, dom, hooks, clientHookMap);
+          oldVNode = update(toVNode(targetEl), dom, hooks, clientHookMap);
 
           // mount client hooks and initialize clientHookMap after the first render
           if (!clientHookMap) {
@@ -63,19 +70,13 @@ export function connect(path: String, opts: Opts) {
         case "update":
           dom = applyPatch(dom, parsed[1], parsed[2]) as Element;
 
-          update(targetEl, dom, hooks, clientHookMap);
+          oldVNode = update(oldVNode, dom, hooks, clientHookMap);
 
           break;
 
         case "error":
           const { code, msg } = parsed[1];
           console.error(`Error ${code}: ${msg}`);
-
-          switch (code) {
-            case "preflight_not_found":
-              setTimeout(() => window.location.reload(), 1000);
-              break;
-          }
 
           break;
       }
@@ -93,35 +94,44 @@ export function connect(path: String, opts: Opts) {
 }
 
 // update the target DOM element using a given JSON DOM
-function update(targetEl, dom, hooks, clientHookMap) {
-  morphdom(targetEl, renderDom(dom), {
-    onBeforeElUpdated: function (fromEl, toEl) {
-      if (toEl.hasAttribute(constant.IgnoreUpdate)) return false;
+function update(
+  oldVNode: VNode,
+  patched: Record<string, any>,
+  hooks: Record<string, any>,
+  clientHookMap: Record<string, any>
+) {
+  const rendered = render(patched) as VNode;
+  const html = rendered.children[0] as VNode;
 
-      clientHookMap &&
-        processClientHookLifecycle("beforeUpdate", hooks, clientHookMap, toEl);
+  patchDOM(oldVNode, html);
 
-      return true;
-    },
-    onElUpdated: function (el) {
-      clientHookMap &&
-        processClientHookLifecycle("updated", hooks, clientHookMap, el);
-    },
-    onNodeDiscarded: function (node) {
-      if (node.nodeType == Node.ELEMENT_NODE) {
-        const el = node as Element;
+  return html;
 
-        clientHookMap =
-          clientHookMap && processClientHookDestroyed(hooks, clientHookMap, el);
-      }
-    },
-    getNodeKey: function (node) {
-      if (node.nodeType == Node.ELEMENT_NODE) {
-        const el = node as Element;
-        if (el.hasAttribute(constant.KeyAttr)) {
-          return el.getAttribute(constant.KeyAttr);
-        }
-      }
-    },
-  });
+  // morphdom(targetEl, renderDom(dom), {
+  //   onBeforeElUpdated: function (fromEl, toEl) {
+  //     if (toEl.hasAttribute(constant.IgnoreUpdate)) return false;
+  //     clientHookMap &&
+  //       processClientHookLifecycle("beforeUpdate", hooks, clientHookMap, toEl);
+  //     return true;
+  //   },
+  //   onElUpdated: function (el) {
+  //     clientHookMap &&
+  //       processClientHookLifecycle("updated", hooks, clientHookMap, el);
+  //   },
+  //   onNodeDiscarded: function (node) {
+  //     if (node.nodeType == Node.ELEMENT_NODE) {
+  //       const el = node as Element;
+  //       clientHookMap =
+  //         clientHookMap && processClientHookDestroyed(hooks, clientHookMap, el);
+  //     }
+  //   },
+  //   getNodeKey: function (node) {
+  //     if (node.nodeType == Node.ELEMENT_NODE) {
+  //       const el = node as Element;
+  //       if (el.hasAttribute(constant.KeyAttr)) {
+  //         return el.getAttribute(constant.KeyAttr);
+  //       }
+  //     }
+  //   },
+  // });
 }

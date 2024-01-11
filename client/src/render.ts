@@ -1,40 +1,36 @@
-import { isInteger } from "./utils";
+import { h, VNode, fragment } from "snabbdom";
+import { isInteger, htmlDecode } from "./utils";
 
-// very naive and basic rendering algorithm
-// TODO: rewrite to a more readable approach
-export function renderDom(dom): string {
-  if (typeof dom === "string") {
-    return dom;
+// Renders a node as a vnode
+export function render(node: string | Record<string, any>): VNode | string {
+  if (typeof node === "string") {
+    return htmlDecode(node);
   }
 
-  switch (dom.type) {
+  switch (node.type) {
     case "component":
-      return renderComponent(dom);
+      return renderComponent(node);
     default:
-      return renderElement(dom);
+      return renderElement(node);
   }
 }
 
-function renderComponent(component): string {
-  let result = "";
-  for (let i = 0; i < Object.keys(component).length - 1; i++) {
-    result += renderDom(component[i]);
-  }
-
-  return result;
+// Renders a component as a fragment of its children
+function renderComponent(component): VNode {
+  return fragment(
+    Object.keys(component).reduce((acc, _key, i) => {
+      return component[i] ? [...acc, render(component[i])] : acc;
+    }, [])
+  );
 }
 
-function renderElement(element): string {
-  const openingTag =
-    Object.keys(element.attrs).reduce((result, key) => {
-      return result + ` ${key}="${element.attrs[key]}"`;
-    }, `<${element.type}`) + ">";
-
-  const children = Object.keys(element)
-    .filter((key) => isInteger(key))
-    .reduce((rendered, key) => rendered + renderDom(element[key]), "");
-
-  const closingTag = "</" + element.type + ">";
-
-  return openingTag + children + closingTag;
+// Renders an element as a vnode
+function renderElement(element): VNode {
+  return h(
+    element.type,
+    { attrs: element.attrs },
+    Object.keys(element)
+      .filter((key) => isInteger(key))
+      .reduce((acc, key) => [...acc, render(element[key])], [])
+  );
 }
