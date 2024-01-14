@@ -3,7 +3,7 @@ import gleam/option.{None, Some}
 import gleeunit/should
 import sprocket/context.{type Context}
 import sprocket/component.{component, render}
-import sprocket/html/elements.{a, div, text}
+import sprocket/html/elements.{a, div, fragment, text}
 import sprocket/html/attributes.{class, classes}
 import sprocket/hooks.{handler}
 import sprocket/render.{
@@ -23,7 +23,31 @@ fn test_component(ctx: Context, props: TestProps) {
 
   render(
     ctx,
-    [
+    a(
+      [
+        classes([
+          Some("block p-2 text-blue-500 hover:text-blue-700"),
+          case is_active {
+            True -> Some("font-bold")
+            False -> None
+          },
+        ]),
+        attributes.href("#"),
+        attributes.on_click(handle_click),
+      ],
+      [text(title)],
+    ),
+  )
+}
+
+fn test_component_with_fragment(ctx: Context, props: TestProps) {
+  let TestProps(title: title, href: _href, is_active: is_active) = props
+
+  use ctx, handle_click <- handler(ctx, fn(_) { Nil })
+
+  render(
+    ctx,
+    fragment([
       a(
         [
           classes([
@@ -38,7 +62,7 @@ fn test_component(ctx: Context, props: TestProps) {
         ],
         [text(title)],
       ),
-    ],
+    ]),
   )
 }
 
@@ -58,21 +82,19 @@ pub fn basic_render_test() {
     _key,
     props,
     _hooks,
-    [
-      RenderedElement(
-        tag: "a",
-        key: None,
-        attrs: [
-          RenderedAttribute(
-            "class",
-            "block p-2 text-blue-500 hover:text-blue-700 font-bold",
-          ),
-          RenderedAttribute("href", "#"),
-          RenderedEventHandler("click", _),
-        ],
-        children: [RenderedText("Home")],
-      ),
-    ],
+    RenderedElement(
+      tag: "a",
+      key: None,
+      attrs: [
+        RenderedAttribute(
+          "class",
+          "block p-2 text-blue-500 hover:text-blue-700 font-bold",
+        ),
+        RenderedAttribute("href", "#"),
+        RenderedEventHandler("click", _),
+      ],
+      children: [RenderedText("Home")],
+    ),
   ) = rendered
 
   props
@@ -96,22 +118,20 @@ fn test_component_with_context_title(ctx: Context, props: TestProps) {
 
   render(
     ctx,
-    [
-      a(
-        [
-          classes([
-            Some("block p-2 text-blue-500 hover:text-blue-700"),
-            case is_active {
-              True -> Some("font-bold")
-              False -> None
-            },
-          ]),
-          attributes.href("#"),
-          attributes.on_click(handle_click),
-        ],
-        [text(context_title)],
-      ),
-    ],
+    a(
+      [
+        classes([
+          Some("block p-2 text-blue-500 hover:text-blue-700"),
+          case is_active {
+            True -> Some("font-bold")
+            False -> None
+          },
+        ]),
+        attributes.href("#"),
+        attributes.on_click(handle_click),
+      ],
+      [text(context_title)],
+    ),
   )
 }
 
@@ -154,21 +174,19 @@ pub fn renders_component_with_context_provider_test() {
             _key,
             _props,
             _hooks,
-            [
-              RenderedElement(
-                tag: "a",
-                key: None,
-                attrs: [
-                  RenderedAttribute(
-                    "class",
-                    "block p-2 text-blue-500 hover:text-blue-700 font-bold",
-                  ),
-                  RenderedAttribute("href", "#"),
-                  RenderedEventHandler("click", _),
-                ],
-                children: [RenderedText("A different title")],
-              ),
-            ],
+            RenderedElement(
+              tag: "a",
+              key: None,
+              attrs: [
+                RenderedAttribute(
+                  "class",
+                  "block p-2 text-blue-500 hover:text-blue-700 font-bold",
+                ),
+                RenderedAttribute("href", "#"),
+                RenderedEventHandler("click", _),
+              ],
+              children: [RenderedText("A different title")],
+            ),
           ),
         ],
       ),

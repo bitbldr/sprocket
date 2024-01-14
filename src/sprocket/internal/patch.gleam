@@ -6,7 +6,7 @@ import gleam/option.{type Option, None, Some}
 import sprocket/render.{
   type RenderedAttribute, type RenderedElement, RenderedAttribute,
   RenderedClientHook, RenderedComponent, RenderedElement, RenderedEventHandler,
-  RenderedText,
+  RenderedFragment, RenderedText,
 }
 import gleam/json.{type Json}
 import sprocket/internal/render/json as json_renderer
@@ -83,15 +83,25 @@ pub fn create(old: RenderedElement, new: RenderedElement) -> Patch {
       key: _old_key,
       props: old_props,
       hooks: _old_hooks,
-      children: old_children,
+      el: old_el,
     ), RenderedComponent(
       fc: new_fc,
       key: _key,
       props: new_props,
       hooks: _hooks,
-      children: new_children,
+      el: new_el,
     ) if old_fc == new_fc && old_props == new_props -> {
-      // functional components and props are the same, check and children
+      // functional components and props are the same, so check the child element
+
+      // In the future, we will want to introduce a RenderedMemo variant where we can
+      // short circuit the diffing process if both old and new function and props match
+      // and only render the new component if the functional component or props have changed.
+      create(old_el, new_el)
+    }
+    RenderedFragment(key: _old_key, children: old_children), RenderedFragment(
+      key: _key,
+      children: new_children,
+    ) -> {
       case compare_children(old_children, new_children) {
         Some(children) -> {
           Update(attrs: None, children: Some(children))

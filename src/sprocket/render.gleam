@@ -7,7 +7,8 @@ import ids/cuid
 import sprocket/context.{
   type AbstractFunctionalComponent, type Attribute, type ComponentHooks,
   type Context, type Element, Attribute, ClientHook, Component, ComponentWip,
-  Context, Debug, Element, Event, IgnoreUpdate, Keyed, Provider, Raw, SafeHtml,
+  Context, Debug, Element, Event, Fragment, IgnoreUpdate, Keyed, Provider, Raw,
+  SafeHtml,
 }
 import sprocket/internal/utils/unique
 import sprocket/internal/utils/ordered_map
@@ -27,12 +28,13 @@ pub type RenderedElement {
     attrs: List(RenderedAttribute),
     children: List(RenderedElement),
   )
+  RenderedFragment(key: Option(String), children: List(RenderedElement))
   RenderedComponent(
     fc: AbstractFunctionalComponent,
     key: Option(String),
     props: Dynamic,
     hooks: ComponentHooks,
-    children: List(RenderedElement),
+    el: RenderedElement,
   )
   RenderedText(text: String)
 }
@@ -72,6 +74,7 @@ pub fn live_render(
     Element(tag, attrs, children) ->
       element(ctx, tag, key, attrs, children, prev)
     Component(fc, props) -> component(ctx, fc, key, props, prev)
+    Fragment(children) -> fragment(ctx, key, children, prev)
     Debug(id, meta, el) -> {
       // unwrap debug element, print details and continue with rendering
       io.debug(#(id, meta))
@@ -186,6 +189,30 @@ fn element(
   )
 }
 
+fn fragment(
+  ctx: Context,
+  key: Option(String),
+  children: List(Element),
+  prev: Option(RenderedElement),
+) -> RenderResult(RenderedElement) {
+  let RenderResult(ctx, children) =
+    children
+    |> list.index_fold(
+      RenderResult(ctx, []),
+      fn(acc, child, i) {
+        let RenderResult(ctx, rendered) = acc
+
+        let prev_child = find_prev_child(prev, child, i)
+
+        let RenderResult(ctx, rendered_child) =
+          live_render(ctx, child, None, prev_child)
+        RenderResult(ctx, [rendered_child, ..rendered])
+      },
+    )
+
+  RenderResult(ctx, RenderedFragment(key, list.reverse(children)))
+}
+
 fn component(
   ctx: Context,
   fc: AbstractFunctionalComponent,
@@ -209,32 +236,14 @@ fn component(
   }
 
   // render the component
-  let #(ctx, children) = fc(ctx, props)
+  let #(ctx, el) = fc(ctx, props)
 
   // capture hook results
   let hooks = ctx.wip.hooks
 
-  // process children
-  let RenderResult(ctx, children) =
-    children
-    |> list.index_fold(
-      RenderResult(ctx, []),
-      fn(acc, child, i) {
-        let RenderResult(ctx, rendered) = acc
+  let RenderResult(ctx, rendered_el) = live_render(ctx, el, None, prev)
 
-        let prev_child = find_prev_child(prev, child, i)
-
-        let RenderResult(ctx, rendered_child) =
-          live_render(ctx, child, None, prev_child)
-
-        RenderResult(ctx, [rendered_child, ..rendered])
-      },
-    )
-
-  RenderResult(
-    ctx,
-    RenderedComponent(fc, key, props, hooks, list.reverse(children)),
-  )
+  RenderResult(ctx, RenderedComponent(fc, key, props, hooks, rendered_el))
 }
 
 fn get_key(el: Element) -> Option(String) {
@@ -252,20 +261,20 @@ fn get_key(el: Element) -> Option(String) {
 fn find_prev_child(prev: Option(RenderedElement), child: Element, index: Int) {
   let child_key = get_key(child)
   option.or(
-    get_child_by_key(prev, child_key),
-    get_matching_prev_child_by_index(prev, child, index),
+    get_prev_matching_child_by_key(prev, child_key),
+    get_prev_matching_child_by_index(prev, child, index),
   )
 }
 
-fn get_child_by_key(
+fn get_prev_matching_child_by_key(
   prev: Option(RenderedElement),
   key: Option(String),
 ) -> Option(RenderedElement) {
   case prev, key {
-    Some(RenderedComponent(_, _, _, _, children)), Some(key) -> {
+    Some(RenderedElement(_, _, _, children)), Some(key) -> {
       find_by_key(children, key)
     }
-    Some(RenderedElement(_, _, _, children)), Some(key) -> {
+    Some(RenderedFragment(_, children)), Some(key) -> {
       find_by_key(children, key)
     }
     _, _ -> None
@@ -280,6 +289,7 @@ fn find_by_key(children, key) {
       case child {
         RenderedComponent(_, Some(child_key), _, _, _) -> child_key == key
         RenderedElement(_, Some(child_key), _, _) -> child_key == key
+        RenderedFragment(Some(child_key), _) -> child_key == key
         _ -> False
       }
     },
@@ -287,13 +297,13 @@ fn find_by_key(children, key) {
   |> option.from_result()
 }
 
-fn get_matching_prev_child_by_index(
+fn get_prev_matching_child_by_index(
   prev: Option(RenderedElement),
   child: Element,
   index: Int,
 ) -> Option(RenderedElement) {
   case prev {
-    Some(RenderedComponent(_, _, _, _, children)) -> {
+    Some(RenderedElement(_, _, _, children)) -> {
       case list.at(children, index) {
         Ok(prev_child) -> {
           maybe_matching_el(prev_child, child)
@@ -301,7 +311,7 @@ fn get_matching_prev_child_by_index(
         Error(Nil) -> None
       }
     }
-    Some(RenderedElement(_, _, _, children)) -> {
+    Some(RenderedFragment(_, children)) -> {
       case list.at(children, index) {
         Ok(prev_child) -> {
           maybe_matching_el(prev_child, child)
@@ -351,20 +361,20 @@ pub fn traverse(
   updater: fn(RenderedElement) -> RenderedElement,
 ) -> RenderedElement {
   case updater(el) {
-    RenderedComponent(fc, key, props, hooks, children) -> {
-      RenderedComponent(
-        fc,
-        key,
-        props,
-        hooks,
-        list.map(children, fn(child) { traverse(child, updater) }),
-      )
+    RenderedComponent(fc, key, props, hooks, el) -> {
+      RenderedComponent(fc, key, props, hooks, traverse(el, updater))
     }
     RenderedElement(tag, key, attrs, children) -> {
       RenderedElement(
         tag,
         key,
         attrs,
+        list.map(children, fn(child) { traverse(child, updater) }),
+      )
+    }
+    RenderedFragment(key, children) -> {
+      RenderedFragment(
+        key,
         list.map(children, fn(child) { traverse(child, updater) }),
       )
     }
@@ -380,7 +390,10 @@ pub fn find(
     True -> Ok(el)
     False -> {
       case el {
-        RenderedComponent(_fc, _key, _props, _hooks, children) -> {
+        RenderedComponent(_fc, _key, _props, _hooks, el) -> {
+          find(el, matches)
+        }
+        RenderedElement(_tag, _key, _attrs, children) -> {
           list.find(
             children,
             fn(child) {
@@ -391,7 +404,7 @@ pub fn find(
             },
           )
         }
-        RenderedElement(_tag, _key, _attrs, children) -> {
+        RenderedFragment(_key, children) -> {
           list.find(
             children,
             fn(child) {
@@ -413,17 +426,18 @@ pub fn append_attribute(
   attr: RenderedAttribute,
 ) -> RenderedElement {
   case el {
+    RenderedComponent(fc, key, props, hooks, el) -> {
+      // we need to append the attribute to the component's element
+      RenderedComponent(fc, key, props, hooks, append_attribute(el, attr))
+    }
     RenderedElement(tag, key, attrs, children) -> {
       RenderedElement(tag, key, list.append(attrs, [attr]), children)
     }
-    RenderedComponent(fc, key, props, hooks, children) -> {
-      // since components are rendered as list of elements, we need to append the attribute to the
+    RenderedFragment(key, children) -> {
+      // since a fragment is a list of elements, we need to append the attribute to the
       // element's children
-      RenderedComponent(
-        fc,
+      RenderedFragment(
         key,
-        props,
-        hooks,
         list.map(children, fn(child) { append_attribute(child, attr) }),
       )
     }

@@ -2,7 +2,7 @@ import gleam/int
 import gleam/string
 import sprocket/context.{type Context}
 import sprocket/component.{component}
-import sprocket/html/elements.{button, text}
+import sprocket/html/elements.{button, fragment, text}
 import sprocket/html/attributes.{id, on_click}
 import sprocket/hooks.{handler, state}
 import sprocket/test_helpers.{ClickEvent, live, render_event, render_html}
@@ -23,12 +23,12 @@ fn inc_reset_on_button_click_using_state(ctx: Context, _props) {
 
   component.render(
     ctx,
-    [
+    fragment([
       text("current count is: "),
       text(current_count),
       button([id("increment"), on_click(on_increment)], [text("increment")]),
       button([id("reset"), on_click(on_reset)], [text("reset")]),
-    ],
+    ]),
   )
 }
 

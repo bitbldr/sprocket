@@ -4,7 +4,7 @@ import gleam/string_builder.{type StringBuilder}
 import sprocket/render.{
   type RenderedAttribute, type RenderedElement, type Renderer, RenderedAttribute,
   RenderedClientHook, RenderedComponent, RenderedElement, RenderedEventHandler,
-  RenderedText, Renderer, traverse,
+  RenderedFragment, RenderedText, Renderer, traverse,
 }
 import sprocket/internal/constants
 
@@ -16,7 +16,8 @@ fn render(el: RenderedElement) -> StringBuilder {
   case el {
     RenderedElement(tag: tag, key: key, attrs: attrs, children: children) ->
       element(tag, key, attrs, children)
-    RenderedComponent(children: children, ..) -> component(children)
+    RenderedComponent(el: el, ..) -> component(el)
+    RenderedFragment(children: children, ..) -> fragment(children)
     RenderedText(text: t) -> text(t)
   }
 }
@@ -101,7 +102,11 @@ fn element(
   ])
 }
 
-fn component(children: List(RenderedElement)) {
+fn component(el: RenderedElement) {
+  render(el)
+}
+
+fn fragment(children: List(RenderedElement)) {
   children
   |> list.fold(
     string_builder.new(),

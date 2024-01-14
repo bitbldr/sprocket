@@ -15,7 +15,7 @@ import sprocket/context.{
 }
 import sprocket/render.{
   type RenderedElement, RenderResult, RenderedComponent, RenderedElement,
-  live_render,
+  RenderedFragment, live_render,
 }
 import sprocket/internal/patch.{type Patch}
 import sprocket/internal/utils/ordered_map.{
@@ -383,7 +383,7 @@ fn build_hooks_map(
   acc: Map(Unique, Hook),
 ) -> Map(Unique, Hook) {
   case node {
-    RenderedComponent(_fc, _key, _props, hooks, children) -> {
+    RenderedComponent(_fc, _key, _props, hooks, el) -> {
       // add hooks from this node
       let acc =
         ordered_map.fold(
@@ -417,6 +417,10 @@ fn build_hooks_map(
           },
         )
 
+      // add hooks from child element
+      build_hooks_map(el, acc)
+    }
+    RenderedElement(_tag, _key, _hooks, children) -> {
       // add hooks from children
       list.fold(
         children,
@@ -424,7 +428,7 @@ fn build_hooks_map(
         fn(acc, child) { map.merge(acc, build_hooks_map(child, acc)) },
       )
     }
-    RenderedElement(_tag, _key, _hooks, children) -> {
+    RenderedFragment(_key, children) -> {
       // add hooks from children
       list.fold(
         children,
@@ -538,26 +542,29 @@ fn find_rendered_hook(
   find_by: fn(Hook) -> Bool,
 ) -> Option(Hook) {
   case node {
-    RenderedComponent(_fc, _key, _props, hooks, children) -> {
+    RenderedComponent(_fc, _key, _props, hooks, el) -> {
       case
         ordered_map.find(hooks, fn(keyed_item) { find_by(keyed_item.value) })
       {
         Ok(KeyedItem(_, hook)) -> Some(hook)
         _ -> {
-          list.fold(
-            children,
-            None,
-            fn(acc, child) {
-              case acc {
-                Some(_) -> acc
-                _ -> find_rendered_hook(child, find_by)
-              }
-            },
-          )
+          find_rendered_hook(el, find_by)
         }
       }
     }
     RenderedElement(_tag, _key, _hooks, children) -> {
+      list.fold(
+        children,
+        None,
+        fn(acc, child) {
+          case acc {
+            Some(_) -> acc
+            _ -> find_rendered_hook(child, find_by)
+          }
+        },
+      )
+    }
+    RenderedFragment(_key, children) -> {
       list.fold(
         children,
         None,
@@ -575,24 +582,15 @@ fn find_rendered_hook(
 
 fn traverse_rendered_hooks(node: RenderedElement, process_hook: HookProcessor) {
   case node {
-    RenderedComponent(fc, key, props, hooks, children) -> {
+    RenderedComponent(fc, key, props, hooks, el) -> {
       let processed_hooks = process_hooks(hooks, process_hook)
-
-      let r_children =
-        list.fold(
-          children,
-          [],
-          fn(acc, child) {
-            [traverse_rendered_hooks(child, process_hook), ..acc]
-          },
-        )
 
       RenderedComponent(
         fc,
         key,
         props,
         processed_hooks,
-        list.reverse(r_children),
+        traverse_rendered_hooks(el, process_hook),
       )
     }
     RenderedElement(tag, key, hooks, children) -> {
@@ -606,6 +604,18 @@ fn traverse_rendered_hooks(node: RenderedElement, process_hook: HookProcessor) {
         )
 
       RenderedElement(tag, key, hooks, list.reverse(r_children))
+    }
+    RenderedFragment(key, children) -> {
+      let r_children =
+        list.fold(
+          children,
+          [],
+          fn(acc, child) {
+            [traverse_rendered_hooks(child, process_hook), ..acc]
+          },
+        )
+
+      RenderedFragment(key, list.reverse(r_children))
     }
     _ -> node
   }

@@ -23,8 +23,8 @@ import sprocket/internal/logger
 pub fn state(
   ctx: Context,
   initial: a,
-  cb: fn(Context, a, fn(a) -> Nil) -> #(Context, List(Element)),
-) -> #(Context, List(Element)) {
+  cb: fn(Context, a, fn(a) -> Nil) -> #(Context, Element),
+) -> #(Context, Element) {
   let Context(render_update: render_update, update_hook: update_hook, ..) = ctx
 
   let init_state = fn() {
@@ -76,8 +76,8 @@ pub fn reducer(
   ctx: Context,
   initial: model,
   reducer: Reducer(model, msg),
-  cb: fn(Context, model, fn(msg) -> Nil) -> #(Context, List(Element)),
-) -> #(Context, List(Element)) {
+  cb: fn(Context, model, fn(msg) -> Nil) -> #(Context, Element),
+) -> #(Context, Element) {
   let Context(render_update: render_update, ..) = ctx
 
   let reducer_init = fn() {
@@ -137,8 +137,8 @@ pub fn reducer(
 pub fn consumer(
   ctx: Context,
   key: String,
-  cb: fn(Context, a) -> #(Context, List(Element)),
-) -> #(Context, List(Element)) {
+  cb: fn(Context, a) -> #(Context, Element),
+) -> #(Context, Element) {
   let value = case map.get(ctx.providers, key) {
     Ok(v) -> {
       dynamic.unsafe_coerce(v)
@@ -167,8 +167,8 @@ pub fn effect(
   ctx: Context,
   effect_fn: fn() -> EffectCleanup,
   trigger: HookTrigger,
-  cb: fn(Context) -> #(Context, List(Element)),
-) -> #(Context, List(Element)) {
+  cb: fn(Context) -> #(Context, Element),
+) -> #(Context, Element) {
   // define the initial effect function that will only run when the hook is first created
   let init = fn() {
     Effect(unique.cuid(ctx.cuid_channel), effect_fn, trigger, None)
@@ -194,8 +194,8 @@ pub fn memo(
   ctx: Context,
   memo_fn: fn() -> a,
   trigger: HookTrigger,
-  cb: fn(Context, a) -> #(Context, List(Element)),
-) -> #(Context, List(Element)) {
+  cb: fn(Context, a) -> #(Context, Element),
+) -> #(Context, Element) {
   let #(ctx, context.Memo(id, current_memoized, prev), index) =
     context.fetch_or_init_hook(
       ctx,
@@ -237,8 +237,8 @@ pub fn callback(
   ctx: Context,
   callback_fn: fn() -> Nil,
   trigger: HookTrigger,
-  cb: fn(Context, fn() -> Nil) -> #(ctx, List(Element)),
-) -> #(ctx, List(Element)) {
+  cb: fn(Context, fn() -> Nil) -> #(ctx, Element),
+) -> #(ctx, Element) {
   let #(ctx, Callback(id, current_callback_fn, prev), index) =
     context.fetch_or_init_hook(
       ctx,
@@ -306,8 +306,8 @@ fn maybe_trigger_update(
 pub fn handler(
   ctx: Context,
   handler_fn: HandlerFn,
-  cb: fn(Context, IdentifiableHandler) -> #(ctx, List(Element)),
-) -> #(ctx, List(Element)) {
+  cb: fn(Context, IdentifiableHandler) -> #(ctx, Element),
+) -> #(ctx, Element) {
   let #(ctx, Handler(id, _handler_fn), index) =
     context.fetch_or_init_hook(
       ctx,
@@ -328,9 +328,8 @@ pub fn client(
   ctx: Context,
   name: String,
   handle_event: Option(ClientEventHandler),
-  cb: fn(Context, fn() -> Attribute, ClientDispatcher) ->
-    #(Context, List(Element)),
-) -> #(Context, List(Element)) {
+  cb: fn(Context, fn() -> Attribute, ClientDispatcher) -> #(Context, Element),
+) -> #(Context, Element) {
   // define the client hook initializer
   let init = fn() { Client(unique.cuid(ctx.cuid_channel), name, handle_event) }
 

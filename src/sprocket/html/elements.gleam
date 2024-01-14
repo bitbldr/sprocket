@@ -4,12 +4,16 @@ import gleam/dynamic.{type Dynamic}
 import gleam/string
 import gleam/string_builder
 import sprocket/context.{
-  type Attribute, type Element, Debug, Element, IgnoreUpdate, Keyed, Raw,
-  SafeHtml,
+  type Attribute, type Element, Debug, Element, Fragment, IgnoreUpdate, Keyed,
+  Raw, SafeHtml,
 }
 
 pub fn el(tag: String, attrs: List(Attribute), children: List(Element)) {
   Element(tag, attrs, children)
+}
+
+pub fn fragment(children: List(Element)) {
+  Fragment(children)
 }
 
 pub fn dangerous_raw_html(html: String) {

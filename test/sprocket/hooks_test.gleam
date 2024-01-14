@@ -4,7 +4,7 @@ import gleam/option.{None}
 import gleeunit/should
 import sprocket/context.{type Context, OnMount, OnUpdate, WithDeps}
 import sprocket/component.{component}
-import sprocket/html/elements.{button, text}
+import sprocket/html/elements.{button, fragment, text}
 import sprocket/html/attributes.{id, on_click}
 import sprocket/hooks.{effect, handler, reducer}
 import sprocket/test_helpers.{ClickEvent, live, render_event, render_html}
@@ -53,7 +53,10 @@ fn inc_initial_render_counter(ctx: Context, _props) {
 
   let current_count = int.to_string(count)
 
-  component.render(ctx, [text("current count is: "), text(current_count)])
+  component.render(
+    ctx,
+    fragment([text("current count is: "), text(current_count)]),
+  )
 }
 
 pub fn effect_should_only_run_on_initial_render_test() {
@@ -92,7 +95,10 @@ fn inc_on_every_update_counter(ctx: Context, _props) {
 
   let current_count = int.to_string(count)
 
-  component.render(ctx, [text("current count is: "), text(current_count)])
+  component.render(
+    ctx,
+    fragment([text("current count is: "), text(current_count)]),
+  )
 }
 
 pub fn effect_should_run_on_every_update_test() {
@@ -146,12 +152,12 @@ fn inc_reset_on_button_click_counter(ctx: Context, _props) {
 
   component.render(
     ctx,
-    [
+    fragment([
       text("current count is: "),
       text(current_count),
       button([id("increment"), on_click(on_increment)], [text("increment")]),
       button([id("reset"), on_click(on_reset)], [text("reset")]),
-    ],
+    ]),
   )
 }
 

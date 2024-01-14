@@ -28,14 +28,15 @@ pub type Attribute {
 }
 
 pub type AbstractFunctionalComponent =
-  fn(Context, Dynamic) -> #(Context, List(Element))
+  fn(Context, Dynamic) -> #(Context, Element)
 
 pub type FunctionalComponent(p) =
-  fn(Context, p) -> #(Context, List(Element))
+  fn(Context, p) -> #(Context, Element)
 
 pub type Element {
   Element(tag: String, attrs: List(Attribute), children: List(Element))
   Component(component: FunctionalComponent(Dynamic), props: Dynamic)
+  Fragment(children: List(Element))
   Debug(id: String, meta: Option(Dynamic), element: Element)
   Keyed(key: String, element: Element)
   IgnoreUpdate(element: Element)

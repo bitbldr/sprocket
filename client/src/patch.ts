@@ -1,4 +1,4 @@
-import { isInteger } from "./utils";
+import { isInteger, htmlDecode } from "./utils";
 
 enum OpCode {
   NoOp = 0,
@@ -143,13 +143,13 @@ export function applyPatch(
 
       return updated;
     case OpCode.Replace:
-      return operation[1];
+      return maybeHtmlDecode(operation[1]);
     case OpCode.Insert:
-      return operation[1];
+      return maybeHtmlDecode(operation[1]);
     case OpCode.Remove:
       return null;
     case OpCode.Change:
-      return operation[1];
+      return maybeHtmlDecode(operation[1]);
     case OpCode.Move:
       if (parent) {
         const fromKey = operation[1];
@@ -167,4 +167,12 @@ export function applyPatch(
         throw new Error("Cannot move element without parent");
       }
   }
+}
+
+function maybeHtmlDecode(maybeString) {
+  if (typeof maybeString === "string") {
+    return htmlDecode(maybeString);
+  }
+
+  return maybeString;
 }
