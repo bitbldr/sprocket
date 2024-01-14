@@ -4,18 +4,14 @@ import { init, attributesModule, VNode, toVNode } from "snabbdom";
 import { render } from "./render";
 import { applyPatch } from "./patch";
 import { initEventHandlers } from "./events";
-import { constant } from "./constants";
-import {
-  processClientHookMount,
-  processClientHookLifecycle,
-  processClientHookDestroyed,
-} from "./hooks";
+import { initClientHooksModule } from "./modules/clientHooksModule";
 
-const patchDOM = init([attributesModule], undefined, {
-  experimental: {
-    fragments: true,
-  },
-});
+export { ClientHook } from "./hooks";
+
+type Patcher = (
+  oldVNode: VNode | Element | DocumentFragment,
+  vnode: VNode
+) => VNode;
 
 type Opts = {
   csrfToken: string;
@@ -35,17 +31,22 @@ export function connect(path: String, opts: Opts) {
 
   let dom: Record<string, any>;
   let oldVNode: VNode;
-  let clientHookMap: Record<string, any>;
+
+  const patcher = init(
+    [attributesModule, initClientHooksModule(socket, hooks)],
+    undefined,
+    {
+      experimental: {
+        fragments: true,
+      },
+    }
+  );
 
   topbar.config({ barColors: { 0: "#29d" }, barThickness: 2 });
   topbar.show(500);
 
   socket.addEventListener("open", function (event) {
     socket.send(JSON.stringify(["join", { csrf: csrfToken }]));
-
-    if (clientHookMap) {
-      processClientHookLifecycle("reconnected", hooks, clientHookMap, targetEl);
-    }
   });
 
   socket.addEventListener("message", function (event) {
@@ -58,19 +59,14 @@ export function connect(path: String, opts: Opts) {
 
           dom = parsed[1];
 
-          oldVNode = update(toVNode(targetEl), dom, hooks, clientHookMap);
-
-          // mount client hooks and initialize clientHookMap after the first render
-          if (!clientHookMap) {
-            clientHookMap = processClientHookMount(socket, hooks);
-          }
+          oldVNode = update(patcher, toVNode(targetEl), dom);
 
           break;
 
         case "update":
           dom = applyPatch(dom, parsed[1], parsed[2]) as Element;
 
-          oldVNode = update(oldVNode, dom, hooks, clientHookMap);
+          oldVNode = update(patcher, oldVNode, dom);
 
           break;
 
@@ -83,9 +79,7 @@ export function connect(path: String, opts: Opts) {
     }
   });
 
-  socket.addEventListener("close", function (event) {
-    processClientHookLifecycle("disconnected", hooks, clientHookMap, targetEl);
-
+  socket.addEventListener("close", function (_event) {
     topbar.show();
   });
 
@@ -95,43 +89,13 @@ export function connect(path: String, opts: Opts) {
 
 // update the target DOM element using a given JSON DOM
 function update(
+  patcher: Patcher,
   oldVNode: VNode,
-  patched: Record<string, any>,
-  hooks: Record<string, any>,
-  clientHookMap: Record<string, any>
+  patched: Record<string, any>
 ) {
   const rendered = render(patched) as VNode;
-  const html = rendered.children[0] as VNode;
 
-  patchDOM(oldVNode, html);
+  patcher(oldVNode, rendered);
 
-  return html;
-
-  // morphdom(targetEl, renderDom(dom), {
-  //   onBeforeElUpdated: function (fromEl, toEl) {
-  //     if (toEl.hasAttribute(constant.IgnoreUpdate)) return false;
-  //     clientHookMap &&
-  //       processClientHookLifecycle("beforeUpdate", hooks, clientHookMap, toEl);
-  //     return true;
-  //   },
-  //   onElUpdated: function (el) {
-  //     clientHookMap &&
-  //       processClientHookLifecycle("updated", hooks, clientHookMap, el);
-  //   },
-  //   onNodeDiscarded: function (node) {
-  //     if (node.nodeType == Node.ELEMENT_NODE) {
-  //       const el = node as Element;
-  //       clientHookMap =
-  //         clientHookMap && processClientHookDestroyed(hooks, clientHookMap, el);
-  //     }
-  //   },
-  //   getNodeKey: function (node) {
-  //     if (node.nodeType == Node.ELEMENT_NODE) {
-  //       const el = node as Element;
-  //       if (el.hasAttribute(constant.KeyAttr)) {
-  //         return el.getAttribute(constant.KeyAttr);
-  //       }
-  //     }
-  //   },
-  // });
+  return rendered;
 }

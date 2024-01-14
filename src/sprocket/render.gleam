@@ -13,12 +13,15 @@ import sprocket/context.{
 import sprocket/internal/utils/unique
 import sprocket/internal/utils/ordered_map
 import sprocket/internal/logger
-import sprocket/internal/constants
 
 pub type RenderedAttribute {
   RenderedAttribute(name: String, value: String)
   RenderedEventHandler(kind: String, id: String)
   RenderedClientHook(name: String, id: String)
+}
+
+pub type IgnoreRule {
+  IgnoreAll
 }
 
 pub type RenderedElement {
@@ -36,6 +39,7 @@ pub type RenderedElement {
     hooks: ComponentHooks,
     el: RenderedElement,
   )
+  RenderedIgnoreUpdate(rule: IgnoreRule, el: RenderedElement)
   RenderedText(text: String)
 }
 
@@ -85,24 +89,14 @@ pub fn live_render(
       case prev {
         Some(prev) -> {
           // since we're ignoring updates, no need to rerender children
-          // just return the previous rendered element with the ignore attribute
-          prev
-          |> append_attribute(RenderedAttribute(
-            constants.ignore_update_attr,
-            "true",
-          ))
-          |> RenderResult(ctx, _)
+          // just return the previous rendered element as ignored
+          RenderResult(ctx, RenderedIgnoreUpdate(IgnoreAll, prev))
         }
         None -> {
-          // render the element and add the ignore attribute
+          // render the element on first render, ignore on subsequent renders
           let RenderResult(ctx, rendered) = live_render(ctx, el, key, prev)
 
-          rendered
-          |> append_attribute(RenderedAttribute(
-            constants.ignore_update_attr,
-            "true",
-          ))
-          |> RenderResult(ctx, _)
+          RenderResult(ctx, RenderedIgnoreUpdate(IgnoreAll, rendered))
         }
       }
     }

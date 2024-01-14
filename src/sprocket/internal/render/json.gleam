@@ -4,22 +4,24 @@ import gleam/string
 import gleam/option.{type Option, None, Some}
 import gleam/json.{type Json}
 import sprocket/render.{
-  type RenderedAttribute, type RenderedElement, type Renderer, RenderedAttribute,
-  RenderedClientHook, RenderedComponent, RenderedElement, RenderedEventHandler,
-  RenderedFragment, RenderedText, Renderer,
+  type IgnoreRule, type RenderedAttribute, type RenderedElement, type Renderer,
+  IgnoreAll, RenderedAttribute, RenderedClientHook, RenderedComponent,
+  RenderedElement, RenderedEventHandler, RenderedFragment, RenderedIgnoreUpdate,
+  RenderedText, Renderer,
 }
 import sprocket/internal/constants
 
 pub fn renderer() -> Renderer(Json) {
-  Renderer(render: fn(el) { render(el) })
+  Renderer(render: fn(el) { render(el, None) })
 }
 
-fn render(el: RenderedElement) -> Json {
+fn render(el: RenderedElement, ignore: Option(IgnoreRule)) -> Json {
   case el {
     RenderedElement(tag: tag, key: key, attrs: attrs, children: children) ->
-      element(tag, key, attrs, children)
-    RenderedComponent(key: key, el: el, ..) -> component(key, el)
-    RenderedFragment(key, children: children) -> fragment(key, children)
+      element(tag, key, ignore, attrs, children)
+    RenderedComponent(key: key, el: el, ..) -> component(key, ignore, el)
+    RenderedFragment(key, children: children) -> fragment(key, ignore, children)
+    RenderedIgnoreUpdate(rule, el) -> render(el, Some(rule))
     RenderedText(text: t) -> text(t)
   }
 }
@@ -27,6 +29,7 @@ fn render(el: RenderedElement) -> Json {
 fn element(
   tag: String,
   key: Option(String),
+  ignore: Option(IgnoreRule),
   attrs: List(RenderedAttribute),
   children: List(RenderedElement),
 ) -> Json {
@@ -62,7 +65,7 @@ fn element(
 
   let children =
     children
-    |> list.index_map(fn(i, child) { #(int.to_string(i), render(child)) })
+    |> list.index_map(fn(i, child) { #(int.to_string(i), render(child, None)) })
 
   [
     #("type", json.string("element")),
@@ -70,21 +73,42 @@ fn element(
     #("attrs", json.object(attrs)),
   ]
   |> maybe_append_string("key", key)
+  |> maybe_append_string(
+    "ignore",
+    option.map(
+      ignore,
+      fn(rule) {
+        case rule {
+          IgnoreAll -> "all"
+        }
+      },
+    ),
+  )
   |> list.append(children)
   |> json.object()
 }
 
-fn component(key: Option(String), el: RenderedElement) -> Json {
+fn component(
+  key: Option(String),
+  ignore: Option(IgnoreRule),
+  el: RenderedElement,
+) -> Json {
   [#("type", json.string("component"))]
   |> maybe_append_string("key", key)
-  |> list.append([#("el", render(el))])
+  |> list.append([#("el", render(el, ignore))])
   |> json.object()
 }
 
-fn fragment(key: Option(String), children: List(RenderedElement)) -> Json {
+fn fragment(
+  key: Option(String),
+  ignore: Option(IgnoreRule),
+  children: List(RenderedElement),
+) -> Json {
   let children =
     children
-    |> list.index_map(fn(i, child) { #(int.to_string(i), render(child)) })
+    |> list.index_map(fn(i, child) {
+      #(int.to_string(i), render(child, ignore))
+    })
 
   [#("type", json.string("fragment"))]
   |> maybe_append_string("key", key)

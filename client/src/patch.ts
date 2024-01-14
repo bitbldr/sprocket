@@ -143,13 +143,13 @@ export function applyPatch(
 
       return updated;
     case OpCode.Replace:
-      return maybeHtmlDecode(operation[1]);
+      return operation[1];
     case OpCode.Insert:
-      return maybeHtmlDecode(operation[1]);
+      return operation[1];
     case OpCode.Remove:
       return null;
     case OpCode.Change:
-      return maybeHtmlDecode(operation[1]);
+      return operation[1];
     case OpCode.Move:
       if (parent) {
         const fromKey = operation[1];

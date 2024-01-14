@@ -19,10 +19,15 @@ export function render(node: string | Record<string, any>): string | VNode {
 }
 
 function renderElement(element): VNode {
-  let data: VNodeData = { attrs: element.attrs };
+  let data: VNodeData = { attrs: element.attrs, hooks: {} };
 
   if (element.key) {
     data.key = element.key;
+  }
+
+  // TODO: figure out how to actually ignore updates with snabbdom
+  if (element.ignore) {
+    data.ignore = true;
   }
 
   return h(
@@ -42,5 +47,10 @@ function renderFragment(f): VNode {
   // ideally, fragments would also allow a key to help inform the patcher about
   // the position of the fragment in the DOM, but snabbdom doesn't support that
   // yet, so we have to leave it up to snabbdom to figure out the position for now
-  return fragment(f.children.map((child) => render(child)));
+
+  return fragment(
+    Object.keys(f)
+      .filter((key) => isInteger(key))
+      .reduce((acc, key) => [...acc, render(f[key])], [])
+  );
 }
