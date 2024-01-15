@@ -77,7 +77,21 @@ pub fn text_change_test() {
   |> should.equal(Update(
     attrs: None,
     children: Some([
-      #(1, Update(attrs: None, children: Some([#(0, Change(text: "Changed"))]))),
+      #(
+        0,
+        Update(
+          attrs: None,
+          children: Some([
+            #(
+              1,
+              Update(
+                attrs: None,
+                children: Some([#(0, Change(text: "Changed"))]),
+              ),
+            ),
+          ]),
+        ),
+      ),
     ]),
   ))
 }
@@ -124,25 +138,23 @@ pub fn first_fc_without_children_test() {
 
   patch.create(first, second)
   |> should.equal(Update(
-    attrs: None,
-    children: Some([
+    None,
+    Some([
       #(
         0,
-        Insert(el: RenderedElement(
-          tag: "p",
-          key: None,
-          attrs: [],
-          children: [RenderedText("Hello")],
-        )),
-      ),
-      #(
-        1,
-        Insert(el: RenderedElement(
-          tag: "p",
-          key: None,
-          attrs: [],
-          children: [RenderedText("Changed")],
-        )),
+        Update(
+          None,
+          Some([
+            #(
+              0,
+              Insert(RenderedElement("p", None, [], [RenderedText("Hello")])),
+            ),
+            #(
+              1,
+              Insert(RenderedElement("p", None, [], [RenderedText("Changed")])),
+            ),
+          ]),
+        ),
       ),
     ]),
   ))
@@ -222,24 +234,32 @@ pub fn add_child_test() {
   |> should.equal(Update(
     attrs: None,
     children: Some([
-      #(1, Update(attrs: None, children: Some([#(0, Change("Great"))]))),
       #(
-        2,
-        Insert(RenderedElement(
-          tag: "p",
-          key: None,
-          attrs: [],
-          children: [RenderedText("Big")],
-        )),
-      ),
-      #(
-        3,
-        Insert(RenderedElement(
-          tag: "p",
-          key: None,
-          attrs: [],
-          children: [RenderedText("World")],
-        )),
+        0,
+        Update(
+          attrs: None,
+          children: Some([
+            #(1, Update(attrs: None, children: Some([#(0, Change("Great"))]))),
+            #(
+              2,
+              Insert(RenderedElement(
+                tag: "p",
+                key: None,
+                attrs: [],
+                children: [RenderedText("Big")],
+              )),
+            ),
+            #(
+              3,
+              Insert(RenderedElement(
+                tag: "p",
+                key: None,
+                attrs: [],
+                children: [RenderedText("World")],
+              )),
+            ),
+          ]),
+        ),
       ),
     ]),
   ))
@@ -320,24 +340,32 @@ pub fn add_move_child_with_keys_test() {
     attrs: None,
     children: Some([
       #(
-        1,
-        Replace(RenderedElement(
-          tag: "p",
-          key: Some("great"),
-          attrs: [],
-          children: [RenderedText("Great")],
-        )),
+        0,
+        Update(
+          attrs: None,
+          children: Some([
+            #(
+              1,
+              Replace(RenderedElement(
+                tag: "p",
+                key: Some("great"),
+                attrs: [],
+                children: [RenderedText("Great")],
+              )),
+            ),
+            #(
+              2,
+              Insert(RenderedElement(
+                tag: "p",
+                key: Some("big"),
+                attrs: [],
+                children: [RenderedText("Big")],
+              )),
+            ),
+            #(3, Move(from: 1, patch: NoOp)),
+          ]),
+        ),
       ),
-      #(
-        2,
-        Insert(RenderedElement(
-          tag: "p",
-          key: Some("big"),
-          attrs: [],
-          children: [RenderedText("Big")],
-        )),
-      ),
-      #(3, Move(from: 1, patch: NoOp)),
     ]),
   ))
 }
@@ -420,37 +448,45 @@ pub fn add_move_update_child_with_keys_test() {
     attrs: None,
     children: Some([
       #(
-        1,
-        Replace(RenderedElement(
-          tag: "p",
-          key: Some("great"),
-          attrs: [],
-          children: [RenderedText("Great")],
-        )),
-      ),
-      #(
-        2,
-        Insert(RenderedElement(
-          tag: "p",
-          key: Some("big"),
-          attrs: [],
-          children: [RenderedText("Big")],
-        )),
-      ),
-      #(
-        3,
-        Move(
-          from: 1,
-          patch: Update(
-            attrs: Some([
-              RenderedAttribute("class", "round"),
-              RenderedAttribute("class", "blue"),
-            ]),
-            children: Some([
-              #(0, Change("Blue")),
-              #(1, Insert(RenderedText("World"))),
-            ]),
-          ),
+        0,
+        Update(
+          attrs: None,
+          children: Some([
+            #(
+              1,
+              Replace(RenderedElement(
+                tag: "p",
+                key: Some("great"),
+                attrs: [],
+                children: [RenderedText("Great")],
+              )),
+            ),
+            #(
+              2,
+              Insert(RenderedElement(
+                tag: "p",
+                key: Some("big"),
+                attrs: [],
+                children: [RenderedText("Big")],
+              )),
+            ),
+            #(
+              3,
+              Move(
+                from: 1,
+                patch: Update(
+                  attrs: Some([
+                    RenderedAttribute("class", "round"),
+                    RenderedAttribute("class", "blue"),
+                  ]),
+                  children: Some([
+                    #(0, Change("Blue")),
+                    #(1, Insert(RenderedText("World"))),
+                  ]),
+                ),
+              ),
+            ),
+          ]),
         ),
       ),
     ]),
@@ -532,33 +568,41 @@ pub fn add_move_replace_child_with_keys_test() {
     attrs: None,
     children: Some([
       #(
-        1,
-        Replace(RenderedElement(
-          tag: "p",
-          key: Some("great"),
-          attrs: [],
-          children: [RenderedText("Great")],
-        )),
-      ),
-      #(
-        2,
-        Insert(RenderedElement(
-          tag: "p",
-          key: Some("big"),
-          attrs: [],
-          children: [RenderedText("Big")],
-        )),
-      ),
-      #(
-        3,
-        Move(
-          from: 1,
-          patch: Replace(RenderedElement(
-            tag: "div",
-            key: Some("world"),
-            attrs: [],
-            children: [RenderedText("Blue"), RenderedText("World")],
-          )),
+        0,
+        Update(
+          attrs: None,
+          children: Some([
+            #(
+              1,
+              Replace(RenderedElement(
+                tag: "p",
+                key: Some("great"),
+                attrs: [],
+                children: [RenderedText("Great")],
+              )),
+            ),
+            #(
+              2,
+              Insert(RenderedElement(
+                tag: "p",
+                key: Some("big"),
+                attrs: [],
+                children: [RenderedText("Big")],
+              )),
+            ),
+            #(
+              3,
+              Move(
+                from: 1,
+                patch: Replace(RenderedElement(
+                  tag: "div",
+                  key: Some("world"),
+                  attrs: [],
+                  children: [RenderedText("Blue"), RenderedText("World")],
+                )),
+              ),
+            ),
+          ]),
         ),
       ),
     ]),
@@ -658,17 +702,25 @@ pub fn remove_middle_child_in_list_with_keys_test() {
     attrs: None,
     children: Some([
       #(
-        2,
-        Move(
-          from: 3,
-          patch: Update(
-            attrs: None,
-            children: Some([#(1, Insert(RenderedText("and a half")))]),
-          ),
+        0,
+        Update(
+          attrs: None,
+          children: Some([
+            #(
+              2,
+              Move(
+                from: 3,
+                patch: Update(
+                  attrs: None,
+                  children: Some([#(1, Insert(RenderedText("and a half")))]),
+                ),
+              ),
+            ),
+            #(3, Move(from: 4, patch: NoOp)),
+            #(4, Remove),
+          ]),
         ),
       ),
-      #(3, Move(from: 4, patch: NoOp)),
-      #(4, Remove),
     ]),
   ))
 }
@@ -766,16 +818,24 @@ pub fn restore_full_list_from_partial_with_keys_test() {
     attrs: None,
     children: Some([
       #(
-        2,
-        Replace(RenderedElement(
-          tag: "li",
-          key: Some("three"),
-          attrs: [],
-          children: [RenderedText("Three")],
-        )),
+        0,
+        Update(
+          attrs: None,
+          children: Some([
+            #(
+              2,
+              Replace(RenderedElement(
+                tag: "li",
+                key: Some("three"),
+                attrs: [],
+                children: [RenderedText("Three")],
+              )),
+            ),
+            #(3, Move(from: 2, patch: NoOp)),
+            #(4, Move(from: 3, patch: NoOp)),
+          ]),
+        ),
       ),
-      #(3, Move(from: 2, patch: NoOp)),
-      #(4, Move(from: 3, patch: NoOp)),
     ]),
   ))
 }
@@ -871,36 +931,44 @@ pub fn remove_first_couple_items_in_list_with_keys_test() {
     children: Some([
       #(
         0,
-        Replace(RenderedElement(
-          tag: "li",
-          key: Some("three"),
-          attrs: [],
-          children: [RenderedText("Three")],
-        )),
-      ),
-      #(1, Move(from: 2, patch: NoOp)),
-      #(
-        2,
-        Move(
-          from: 3,
-          patch: Update(
-            attrs: None,
-            children: Some([
-              #(
-                1,
-                Insert(RenderedComponent(
-                  fc,
-                  None,
-                  props,
-                  ordered_map.new(),
-                  RenderedText("and some change"),
-                )),
+        Update(
+          attrs: None,
+          children: Some([
+            #(
+              0,
+              Replace(RenderedElement(
+                tag: "li",
+                key: Some("three"),
+                attrs: [],
+                children: [RenderedText("Three")],
+              )),
+            ),
+            #(1, Move(from: 2, patch: NoOp)),
+            #(
+              2,
+              Move(
+                from: 3,
+                patch: Update(
+                  attrs: None,
+                  children: Some([
+                    #(
+                      1,
+                      Insert(RenderedComponent(
+                        fc,
+                        None,
+                        props,
+                        ordered_map.new(),
+                        RenderedText("and some change"),
+                      )),
+                    ),
+                  ]),
+                ),
               ),
-            ]),
-          ),
+            ),
+            #(3, Remove),
+          ]),
         ),
       ),
-      #(3, Remove),
     ]),
   ))
 }
@@ -1097,35 +1165,43 @@ pub fn shift_list_with_keys_test() {
     children: Some([
       #(
         0,
-        Replace(RenderedElement(
-          tag: "li",
-          key: Some("uno"),
-          attrs: [],
-          children: [RenderedText("Uno")],
-        )),
+        Update(
+          attrs: None,
+          children: Some([
+            #(
+              0,
+              Replace(RenderedElement(
+                tag: "li",
+                key: Some("uno"),
+                attrs: [],
+                children: [RenderedText("Uno")],
+              )),
+            ),
+            #(
+              1,
+              Replace(RenderedElement(
+                tag: "li",
+                key: Some("dos"),
+                attrs: [],
+                children: [RenderedText("Dos")],
+              )),
+            ),
+            #(
+              2,
+              Replace(RenderedElement(
+                tag: "li",
+                key: Some("tres"),
+                attrs: [],
+                children: [RenderedText("Tres")],
+              )),
+            ),
+            #(3, Move(from: 0, patch: NoOp)),
+            #(4, Move(from: 1, patch: NoOp)),
+            #(5, Move(from: 2, patch: NoOp)),
+            #(6, Move(from: 3, patch: NoOp)),
+          ]),
+        ),
       ),
-      #(
-        1,
-        Replace(RenderedElement(
-          tag: "li",
-          key: Some("dos"),
-          attrs: [],
-          children: [RenderedText("Dos")],
-        )),
-      ),
-      #(
-        2,
-        Replace(RenderedElement(
-          tag: "li",
-          key: Some("tres"),
-          attrs: [],
-          children: [RenderedText("Tres")],
-        )),
-      ),
-      #(3, Move(from: 0, patch: NoOp)),
-      #(4, Move(from: 1, patch: NoOp)),
-      #(5, Move(from: 2, patch: NoOp)),
-      #(6, Move(from: 3, patch: NoOp)),
     ]),
   ))
 }
@@ -1198,16 +1274,27 @@ pub fn attribute_change_test() {
       #(
         0,
         Update(
-          attrs: Some([
-            RenderedAttribute("class", "bold"),
-            RenderedAttribute("class", "italic"),
+          attrs: None,
+          children: Some([
+            #(
+              0,
+              Update(
+                attrs: Some([
+                  RenderedAttribute("class", "bold"),
+                  RenderedAttribute("class", "italic"),
+                ]),
+                children: None,
+              ),
+            ),
+            #(
+              1,
+              Update(
+                attrs: Some([]),
+                children: Some([#(0, Change(text: "Changed"))]),
+              ),
+            ),
           ]),
-          children: None,
         ),
-      ),
-      #(
-        1,
-        Update(attrs: Some([]), children: Some([#(0, Change(text: "Changed"))])),
       ),
     ]),
   ))
@@ -1456,34 +1543,40 @@ pub fn patch_to_json_test() {
     "[
       \"Update\",
       null,
-      {
-          \"1\": [
-              \"Replace\",
-              {
-                  \"type\": \"element\",
-                  \"tag\": \"p\",
-                  \"attrs\": {},
-                  \"key\": \"great\",
-                  \"0\": \"Great\"
-              }
-          ],
-          \"2\": [
-              \"Insert\",
-              {
-                  \"type\": \"element\",
-                  \"tag\": \"p\",
-                  \"attrs\": {},
-                  \"key\": \"big\",
-                  \"0\": \"Big\"
-              }
-          ],
-          \"3\": [
-              \"Move\",
-              1,
-              [
-                  \"NoOp\"
+      {\"0\":
+        [
+          \"Update\",
+          null,
+          {
+              \"1\": [
+                  \"Replace\",
+                  {
+                      \"type\": \"element\",
+                      \"tag\": \"p\",
+                      \"attrs\": {},
+                      \"key\": \"great\",
+                      \"0\": \"Great\"
+                  }
+              ],
+              \"2\": [
+                  \"Insert\",
+                  {
+                      \"type\": \"element\",
+                      \"tag\": \"p\",
+                      \"attrs\": {},
+                      \"key\": \"big\",
+                      \"0\": \"Big\"
+                  }
+              ],
+              \"3\": [
+                  \"Move\",
+                  1,
+                  [
+                      \"NoOp\"
+                  ]
               ]
-          ]
+          }
+        ]
       }
     ]"
     |> normalize_json_str(),
@@ -1570,25 +1663,31 @@ pub fn patch_to_json_replace_list_with_component_test() {
     "[
       \"Update\",
       null,
-      {
-          \"1\": [
-              \"Replace\",
-              {
-                  \"type\": \"component\",
-                  \"key\": \"fc2\",
-                  \"el\": {
-                      \"type\": \"element\",
-                      \"tag\": \"div\",
-                      \"attrs\": {}
+      {\"0\":
+        [
+          \"Update\",
+          null,
+          {
+              \"1\": [
+                  \"Replace\",
+                  {
+                      \"type\": \"component\",
+                      \"key\": \"fc2\",
+                      \"0\": {
+                          \"type\": \"element\",
+                          \"tag\": \"div\",
+                          \"attrs\": {}
+                      }
                   }
-              }
-          ],
-          \"2\": [
-              \"Remove\"
-          ],
-          \"3\": [
-              \"Remove\"
-          ]
+              ],
+              \"2\": [
+                  \"Remove\"
+              ],
+              \"3\": [
+                  \"Remove\"
+              ]
+          }
+        ]
       }
     ]"
     |> normalize_json_str(),
