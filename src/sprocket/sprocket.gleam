@@ -153,14 +153,10 @@ fn handle_message(message: Message, state: State) -> actor.Next(Message, State) 
           rendered: Some(prev_rendered),
           ..,
         ) -> {
-          io.debug(#("RenderUpdate ctx before:", ctx))
-
           let RenderResult(ctx, rendered) =
             ctx
             |> context.reset_for_render
             |> live_render(view, None, Some(prev_rendered))
-
-          io.debug(#("ctx after:", ctx))
 
           // let update =
           //   timer.timed_operation(

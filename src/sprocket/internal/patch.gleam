@@ -96,7 +96,14 @@ pub fn create(old: RenderedElement, new: RenderedElement) -> Patch {
       // In the future, we will want to introduce a RenderedMemo variant where we can
       // short circuit the diffing process if both old and new function and props match
       // and only render the new component if the functional component or props have changed.
-      create(old_el, new_el)
+      case create(old_el, new_el) {
+        NoOp -> {
+          NoOp
+        }
+        patch -> {
+          Update(attrs: None, children: Some([#(0, patch)]))
+        }
+      }
     }
     RenderedFragment(key: _old_key, children: old_children), RenderedFragment(
       key: _key,

@@ -65,7 +65,7 @@ function renderElement(element, providers: Providers): VNode {
 }
 
 function renderComponent(component, providers: Providers): string | VNode {
-  return render(component.el, providers);
+  return render(component["0"], providers);
 }
 
 function renderFragment(f, providers: Providers): VNode {

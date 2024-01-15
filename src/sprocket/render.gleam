@@ -235,7 +235,12 @@ fn component(
   // capture hook results
   let hooks = ctx.wip.hooks
 
-  let RenderResult(ctx, rendered_el) = live_render(ctx, el, None, prev)
+  let prev_el = case prev {
+    Some(RenderedComponent(_, _, _, _, el)) -> Some(el)
+    _ -> None
+  }
+
+  let RenderResult(ctx, rendered_el) = live_render(ctx, el, None, prev_el)
 
   RenderResult(ctx, RenderedComponent(fc, key, props, hooks, rendered_el))
 }

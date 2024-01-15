@@ -95,7 +95,7 @@ fn component(
 ) -> Json {
   [#("type", json.string("component"))]
   |> maybe_append_string("key", key)
-  |> list.append([#("el", render(el, ignore))])
+  |> list.append([#("0", render(el, ignore))])
   |> json.object()
 }
 
