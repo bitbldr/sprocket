@@ -4,7 +4,7 @@ import { init, attributesModule, VNode, toVNode } from "snabbdom";
 import { render } from "./render";
 import { applyPatch } from "./patch";
 import { initEventHandlers } from "./events";
-import { initClientHooksModule } from "./modules/clientHooksModule";
+import { ClientHookProvider, initClientHookProvider } from "./hooks";
 
 export { ClientHook } from "./hooks";
 
@@ -32,14 +32,17 @@ export function connect(path: String, opts: Opts) {
   let dom: Record<string, any>;
   let oldVNode: VNode;
 
-  const patcher = init(
-    [attributesModule, initClientHooksModule(socket, hooks)],
-    undefined,
-    {
-      experimental: {
-        fragments: true,
-      },
-    }
+  const patcher = init([attributesModule], undefined, {
+    experimental: {
+      fragments: true,
+    },
+  });
+
+  let clientHookMap: Record<string, any> = {};
+  const clientHookProvider = initClientHookProvider(
+    socket,
+    hooks,
+    clientHookMap
   );
 
   topbar.config({ barColors: { 0: "#29d" }, barThickness: 2 });
@@ -59,14 +62,19 @@ export function connect(path: String, opts: Opts) {
 
           dom = parsed[1];
 
-          oldVNode = update(patcher, toVNode(targetEl), dom);
+          oldVNode = update(
+            patcher,
+            toVNode(targetEl),
+            dom,
+            clientHookProvider
+          );
 
           break;
 
         case "update":
           dom = applyPatch(dom, parsed[1], parsed[2]) as Element;
 
-          oldVNode = update(patcher, oldVNode, dom);
+          oldVNode = update(patcher, oldVNode, dom, clientHookProvider);
 
           break;
 
@@ -91,9 +99,10 @@ export function connect(path: String, opts: Opts) {
 function update(
   patcher: Patcher,
   oldVNode: VNode,
-  patched: Record<string, any>
+  patched: Record<string, any>,
+  clientHookProvider: ClientHookProvider
 ) {
-  const rendered = render(patched) as VNode;
+  const rendered = render(patched, clientHookProvider) as VNode;
 
   patcher(oldVNode, rendered);
 
