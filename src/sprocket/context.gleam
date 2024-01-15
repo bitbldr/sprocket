@@ -1,3 +1,4 @@
+import gleam/io
 import gleam/int
 import gleam/list
 import gleam/map.{Map}
@@ -15,6 +16,10 @@ pub type HandlerFn =
 
 pub type CallbackParam {
   CallbackString(value: String)
+}
+
+pub fn callback_param_from_string(value: String) -> CallbackParam {
+  CallbackString(value)
 }
 
 pub type IdentifiableHandler {

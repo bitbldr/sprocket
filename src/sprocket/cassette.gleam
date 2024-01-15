@@ -7,8 +7,9 @@ import gleam/erlang/process.{type Subject}
 import gleam/otp/actor
 import ids/cuid
 import sprocket/sprocket.{type Sprocket}
-import sprocket/context.{type Element, Client, Dispatcher, Updater}
-import sprocket/html/attributes.{callback_param_from_string}
+import sprocket/context.{
+  type Element, Client, Dispatcher, Updater, callback_param_from_string,
+}
 import sprocket/render.{type RenderedElement}
 import sprocket/internal/render/json as json_renderer
 import sprocket/internal/patch.{type Patch}
@@ -218,7 +219,11 @@ pub fn client_message(
               ))
               |> Ok
             }
-            _ -> Ok(Nil)
+            _ -> {
+              logger.error("Error: no handler defined for id: " <> event_id)
+
+              Ok(Nil)
+            }
           }
         }
         _ -> Error(Nil)

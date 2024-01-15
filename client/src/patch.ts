@@ -168,11 +168,3 @@ export function applyPatch(
       }
   }
 }
-
-function maybeHtmlDecode(maybeString) {
-  if (typeof maybeString === "string") {
-    return htmlDecode(maybeString);
-  }
-
-  return maybeString;
-}

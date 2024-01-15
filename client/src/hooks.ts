@@ -60,7 +60,7 @@ export const initClientHookProvider = (
           handleEvent,
         };
 
-        hooks[hookName].create && hooks[hookName].create(clientHookMap[hookId]);
+        execClientHook(hooks, clientHookMap, hookName, hookId, "create");
       }
     },
     insert: (vnode) => {
@@ -68,8 +68,7 @@ export const initClientHookProvider = (
 
       if (h) {
         const { id: hookId, name: hookName } = h;
-
-        hooks[hookName].insert && hooks[hookName].insert(clientHookMap[hookId]);
+        execClientHook(hooks, clientHookMap, hookName, hookId, "insert");
       }
     },
     update: (oldVNode, vnode) => {
@@ -77,8 +76,7 @@ export const initClientHookProvider = (
 
       if (h) {
         const { id: hookId, name: hookName } = h;
-
-        hooks[hookName].update && hooks[hookName].update(clientHookMap[hookId]);
+        execClientHook(hooks, clientHookMap, hookName, hookId, "update");
       }
     },
     destroy: (vnode) => {
@@ -86,8 +84,7 @@ export const initClientHookProvider = (
 
       if (h) {
         const { id: hookId, name: hookName } = h;
-        hooks[hookName].destroy &&
-          hooks[hookName].destroy(clientHookMap[hookId]);
+        execClientHook(hooks, clientHookMap, hookName, hookId, "destroy");
 
         delete clientHookMap[hookId];
       }
@@ -106,4 +103,20 @@ function maybeGetHook(vnode: VNode) {
   }
 
   return null;
+}
+
+function execClientHook(
+  hooks: Record<string, any>,
+  clientHookMap: Record<string, any>,
+  hookName: string,
+  hookId: string,
+  method: string
+) {
+  const hook = hooks[hookName];
+
+  if (hook) {
+    hook[method] && hook[method](clientHookMap[hookId]);
+  } else {
+    throw new Error(`Client hook ${hookName} not found`);
+  }
 }

@@ -3,14 +3,10 @@ import gleam/string_builder
 import gleam/option.{type Option, None, Some}
 import gleam/dynamic
 import sprocket/context.{
-  type Attribute, type CallbackParam, type IdentifiableHandler, Attribute,
-  CallbackString, ClientHook, Event, IdentifiableHandler,
+  type Attribute, type IdentifiableHandler, Attribute, ClientHook, Event,
+  IdentifiableHandler,
 }
 import sprocket/internal/utils/unique.{type Unique}
-
-pub fn callback_param_from_string(value: String) -> CallbackParam {
-  CallbackString(value)
-}
 
 pub fn attribute(name: String, value: any) -> Attribute {
   Attribute(name, dynamic.from(value))

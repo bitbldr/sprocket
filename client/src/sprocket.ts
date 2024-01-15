@@ -1,10 +1,16 @@
 import topbar from "topbar";
 import ReconnectingWebSocket from "reconnecting-websocket";
-import { init, attributesModule, VNode, toVNode } from "snabbdom";
-import { render } from "./render";
+import {
+  init,
+  attributesModule,
+  eventListenersModule,
+  VNode,
+  toVNode,
+} from "snabbdom";
+import { render, Providers } from "./render";
 import { applyPatch } from "./patch";
-import { initEventHandlers } from "./events";
-import { ClientHookProvider, initClientHookProvider } from "./hooks";
+import { EventIdentifier } from "./events";
+import { initClientHookProvider } from "./hooks";
 
 export { ClientHook } from "./hooks";
 
@@ -32,7 +38,7 @@ export function connect(path: String, opts: Opts) {
   let dom: Record<string, any>;
   let oldVNode: VNode;
 
-  const patcher = init([attributesModule], undefined, {
+  const patcher = init([attributesModule, eventListenersModule], undefined, {
     experimental: {
       fragments: true,
     },
@@ -44,6 +50,19 @@ export function connect(path: String, opts: Opts) {
     hooks,
     clientHookMap
   );
+
+  const eventHandlerProvider =
+    ({ id, kind }: EventIdentifier) =>
+    (e) => {
+      socket.send(
+        JSON.stringify(["event", { id, kind, value: e.target.value }])
+      );
+    };
+
+  const providers: Providers = {
+    clientHookProvider,
+    eventHandlerProvider,
+  };
 
   topbar.config({ barColors: { 0: "#29d" }, barThickness: 2 });
   topbar.show(500);
@@ -62,19 +81,14 @@ export function connect(path: String, opts: Opts) {
 
           dom = parsed[1];
 
-          oldVNode = update(
-            patcher,
-            toVNode(targetEl),
-            dom,
-            clientHookProvider
-          );
+          oldVNode = update(patcher, toVNode(targetEl), dom, providers);
 
           break;
 
         case "update":
           dom = applyPatch(dom, parsed[1], parsed[2]) as Element;
 
-          oldVNode = update(patcher, oldVNode, dom, clientHookProvider);
+          oldVNode = update(patcher, oldVNode, dom, providers);
 
           break;
 
@@ -90,9 +104,6 @@ export function connect(path: String, opts: Opts) {
   socket.addEventListener("close", function (_event) {
     topbar.show();
   });
-
-  // wire up event handlers
-  initEventHandlers(socket);
 }
 
 // update the target DOM element using a given JSON DOM
@@ -100,9 +111,9 @@ function update(
   patcher: Patcher,
   oldVNode: VNode,
   patched: Record<string, any>,
-  clientHookProvider: ClientHookProvider
+  providers: Providers
 ) {
-  const rendered = render(patched, clientHookProvider) as VNode;
+  const rendered = render(patched, providers) as VNode;
 
   patcher(oldVNode, rendered);
 
