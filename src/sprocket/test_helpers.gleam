@@ -12,7 +12,10 @@ import sprocket/internal/utils/unique
 
 pub fn live(view) {
   let assert Ok(cuid_channel) = cuid.start()
-  sprocket.start(unique.uuid(), view, cuid_channel, None, None)
+  let assert Ok(spkt) =
+    sprocket.start(unique.uuid(), view, cuid_channel, None, None)
+
+  spkt
 }
 
 pub fn render_html(spkt) {

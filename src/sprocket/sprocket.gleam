@@ -1,6 +1,7 @@
 import gleam/list
 import gleam/map.{type Map}
-import gleam/otp/actor
+import gleam/function.{identity}
+import gleam/otp/actor.{type StartError, Spec}
 import gleam/erlang/process.{type Subject}
 import gleam/option.{type Option, None, Some}
 import ids/cuid
@@ -31,7 +32,7 @@ pub type Sprocket =
 type State {
   State(
     id: Unique,
-    self: Option(Sprocket),
+    self: Sprocket,
     cancel_shutdown: Option(fn() -> Nil),
     ctx: Context,
     updater: Option(Updater(Patch)),
@@ -41,15 +42,12 @@ type State {
 
 pub type Message {
   Shutdown
-  SetSelf(Sprocket)
   BeginSelfDestruct(Int)
   CancelSelfDestruct
   GetRendered(reply_with: Subject(Option(RenderedElement)))
   GetId(reply_with: Subject(Unique))
-  SetRenderUpdate(fn() -> Nil)
   Render(reply_with: Subject(RenderedElement))
   RenderUpdate
-  SetUpdateHook(fn(Unique, fn(Hook) -> Hook) -> Nil)
   UpdateHook(Unique, fn(Hook) -> Hook)
   GetEventHandler(
     reply_with: Subject(Result(IdentifiableHandler, Nil)),
@@ -72,19 +70,10 @@ fn handle_message(message: Message, state: State) -> actor.Next(Message, State) 
       actor.Stop(process.Normal)
     }
 
-    SetSelf(self) -> {
-      actor.continue(State(..state, self: Some(self)))
-    }
-
     BeginSelfDestruct(timeout) -> {
-      case state.self {
-        Some(self) -> {
-          let cancel = interval(timeout, fn() { actor.send(self, Shutdown) })
+      let cancel = interval(timeout, fn() { actor.send(state.self, Shutdown) })
 
-          actor.continue(State(..state, cancel_shutdown: Some(cancel)))
-        }
-        _ -> actor.continue(state)
-      }
+      actor.continue(State(..state, cancel_shutdown: Some(cancel)))
     }
 
     CancelSelfDestruct -> {
@@ -109,12 +98,6 @@ fn handle_message(message: Message, state: State) -> actor.Next(Message, State) 
       actor.send(reply_with, state.id)
 
       actor.continue(state)
-    }
-
-    SetRenderUpdate(render_update) -> {
-      actor.continue(
-        State(..state, ctx: Context(..state.ctx, render_update: render_update)),
-      )
     }
 
     Render(reply_with) -> {
@@ -207,12 +190,6 @@ fn handle_message(message: Message, state: State) -> actor.Next(Message, State) 
       }
     }
 
-    SetUpdateHook(update_hook) -> {
-      actor.continue(
-        State(..state, ctx: Context(..state.ctx, update_hook: update_hook)),
-      )
-    }
-
     UpdateHook(id, updater) -> {
       actor.continue(update_hook_state(state, id, updater))
     }
@@ -265,28 +242,36 @@ pub fn start(
   cuid_channel: Subject(cuid.Message),
   updater: Option(Updater(Patch)),
   dispatcher: Option(Dispatcher),
-) {
-  let assert Ok(actor) =
-    actor.start(
+) -> Result(Sprocket, StartError) {
+  let init = fn() {
+    let self = process.new_subject()
+    let render_update = fn() { actor.send(self, RenderUpdate) }
+    let update_hook = fn(id, updater) {
+      actor.send(self, UpdateHook(id, updater))
+    }
+
+    let state =
       State(
         id: id,
-        self: None,
+        self: self,
         cancel_shutdown: None,
-        ctx: context.new(view, cuid_channel, dispatcher),
+        ctx: context.new(
+          view,
+          cuid_channel,
+          dispatcher,
+          render_update,
+          update_hook,
+        ),
         updater: updater,
         rendered: None,
-      ),
-      handle_message,
-    )
+      )
 
-  actor.send(actor, SetSelf(actor))
-  actor.send(actor, SetRenderUpdate(fn() { actor.send(actor, RenderUpdate) }))
-  actor.send(
-    actor,
-    SetUpdateHook(fn(id, updater) { actor.send(actor, UpdateHook(id, updater)) }),
-  )
+    let selector = process.selecting(process.new_selector(), self, identity)
 
-  actor
+    actor.Ready(state, selector)
+  }
+
+  actor.start_spec(Spec(init, call_timeout, handle_message))
 }
 
 /// Stop a sprocket actor

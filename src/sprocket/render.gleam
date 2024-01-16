@@ -59,7 +59,18 @@ pub fn render(el: Element, renderer: Renderer(r)) -> r {
   let assert Ok(cuid_channel) = cuid.start()
 
   let RenderResult(rendered: rendered, ..) =
-    live_render(context.new(el, cuid_channel, None), el, None, None)
+    live_render(
+      context.new(
+        el,
+        cuid_channel,
+        None,
+        fn() { Nil },
+        fn(_index, _updater) { Nil },
+      ),
+      el,
+      None,
+      None,
+    )
 
   renderer.render(rendered)
 }

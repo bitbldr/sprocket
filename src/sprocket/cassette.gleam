@@ -3,8 +3,9 @@ import gleam/list
 import gleam/dynamic.{type Dynamic, field, optional_field}
 import gleam/option.{type Option, None, Some}
 import gleam/json
+import gleam/function.{identity}
 import gleam/erlang/process.{type Subject}
-import gleam/otp/actor
+import gleam/otp/actor.{type StartError, Spec}
 import ids/cuid
 import sprocket/sprocket.{type Sprocket}
 import sprocket/context.{
@@ -119,21 +120,25 @@ pub type CassetteOpts {
 pub fn start(
   csrf_validator: CSRFValidator,
   opts: Option(CassetteOpts),
-) -> Cassette {
-  let assert Ok(cuid_channel) = cuid.start()
-  let assert Ok(ca) =
-    actor.start(
+) -> Result(Cassette, StartError) {
+  let init = fn() {
+    let self = process.new_subject()
+    let assert Ok(cuid_channel) = cuid.start()
+    let state =
       State(
         sprockets: [],
         debug: option.map(opts, fn(opts) { opts.debug })
         |> option.unwrap(False),
         csrf_validator: csrf_validator,
         cuid_channel: cuid_channel,
-      ),
-      handle_message,
-    )
+      )
 
-  ca
+    let selector = process.selecting(process.new_selector(), self, identity)
+
+    actor.Ready(state, selector)
+  }
+
+  actor.start_spec(Spec(init, call_timeout, handle_message))
 }
 
 /// Stop the cassette
@@ -290,7 +295,7 @@ fn connect(
       Ok(Nil)
     })
 
-  let sprocket =
+  let sprocket = case
     sprocket.start(
       id,
       view,
@@ -298,6 +303,14 @@ fn connect(
       Some(updater),
       Some(dispatcher),
     )
+  {
+    Ok(sprocket) -> sprocket
+    Error(err) -> {
+      logger.error("Error starting sprocket")
+      io.debug(err)
+      panic
+    }
+  }
 
   push_sprocket(ca, sprocket)
 
