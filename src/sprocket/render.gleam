@@ -31,7 +31,6 @@ pub type RenderedElement {
     attrs: List(RenderedAttribute),
     children: List(RenderedElement),
   )
-  RenderedFragment(key: Option(String), children: List(RenderedElement))
   RenderedComponent(
     fc: AbstractFunctionalComponent,
     key: Option(String),
@@ -39,6 +38,7 @@ pub type RenderedElement {
     hooks: ComponentHooks,
     el: RenderedElement,
   )
+  RenderedFragment(key: Option(String), children: List(RenderedElement))
   RenderedIgnoreUpdate(rule: IgnoreRule, el: RenderedElement)
   RenderedText(text: String)
 }
@@ -326,15 +326,23 @@ fn maybe_matching_el(
   prev_child: RenderedElement,
   child: Element,
 ) -> Option(RenderedElement) {
+  let child_key = get_key(child)
+
   case prev_child, child {
-    RenderedComponent(prev_fc, _, _, _, _), Component(fc, ..) -> {
-      case prev_fc == fc {
+    RenderedElement(prev_tag, prev_key, _, _), Element(tag, ..) -> {
+      case prev_tag == tag && prev_key == child_key {
         True -> Some(prev_child)
         False -> None
       }
     }
-    RenderedElement(prev_tag, _, _, _), Element(tag, ..) -> {
-      case prev_tag == tag {
+    RenderedComponent(prev_fc, prev_key, _, _, _), Component(fc, ..) -> {
+      case prev_fc == fc && prev_key == child_key {
+        True -> Some(prev_child)
+        False -> None
+      }
+    }
+    RenderedFragment(prev_key, _), Fragment(..) -> {
+      case prev_key == child_key {
         True -> Some(prev_child)
         False -> None
       }
