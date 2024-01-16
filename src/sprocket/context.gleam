@@ -1,4 +1,3 @@
-import gleam/io
 import gleam/int
 import gleam/list
 import gleam/map.{Map}

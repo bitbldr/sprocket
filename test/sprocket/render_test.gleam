@@ -8,7 +8,7 @@ import sprocket/html/attributes.{class, classes}
 import sprocket/hooks.{handler}
 import sprocket/render.{
   RenderedAttribute, RenderedComponent, RenderedElement, RenderedEventHandler,
-  RenderedText,
+  RenderedFragment, RenderedText,
 }
 import sprocket/internal/render/identity
 
@@ -37,32 +37,6 @@ fn test_component(ctx: Context, props: TestProps) {
       ],
       [text(title)],
     ),
-  )
-}
-
-fn test_component_with_fragment(ctx: Context, props: TestProps) {
-  let TestProps(title: title, href: _href, is_active: is_active) = props
-
-  use ctx, handle_click <- handler(ctx, fn(_) { Nil })
-
-  render(
-    ctx,
-    fragment([
-      a(
-        [
-          classes([
-            Some("block p-2 text-blue-500 hover:text-blue-700"),
-            case is_active {
-              True -> Some("font-bold")
-              False -> None
-            },
-          ]),
-          attributes.href("#"),
-          attributes.on_click(handle_click),
-        ],
-        [text(title)],
-      ),
-    ]),
   )
 }
 
@@ -103,6 +77,86 @@ pub fn basic_render_test() {
     href: "/",
     is_active: True,
   )))
+}
+
+fn test_component_with_fragment(ctx: Context, _props: TestProps) {
+  use ctx, handle_click <- handler(ctx, fn(_) { Nil })
+  use ctx, handle_click_2 <- handler(ctx, fn(_) { Nil })
+
+  render(
+    ctx,
+    fragment([
+      a(
+        [
+          class("block p-2 text-blue-500 hover:text-blue-700"),
+          attributes.href("#one"),
+          attributes.on_click(handle_click),
+        ],
+        [text("One")],
+      ),
+      a(
+        [
+          class("block p-2 text-blue-500 hover:text-blue-700"),
+          attributes.href("#two"),
+          attributes.on_click(handle_click_2),
+        ],
+        [text("Two")],
+      ),
+    ]),
+  )
+}
+
+pub fn render_with_fragment_test() {
+  let rendered =
+    render.render(
+      component(
+        test_component_with_fragment,
+        TestProps(title: "Home", href: "/", is_active: True),
+      ),
+      identity.renderer(),
+    )
+
+  let assert RenderedComponent(
+    _fc,
+    _key,
+    props,
+    _hooks,
+    RenderedFragment(
+      None,
+      [
+        RenderedElement(
+          tag: "a",
+          key: None,
+          attrs: [
+            RenderedAttribute(
+              "class",
+              "block p-2 text-blue-500 hover:text-blue-700",
+            ),
+            RenderedAttribute("href", "#one"),
+            RenderedEventHandler("click", _),
+          ],
+          children: [RenderedText("One")],
+        ),
+        RenderedElement(
+          tag: "a",
+          key: None,
+          attrs: [
+            RenderedAttribute(
+              "class",
+              "block p-2 text-blue-500 hover:text-blue-700",
+            ),
+            RenderedAttribute("href", "#two"),
+            RenderedEventHandler("click", _),
+          ],
+          children: [RenderedText("Two")],
+        ),
+      ],
+    ),
+  ) = rendered
+
+  props
+  |> dynamic.unsafe_coerce
+  |> should.equal(TestProps(title: "Home", href: "/", is_active: True))
 }
 
 type TitleContext {

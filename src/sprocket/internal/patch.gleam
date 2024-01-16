@@ -529,14 +529,3 @@ fn map_key_to_str(c: #(Int, Patch), debug: Bool) -> #(String, Json) {
   let #(index, patch) = c
   #(int.to_string(index), patch_to_json(patch, debug))
 }
-
-fn map_index_fold(map: Map(a, k), acc: b, fold_fn: fn(b, k, a, Int) -> b) {
-  map
-  |> map.fold(
-    #(acc, 0),
-    fn(acc, item, key) {
-      let #(acc, index) = acc
-      #(fold_fn(acc, key, item, index), index + 1)
-    },
-  )
-}

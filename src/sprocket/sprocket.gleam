@@ -1,4 +1,3 @@
-import gleam/io
 import gleam/list
 import gleam/map.{type Map}
 import gleam/otp/actor
