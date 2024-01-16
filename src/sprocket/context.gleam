@@ -1,6 +1,6 @@
 import gleam/int
 import gleam/list
-import gleam/map.{Map}
+import gleam/map.{type Map}
 import gleam/option.{type Option, None, Some}
 import gleam/erlang/process.{type Subject}
 import gleam/dynamic.{type Dynamic}

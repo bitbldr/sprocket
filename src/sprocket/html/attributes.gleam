@@ -4,7 +4,6 @@ import gleam/option.{type Option, None, Some}
 import gleam/dynamic
 import sprocket/context.{
   type Attribute, type IdentifiableHandler, Attribute, ClientHook, Event,
-  IdentifiableHandler,
 }
 import sprocket/internal/utils/unique.{type Unique}
 
