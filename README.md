@@ -102,8 +102,8 @@ pub fn clock(ctx: Context, props) {
   render(
     ctx,
     case label {
-      Some(label) -> [span([], [text(label)]), span([], [text(current_time)])]
-      None -> [text(current_time)]
+      Some(label) -> fragment([span([], [text(label)]), span([], [text(current_time)])])
+      None -> text(current_time)
     },
   )
 }
@@ -118,23 +118,21 @@ pub type ExampleViewProps {
 pub fn example_view(ctx: Context, _props: ExampleViewProps) {
   render(
     ctx,
-    [
-      html(
-        [lang("en")],
-        [
-          head([], [link([rel("stylesheet"), href("/app.css")])]),
-          body(
-            [class("bg-white dark:bg-gray-900 dark:text-white p-4")],
-            [
-              component(
-                clock,
-                ClockProps(label: Some("The current time is: ")),
-              ),
-            ],
-          ),
-        ],
-      ),
-    ],
+    html(
+      [lang("en")],
+      [
+        head([], [link([rel("stylesheet"), href("/app.css")])]),
+        body(
+          [class("bg-white dark:bg-gray-900 dark:text-white p-4")],
+          [
+            component(
+              clock,
+              ClockProps(label: Some("The current time is: ")),
+            ),
+          ],
+        ),
+      ],
+    ),
   )
 }
 
