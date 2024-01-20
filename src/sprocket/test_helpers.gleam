@@ -2,7 +2,7 @@ import gleam/io
 import gleam/list
 import gleam/option.{None, Some}
 import ids/cuid
-import sprocket/sprocket.{type Sprocket}
+import sprocket/runtime.{type Runtime}
 import sprocket/context
 import sprocket/render.{
   type RenderedElement, RenderedAttribute, RenderedElement, RenderedEventHandler,
@@ -13,7 +13,7 @@ import sprocket/internal/utils/unique
 pub fn live(view) {
   let assert Ok(cuid_channel) = cuid.start()
   let assert Ok(spkt) =
-    sprocket.start(unique.uuid(), view, cuid_channel, None, None)
+    runtime.start(unique.uuid(), view, cuid_channel, None, None)
 
   spkt
 }
@@ -22,7 +22,7 @@ pub fn render_html(spkt) {
   let renderer = html_render.renderer()
 
   let html =
-    sprocket.render(spkt)
+    runtime.render(spkt)
     |> renderer.render()
 
   #(spkt, html)
@@ -32,8 +32,8 @@ pub type Event {
   ClickEvent
 }
 
-pub fn render_event(spkt: Sprocket, event: Event, html_id: String) {
-  case sprocket.get_rendered(spkt) {
+pub fn render_event(spkt: Runtime, event: Event, html_id: String) {
+  case runtime.get_rendered(spkt) {
     Some(rendered) -> {
       let found =
         render.find(
@@ -79,7 +79,7 @@ pub fn render_event(spkt: Sprocket, event: Event, html_id: String) {
 
           case rendered_event_handler {
             Ok(RenderedEventHandler(_kind, event_id)) -> {
-              case sprocket.get_handler(spkt, event_id) {
+              case runtime.get_handler(spkt, event_id) {
                 Ok(context.IdentifiableHandler(_, handler)) -> {
                   // call the event handler
                   handler(None)

@@ -26,13 +26,13 @@ import sprocket/internal/utils/unique.{type Unique}
 import sprocket/internal/exceptions.{throw_on_unexpected_hook_result}
 import sprocket/internal/utils/timer.{interval}
 
-pub type Sprocket =
+pub type Runtime =
   Subject(Message)
 
 type State {
   State(
     id: Unique,
-    self: Sprocket,
+    self: Runtime,
     cancel_shutdown: Option(fn() -> Nil),
     ctx: Context,
     updater: Option(Updater(Patch)),
@@ -234,14 +234,14 @@ fn handle_message(message: Message, state: State) -> actor.Next(Message, State) 
   }
 }
 
-/// Start a new sprocket actor
+/// Start a new runtime actor
 pub fn start(
   id: Unique,
   view: Element,
   cuid_channel: Subject(cuid.Message),
   updater: Option(Updater(Patch)),
   dispatcher: Option(Dispatcher),
-) -> Result(Sprocket, StartError) {
+) -> Result(Runtime, StartError) {
   let init = fn() {
     let self = process.new_subject()
     let render_update = fn() { actor.send(self, RenderUpdate) }
@@ -273,7 +273,7 @@ pub fn start(
   actor.start_spec(Spec(init, call_timeout, handle_message))
 }
 
-/// Stop a sprocket actor
+/// Stop a runtime actor
 pub fn stop(actor) {
   actor.send(actor, Shutdown)
 }

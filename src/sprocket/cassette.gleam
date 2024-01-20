@@ -8,7 +8,7 @@ import gleam/function.{identity}
 import gleam/erlang/process.{type Subject}
 import gleam/otp/actor.{type StartError, Spec}
 import ids/cuid
-import sprocket/sprocket.{type Sprocket}
+import sprocket/runtime.{type Runtime}
 import sprocket/context.{
   type Element, Client, Dispatcher, Updater, callback_param_from_string,
 }
@@ -27,7 +27,7 @@ pub type Cassette =
 
 pub type State {
   State(
-    sprockets: List(Sprocket),
+    sprockets: List(Runtime),
     debug: Bool,
     csrf_validator: CSRFValidator,
     cuid_channel: Subject(cuid.Message),
@@ -37,8 +37,8 @@ pub type State {
 pub type Message {
   Shutdown
   GetState(reply_with: Subject(State))
-  PushSprocket(sprocket: Sprocket)
-  GetSprocket(reply_with: Subject(Result(Sprocket, Nil)), id: Unique)
+  PushSprocket(sprocket: Runtime)
+  GetSprocket(reply_with: Subject(Result(Runtime, Nil)), id: Unique)
   PopSprocket(reply_with: Subject(Result(Nil, Nil)), id: Unique)
   GetCUIDChannel(reply_with: Subject(Subject(cuid.Message)))
   GetCSRFValidator(reply_with: Subject(CSRFValidator))
@@ -68,7 +68,7 @@ fn handle_message(message: Message, state: State) -> actor.Next(Message, State) 
         list.find(
           state.sprockets,
           fn(s) {
-            case sprocket.get_id(s) {
+            case runtime.get_id(s) {
               Ok(spkt_id) -> unique.equals(spkt_id, id)
               Error(_) -> False
             }
@@ -85,7 +85,7 @@ fn handle_message(message: Message, state: State) -> actor.Next(Message, State) 
         list.find(
           state.sprockets,
           fn(s) {
-            case sprocket.get_id(s) {
+            case runtime.get_id(s) {
               Ok(spkt_id) -> unique.equals(spkt_id, id)
               Error(_) -> False
             }
@@ -94,7 +94,7 @@ fn handle_message(message: Message, state: State) -> actor.Next(Message, State) 
 
       case sprocket {
         Ok(sprocket) -> {
-          sprocket.stop(sprocket)
+          runtime.stop(sprocket)
 
           let updated_sprockets =
             list.filter(state.sprockets, fn(s) { sprocket != s })
@@ -142,8 +142,8 @@ pub type CassetteOpts {
 /// Start the cassette. This is intended to only be called once during web server
 /// initiliazation.
 /// 
-/// The cassette is a long running process that manages the state of
-/// all sprockets and preflights.
+/// The cassette is a long running service process that manages the state of
+/// all sprocket runtimes.
 pub fn start(
   csrf_validator: CSRFValidator,
   opts: Option(CassetteOpts),
@@ -191,13 +191,13 @@ pub fn get_state(ca: Cassette) {
   }
 }
 
-/// Pushes a sprocket to the cassette.
-pub fn push_sprocket(ca: Cassette, sprocket: Sprocket) {
+/// Pushes a sprocket runtime into the cassette.
+pub fn push_sprocket(ca: Cassette, sprocket: Runtime) {
   process.send(ca, PushSprocket(sprocket))
 }
 
 /// Gets a sprocket from the cassette.
-pub fn get_sprocket(ca: Cassette, ws: Unique) -> Result(Sprocket, Nil) {
+pub fn get_sprocket(ca: Cassette, ws: Unique) -> Result(Runtime, Nil) {
   case process.try_call(ca, GetSprocket(_, ws), call_timeout) {
     Ok(sprocket) -> sprocket
     Error(err) -> {
@@ -208,12 +208,12 @@ pub fn get_sprocket(ca: Cassette, ws: Unique) -> Result(Sprocket, Nil) {
   }
 }
 
-/// Pops a sprocket from the cassette.
+/// Pops a sprocket runtime from the cassette.
 pub fn pop_sprocket(ca: Cassette, ws: Unique) -> Result(Nil, Nil) {
   case process.try_call(ca, PopSprocket(_, ws), call_timeout) {
     Ok(_) -> Ok(Nil)
     Error(err) -> {
-      logger.error("Error popping sprocket")
+      logger.error("Error popping sprocket with id: " <> unique.to_string(ws))
       io.debug(err)
       panic
     }
@@ -292,7 +292,7 @@ pub fn client_message(
 
       case get_sprocket(ca, id) {
         Ok(sprocket) -> {
-          case sprocket.get_handler(sprocket, event_id) {
+          case runtime.get_handler(sprocket, event_id) {
             Ok(context.IdentifiableHandler(_, handler)) -> {
               // call the event handler
               handler(option.map(
@@ -316,7 +316,7 @@ pub fn client_message(
 
       case get_sprocket(ca, id) {
         Ok(sprocket) -> {
-          case sprocket.get_client_hook(sprocket, hook_id) {
+          case runtime.get_client_hook(sprocket, hook_id) {
             Ok(Client(_id, _name, handle_event)) -> {
               // TODO: implement reply dispatcher
               let reply_dispatcher = fn(event, payload) {
@@ -373,7 +373,7 @@ fn connect(
     })
 
   let sprocket = case
-    sprocket.start(
+    runtime.start(
       id,
       view,
       get_cuid_channel(ca),
@@ -394,7 +394,7 @@ fn connect(
   logger.info("Sprocket connected! " <> unique.to_string(id))
 
   // intitial live render
-  let rendered = sprocket.render(sprocket)
+  let rendered = runtime.render(sprocket)
 
   ws_send(rendered_to_json(rendered))
 }
