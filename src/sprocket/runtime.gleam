@@ -1,3 +1,4 @@
+import gleam/io
 import gleam/list
 import gleam/map.{type Map}
 import gleam/function.{identity}
@@ -278,33 +279,76 @@ pub fn stop(actor) {
   actor.send(actor, Shutdown)
 }
 
-// pub fn get_id(actor) -> Result(Unique, CallError(Unique)) {
 /// Returns true if the actor matches a given websocket connection
-pub fn get_id(actor) -> Result(Unique, Nil) {
+pub fn get_id(actor) -> Unique {
   case process.try_call(actor, GetId(_), call_timeout) {
-    Ok(id) -> Ok(id)
-    Error(_) -> Error(Nil)
+    Ok(id) -> id
+    Error(err) -> {
+      logger.error("Error getting id from runtime actor")
+      io.debug(err)
+      panic
+    }
   }
 }
 
-/// Get the previously rendered view from the actor
+/// Get the previously rendered view from the actor. This is useful for testing.
 pub fn get_rendered(actor) {
-  actor.call(actor, GetRendered(_), call_timeout)
+  case process.try_call(actor, GetRendered(_), call_timeout) {
+    Ok(rendered) -> rendered
+    Error(err) -> {
+      logger.error("Error getting rendered view from runtime actor")
+      io.debug(err)
+      panic
+    }
+  }
 }
 
 /// Get the event handler for a given id
 pub fn get_handler(actor, id: String) {
-  actor.call(actor, GetEventHandler(_, unique.from_string(id)), call_timeout)
+  case
+    process.try_call(
+      actor,
+      GetEventHandler(_, unique.from_string(id)),
+      call_timeout,
+    )
+  {
+    Ok(handler) -> handler
+    Error(err) -> {
+      logger.error("Error getting handler from runtime actor")
+      io.debug(err)
+      panic
+    }
+  }
 }
 
 /// Get the client hook for a given id
 pub fn get_client_hook(actor, id: String) {
-  actor.call(actor, GetClientHook(_, unique.from_string(id)), call_timeout)
+  case
+    process.try_call(
+      actor,
+      GetClientHook(_, unique.from_string(id)),
+      call_timeout,
+    )
+  {
+    Ok(hook) -> hook
+    Error(err) -> {
+      logger.error("Error getting client hook from runtime actor")
+      io.debug(err)
+      panic
+    }
+  }
 }
 
 /// Render the view
 pub fn render(actor) -> RenderedElement {
-  actor.call(actor, Render(_), call_timeout)
+  case process.try_call(actor, Render(_), call_timeout) {
+    Ok(rendered) -> rendered
+    Error(err) -> {
+      logger.error("Error rendering view from runtime actor")
+      io.debug(err)
+      panic
+    }
+  }
 }
 
 /// Render the view and send an update Patch to the updater

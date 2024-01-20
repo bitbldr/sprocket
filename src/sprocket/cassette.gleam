@@ -67,12 +67,7 @@ fn handle_message(message: Message, state: State) -> actor.Next(Message, State) 
       let spkt =
         list.find(
           state.sprockets,
-          fn(s) {
-            case runtime.get_id(s) {
-              Ok(spkt_id) -> unique.equals(spkt_id, id)
-              Error(_) -> False
-            }
-          },
+          fn(s) { unique.equals(runtime.get_id(s), id) },
         )
 
       process.send(reply_with, spkt)
@@ -84,12 +79,7 @@ fn handle_message(message: Message, state: State) -> actor.Next(Message, State) 
       let sprocket =
         list.find(
           state.sprockets,
-          fn(s) {
-            case runtime.get_id(s) {
-              Ok(spkt_id) -> unique.equals(spkt_id, id)
-              Error(_) -> False
-            }
-          },
+          fn(s) { unique.equals(runtime.get_id(s), id) },
         )
 
       case sprocket {
