@@ -1,13 +1,20 @@
+import gleam/result
 import gleam/erlang/process.{type Subject}
 import ids/cuid.{type Message}
 import ids/uuid
+import sprocket/internal/logger
 
 pub opaque type Unique {
   Unique(id: String)
 }
 
 pub fn uuid() -> Unique {
-  let assert Ok(id) = uuid.generate_v4()
+  let assert Ok(id) =
+    uuid.generate_v4()
+    |> result.map_error(fn(error) {
+      logger.error("unique.uuid: failed to generate UUID")
+      error
+    })
 
   Unique(id: id)
 }

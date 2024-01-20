@@ -1,5 +1,6 @@
 import gleam/io
 import gleam/list
+import gleam/result
 import gleam/dynamic.{type Dynamic, field, optional_field}
 import gleam/option.{type Option, None, Some}
 import gleam/json
@@ -38,7 +39,10 @@ pub type Message {
   GetState(reply_with: Subject(State))
   PushSprocket(sprocket: Sprocket)
   GetSprocket(reply_with: Subject(Result(Sprocket, Nil)), id: Unique)
-  PopSprocket(reply_with: Subject(Result(Sprocket, Nil)), id: Unique)
+  PopSprocket(reply_with: Subject(Result(Nil, Nil)), id: Unique)
+  GetCUIDChannel(reply_with: Subject(Subject(cuid.Message)))
+  GetCSRFValidator(reply_with: Subject(CSRFValidator))
+  GetDebug(reply_with: Subject(Bool))
 }
 
 fn handle_message(message: Message, state: State) -> actor.Next(Message, State) {
@@ -88,8 +92,6 @@ fn handle_message(message: Message, state: State) -> actor.Next(Message, State) 
           },
         )
 
-      process.send(reply_with, sprocket)
-
       case sprocket {
         Ok(sprocket) -> {
           sprocket.stop(sprocket)
@@ -99,11 +101,36 @@ fn handle_message(message: Message, state: State) -> actor.Next(Message, State) 
 
           let new_state = State(..state, sprockets: updated_sprockets)
 
+          process.send(reply_with, Ok(Nil))
+
           actor.continue(new_state)
         }
 
-        Error(_) -> actor.continue(state)
+        Error(_) -> {
+          logger.error(
+            "Failed to pop sprocket with id: " <> unique.to_string(id) <> " from cassette",
+          )
+
+          process.send(reply_with, Error(Nil))
+
+          actor.continue(state)
+        }
       }
+    }
+
+    GetCUIDChannel(reply_with) -> {
+      process.send(reply_with, state.cuid_channel)
+      actor.continue(state)
+    }
+
+    GetCSRFValidator(reply_with) -> {
+      process.send(reply_with, state.csrf_validator)
+      actor.continue(state)
+    }
+
+    GetDebug(reply_with) -> {
+      process.send(reply_with, state.debug)
+      actor.continue(state)
     }
   }
 }
@@ -123,7 +150,13 @@ pub fn start(
 ) -> Result(Cassette, StartError) {
   let init = fn() {
     let self = process.new_subject()
-    let assert Ok(cuid_channel) = cuid.start()
+    let assert Ok(cuid_channel) =
+      cuid.start()
+      |> result.map_error(fn(error) {
+        logger.error("cassette.start: error starting cuid process")
+        error
+      })
+
     let state =
       State(
         sprockets: [],
@@ -148,7 +181,14 @@ pub fn stop(ca: Cassette) {
 
 /// Get the current state of the cassette. Mostly intended for unit tests and debugging.
 pub fn get_state(ca: Cassette) {
-  process.call(ca, GetState(_), call_timeout)
+  case process.try_call(ca, GetState(_), call_timeout) {
+    Ok(state) -> state
+    Error(err) -> {
+      logger.error("Error getting cassette state")
+      io.debug(err)
+      panic
+    }
+  }
 }
 
 /// Pushes a sprocket to the cassette.
@@ -157,26 +197,63 @@ pub fn push_sprocket(ca: Cassette, sprocket: Sprocket) {
 }
 
 /// Gets a sprocket from the cassette.
-pub fn get_sprocket(ca: Cassette, ws: Unique) {
-  process.call(ca, GetSprocket(_, ws), call_timeout)
+pub fn get_sprocket(ca: Cassette, ws: Unique) -> Result(Sprocket, Nil) {
+  case process.try_call(ca, GetSprocket(_, ws), call_timeout) {
+    Ok(sprocket) -> sprocket
+    Error(err) -> {
+      logger.error("Error getting sprocket")
+      io.debug(err)
+      panic
+    }
+  }
 }
 
 /// Pops a sprocket from the cassette.
-pub fn pop_sprocket(ca: Cassette, ws: Unique) {
-  process.call(ca, PopSprocket(_, ws), call_timeout)
+pub fn pop_sprocket(ca: Cassette, ws: Unique) -> Result(Nil, Nil) {
+  case process.try_call(ca, PopSprocket(_, ws), call_timeout) {
+    Ok(_) -> Ok(Nil)
+    Error(err) -> {
+      logger.error("Error popping sprocket")
+      io.debug(err)
+      panic
+    }
+  }
 }
 
 fn get_cuid_channel(ca: Cassette) {
-  case get_state(ca) {
-    State(cuid_channel: cuid_channel, ..) -> cuid_channel
+  case process.try_call(ca, GetCUIDChannel(_), call_timeout) {
+    Ok(cuid_channel) -> cuid_channel
+    Error(err) -> {
+      logger.error("Error getting cuid channel")
+      io.debug(err)
+      panic
+    }
+  }
+}
+
+fn get_debug(ca: Cassette) {
+  case process.try_call(ca, GetDebug(_), call_timeout) {
+    Ok(debug) -> debug
+    Error(err) -> {
+      logger.error("Error getting debug")
+      io.debug(err)
+      panic
+    }
   }
 }
 
 /// Validates a CSRF token.
 fn validate_csrf(ca: Cassette, csrf: String) {
-  case get_state(ca) {
-    State(csrf_validator: csrf_validator, ..) -> csrf_validator(csrf)
+  let validator = case process.try_call(ca, GetCSRFValidator(_), call_timeout) {
+    Ok(validator) -> validator
+    Error(err) -> {
+      logger.error("Error getting CSRF validator")
+      io.debug(err)
+      panic
+    }
   }
+
+  validator(csrf)
 }
 
 type Payload {
@@ -285,7 +362,7 @@ fn connect(
 ) {
   let updater =
     Updater(send: fn(update) {
-      let _ = ws_send(update_to_json(update, get_state(ca).debug))
+      let _ = ws_send(update_to_json(update, get_debug(ca)))
       Ok(Nil)
     })
 

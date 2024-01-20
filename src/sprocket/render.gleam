@@ -1,6 +1,7 @@
 import gleam/io
 import gleam/list
 import gleam/map
+import gleam/result
 import gleam/option.{type Option, None, Some}
 import gleam/dynamic.{type Dynamic}
 import ids/cuid
@@ -56,7 +57,12 @@ pub type RenderResult(a) {
 // Internally this function uses live_render with a placeholder ctx to render the tree,
 // but then discards the ctx and returns the result.
 pub fn render(el: Element, renderer: Renderer(r)) -> r {
-  let assert Ok(cuid_channel) = cuid.start()
+  let assert Ok(cuid_channel) =
+    cuid.start()
+    |> result.map_error(fn(error) {
+      logger.error("render.render: Failed to start cuid channel")
+      error
+    })
 
   let RenderResult(rendered: rendered, ..) =
     live_render(
@@ -142,7 +148,15 @@ fn element(
 
         case current {
           Attribute(name, value) -> {
-            let assert Ok(value) = dynamic.string(value)
+            let assert Ok(value) =
+              dynamic.string(value)
+              |> result.map_error(fn(error) {
+                logger.error(
+                  "render.element: failed to convert attribute value to string",
+                )
+                error
+              })
+
             RenderResult(
               ctx,
               [RenderedAttribute(name, value), ..rendered_attrs],

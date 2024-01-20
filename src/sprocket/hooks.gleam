@@ -1,5 +1,6 @@
 import gleam/option.{type Option, None, Some}
 import gleam/dynamic
+import gleam/result
 import gleam/map
 import gleam/otp/actor
 import gleam/erlang/process.{type Subject}
@@ -31,7 +32,7 @@ pub fn state(
     context.State(unique.cuid(ctx.cuid_channel), dynamic.from(initial))
   }
 
-  let assert #(ctx, context.State(hook_id, value), _index) =
+  let #(ctx, context.State(hook_id, value), _index) =
     context.fetch_or_init_hook(ctx, init_state)
 
   // create a dispatch function for updating the reducer's state and triggering a render update
@@ -106,6 +107,10 @@ pub fn reducer(
           }
         },
       )
+      |> result.map_error(fn(error) {
+        logger.error("hooks.reducer: failed to start reducer actor")
+        error
+      })
 
     context.Reducer(
       unique.cuid(ctx.cuid_channel),
@@ -114,7 +119,7 @@ pub fn reducer(
     )
   }
 
-  let assert #(ctx, context.Reducer(_id, dyn_reducer_actor, _cleanup), _index) =
+  let #(ctx, context.Reducer(_id, dyn_reducer_actor, _cleanup), _index) =
     context.fetch_or_init_hook(ctx, reducer_init)
 
   // we dont know what types of reducer messages a component will implement so the best

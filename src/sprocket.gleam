@@ -1,5 +1,4 @@
 import gleam/option.{type Option}
-import sprocket/sprocket
 import sprocket/context.{type Element}
 import sprocket/cassette.{type Cassette, type CassetteOpts}
 import sprocket/internal/utils/unique
@@ -47,14 +46,5 @@ pub fn handle_client(
 ///
 /// Its important to call this function when the websocket connection is terminated.
 pub fn cleanup(ca: Cassette, id: String) {
-  let spkt = cassette.pop_sprocket(ca, unique.from_string(id))
-
-  case spkt {
-    Ok(sprocket) -> {
-      sprocket.stop(sprocket)
-    }
-    Error(_) -> {
-      Nil
-    }
-  }
+  cassette.pop_sprocket(ca, unique.from_string(id))
 }

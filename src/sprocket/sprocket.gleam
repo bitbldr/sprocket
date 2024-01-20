@@ -135,35 +135,34 @@ fn handle_message(message: Message, state: State) -> actor.Next(Message, State) 
           rendered: Some(prev_rendered),
           ..,
         ) -> {
-          let RenderResult(ctx, rendered) =
-            ctx
-            |> context.reset_for_render
-            |> live_render(view, None, Some(prev_rendered))
-
-          // let update =
-          //   timer.timed_operation(
-          //     "CREATE PATCH",
-          //     fn() { patch.create(prev_rendered, rendered) },
-          //   )
-
-          let update = patch.create(prev_rendered, rendered)
-
-          // send the rendered update using updater
-          case updater.send(update) {
-            Ok(_) -> Nil
-            Error(_) -> {
-              logger.error("Failed to send patch update!")
-              Nil
-            }
-          }
-
-          cleanup_disposed_hooks(prev_rendered, rendered)
-
-          // hooks might contain effects that will trigger a rerender. That is okay because any
-          // RenderUpdate messages sent during this operation will be placed into this actor's mailbox
-          // and will be processed in order after this current render is complete
           let state =
-            run_effects(State(..state, ctx: ctx, rendered: Some(rendered)))
+            timer.timed_operation(
+              "RenderUpdate",
+              fn() {
+                let RenderResult(ctx, rendered) =
+                  ctx
+                  |> context.reset_for_render
+                  |> live_render(view, None, Some(prev_rendered))
+
+                let update = patch.create(prev_rendered, rendered)
+
+                // send the rendered update using updater
+                case updater.send(update) {
+                  Ok(_) -> Nil
+                  Error(_) -> {
+                    logger.error("Failed to send patch update!")
+                    Nil
+                  }
+                }
+
+                cleanup_disposed_hooks(prev_rendered, rendered)
+
+                // hooks might contain effects that will trigger a rerender. That is okay because any
+                // RenderUpdate messages sent during this operation will be placed into this actor's mailbox
+                // and will be processed in order after this current render is complete
+                run_effects(State(..state, ctx: ctx, rendered: Some(rendered)))
+              },
+            )
 
           actor.continue(state)
         }

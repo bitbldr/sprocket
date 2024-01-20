@@ -1,5 +1,6 @@
 import gleam/string
 import gleam/int
+import gleam/result
 import gleam/otp/actor.{type Next}
 import gleam/erlang/process.{type Subject}
 import sprocket/internal/logger
@@ -34,14 +35,24 @@ fn handle_timer_message(
 }
 
 pub fn timer(interval_ms: Int, callback: fn() -> Nil) {
-  let assert Ok(actor) = actor.start(interval_ms, handle_timer_message)
+  let assert Ok(actor) =
+    actor.start(interval_ms, handle_timer_message)
+    |> result.map_error(fn(error) {
+      logger.error("timer.timer: failed to start timer actor")
+      error
+    })
 
   // actor will terminate on Timeout
   process.send_after(actor, interval_ms, Timeout(callback))
 }
 
 pub fn interval(interval_ms: Int, callback: fn() -> Nil) {
-  let assert Ok(actor) = actor.start(interval_ms, handle_timer_message)
+  let assert Ok(actor) =
+    actor.start(interval_ms, handle_timer_message)
+    |> result.map_error(fn(error) {
+      logger.error("timer.interval: failed to start timer actor")
+      error
+    })
 
   process.send_after(actor, interval_ms, Interval(actor, interval_ms, callback))
 
