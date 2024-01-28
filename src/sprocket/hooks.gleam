@@ -26,7 +26,11 @@ pub fn state(
   initial: a,
   cb: fn(Context, a, fn(a) -> Nil) -> #(Context, Element),
 ) -> #(Context, Element) {
-  let Context(render_update: render_update, update_hook: update_hook, ..) = ctx
+  let Context(
+    schedule_reconciliation: schedule_reconciliation,
+    update_hook: update_hook,
+    ..,
+  ) = ctx
 
   let init_state = fn() {
     context.State(unique.cuid(ctx.cuid_channel), dynamic.from(initial))
@@ -52,7 +56,7 @@ pub fn state(
       },
     )
 
-    render_update()
+    schedule_reconciliation()
   }
 
   cb(ctx, dynamic.unsafe_coerce(value), setter)
@@ -79,7 +83,7 @@ pub fn reducer(
   reducer: Reducer(model, msg),
   cb: fn(Context, model, fn(msg) -> Nil) -> #(Context, Element),
 ) -> #(Context, Element) {
-  let Context(render_update: render_update, ..) = ctx
+  let Context(schedule_reconciliation: schedule_reconciliation, ..) = ctx
 
   let reducer_init = fn() {
     // creates an actor process for a reducer that handles two types of messages:
@@ -133,7 +137,7 @@ pub fn reducer(
   let dispatch = fn(msg) -> Nil {
     actor.send(reducer_actor, DispatchReducer(r: reducer, m: msg))
 
-    render_update()
+    schedule_reconciliation()
   }
 
   cb(ctx, state, dispatch)

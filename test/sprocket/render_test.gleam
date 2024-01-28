@@ -1,15 +1,17 @@
 import gleam/dynamic
 import gleam/option.{None, Some}
 import gleeunit/should
+import sprocket
 import sprocket/context.{type Context}
 import sprocket/component.{component, render}
 import sprocket/html/elements.{a, div, fragment, text}
 import sprocket/html/attributes.{class, classes}
 import sprocket/hooks.{handler}
-import sprocket/render.{
+import sprocket/internal/reconcile.{
   RenderedAttribute, RenderedComponent, RenderedElement, RenderedEventHandler,
   RenderedFragment, RenderedText,
 }
+import sprocket/internal/reconcilers/recursive
 import sprocket/internal/render/identity
 
 type TestProps {
@@ -43,7 +45,7 @@ fn test_component(ctx: Context, props: TestProps) {
 // gleeunit test functions end in `_test`
 pub fn basic_render_test() {
   let rendered =
-    render.render(
+    sprocket.render(
       component(
         test_component,
         TestProps(title: "Home", href: "/", is_active: True),
@@ -108,7 +110,7 @@ fn test_component_with_fragment(ctx: Context, _props: TestProps) {
 
 pub fn render_with_fragment_test() {
   let rendered =
-    render.render(
+    sprocket.render(
       component(
         test_component_with_fragment,
         TestProps(title: "Home", href: "/", is_active: True),
@@ -191,7 +193,7 @@ fn test_component_with_context_title(ctx: Context, props: TestProps) {
 
 pub fn renders_component_with_context_provider_test() {
   let rendered =
-    render.render(
+    sprocket.render(
       div(
         [class("first div")],
         [

@@ -12,7 +12,7 @@ import sprocket/runtime.{type Runtime}
 import sprocket/context.{
   type Element, Client, Dispatcher, Updater, callback_param_from_string,
 }
-import sprocket/render.{type RenderedElement}
+import sprocket/internal/reconcile.{type RenderedElement}
 import sprocket/internal/render/json as json_renderer
 import sprocket/internal/patch.{type Patch}
 import sprocket/internal/logger
@@ -283,13 +283,15 @@ pub fn client_message(
       case get_sprocket(ca, id) {
         Ok(sprocket) -> {
           case runtime.get_handler(sprocket, event_id) {
-            Ok(context.IdentifiableHandler(_, handler)) -> {
-              // call the event handler
-              handler(option.map(
-                value,
-                fn(value) { callback_param_from_string(value) },
-              ))
-              |> Ok
+            Ok(context.IdentifiableHandler(_, handler_fn)) -> {
+              // call the event handler function
+              value
+              |> option.map(callback_param_from_string)
+              |> handler_fn()
+
+              runtime.maybe_reconcile(sprocket)
+
+              Ok(Nil)
             }
             _ -> {
               logger.error("Error: no handler defined for id: " <> event_id)

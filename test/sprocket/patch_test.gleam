@@ -4,7 +4,7 @@ import gleeunit/should
 import gleam/dynamic
 import gleam/option.{None, Some}
 import sprocket/context.{Element}
-import sprocket/render.{
+import sprocket/internal/reconcile.{
   RenderedAttribute, RenderedComponent, RenderedElement, RenderedText,
 }
 import sprocket/internal/patch.{

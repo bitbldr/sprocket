@@ -1,11 +1,13 @@
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/string_builder.{type StringBuilder}
-import sprocket/render.{
-  type RenderedAttribute, type RenderedElement, type Renderer, RenderedAttribute,
+import sprocket/internal/reconcile.{
+  type RenderedAttribute, type RenderedElement, RenderedAttribute,
   RenderedClientHook, RenderedComponent, RenderedElement, RenderedEventHandler,
-  RenderedFragment, RenderedIgnoreUpdate, RenderedText, Renderer, traverse,
+  RenderedFragment, RenderedIgnoreUpdate, RenderedText,
 }
+import sprocket/internal/reconcilers/recursive.{traverse}
+import sprocket/internal/render.{type Renderer, Renderer}
 import sprocket/internal/constants
 
 pub fn renderer() -> Renderer(String) {

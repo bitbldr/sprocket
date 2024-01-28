@@ -4,91 +4,29 @@ import gleam/map
 import gleam/result
 import gleam/option.{type Option, None, Some}
 import gleam/dynamic.{type Dynamic}
-import ids/cuid
 import sprocket/context.{
-  type AbstractFunctionalComponent, type Attribute, type ComponentHooks,
-  type Context, type Element, Attribute, ClientHook, Component, ComponentWip,
-  Context, Debug, Element, Event, Fragment, IgnoreUpdate, Keyed, Provider, Raw,
-  SafeHtml,
+  type AbstractFunctionalComponent, type Attribute, type Context, type Element,
+  Attribute, ClientHook, Component, ComponentWip, Context, Debug, Element, Event,
+  Fragment, IgnoreUpdate, Keyed, Provider, Raw, SafeHtml,
+}
+import sprocket/internal/reconcile.{
+  type ReconciledResult, type RenderedAttribute, type RenderedElement, IgnoreAll,
+  ReconciledResult, RenderedAttribute, RenderedClientHook, RenderedComponent,
+  RenderedElement, RenderedEventHandler, RenderedFragment, RenderedIgnoreUpdate,
+  RenderedText,
 }
 import sprocket/internal/utils/unique
 import sprocket/internal/utils/ordered_map
 import sprocket/internal/logger
 
-pub type RenderedAttribute {
-  RenderedAttribute(name: String, value: String)
-  RenderedEventHandler(kind: String, id: String)
-  RenderedClientHook(name: String, id: String)
-}
-
-pub type IgnoreRule {
-  IgnoreAll
-}
-
-pub type RenderedElement {
-  RenderedElement(
-    tag: String,
-    key: Option(String),
-    attrs: List(RenderedAttribute),
-    children: List(RenderedElement),
-  )
-  RenderedComponent(
-    fc: AbstractFunctionalComponent,
-    key: Option(String),
-    props: Dynamic,
-    hooks: ComponentHooks,
-    el: RenderedElement,
-  )
-  RenderedFragment(key: Option(String), children: List(RenderedElement))
-  RenderedIgnoreUpdate(rule: IgnoreRule, el: RenderedElement)
-  RenderedText(text: String)
-}
-
-pub type Renderer(result) {
-  Renderer(render: fn(RenderedElement) -> result)
-}
-
-pub type RenderResult(a) {
-  RenderResult(ctx: Context, rendered: a)
-}
-
-// Renders the given element using the provided renderer as a stateless element.
-//
-// Internally this function uses live_render with a placeholder ctx to render the tree,
-// but then discards the ctx and returns the result.
-pub fn render(el: Element, renderer: Renderer(r)) -> r {
-  let assert Ok(cuid_channel) =
-    cuid.start()
-    |> result.map_error(fn(error) {
-      logger.error("render.render: Failed to start cuid channel")
-      error
-    })
-
-  let RenderResult(rendered: rendered, ..) =
-    live_render(
-      context.new(
-        el,
-        cuid_channel,
-        None,
-        fn() { Nil },
-        fn(_index, _updater) { Nil },
-      ),
-      el,
-      None,
-      None,
-    )
-
-  renderer.render(rendered)
-}
-
-// Renders the given element into a RenderedElement tree.
-// Returns the ctx and a stateful RenderedElement tree using the given ctx.
-pub fn live_render(
+// Reconciles the given element into a RenderedElement tree against the previous rendered element.
+// Returns the updated ctx and a stateful RenderedElement tree.
+pub fn reconcile(
   ctx: Context,
   el: Element,
   key: Option(String),
   prev: Option(RenderedElement),
-) -> RenderResult(RenderedElement) {
+) -> ReconciledResult(RenderedElement) {
   // TODO: detect infinite render loop - render_count > SOME_THRESHOLD then panic "Possible infinite rerender loop"
 
   case el {
@@ -99,21 +37,21 @@ pub fn live_render(
     Debug(id, meta, el) -> {
       // unwrap debug element, print details and continue with rendering
       io.debug(#(id, meta))
-      io.debug(live_render(ctx, el, key, prev))
+      io.debug(reconcile(ctx, el, key, prev))
     }
-    Keyed(key, el) -> live_render(ctx, el, Some(key), prev)
+    Keyed(key, el) -> reconcile(ctx, el, Some(key), prev)
     IgnoreUpdate(el) -> {
       case prev {
         Some(prev) -> {
           // since we're ignoring updates, no need to rerender children
           // just return the previous rendered element as ignored
-          RenderResult(ctx, RenderedIgnoreUpdate(IgnoreAll, prev))
+          ReconciledResult(ctx, RenderedIgnoreUpdate(IgnoreAll, prev))
         }
         None -> {
           // render the element on first render, ignore on subsequent renders
-          let RenderResult(ctx, rendered) = live_render(ctx, el, key, prev)
+          let ReconciledResult(ctx, rendered) = reconcile(ctx, el, key, prev)
 
-          RenderResult(ctx, RenderedIgnoreUpdate(IgnoreAll, rendered))
+          ReconciledResult(ctx, RenderedIgnoreUpdate(IgnoreAll, rendered))
         }
       }
     }
@@ -124,7 +62,7 @@ pub fn live_render(
           providers: map.insert(ctx.providers, provider_key, value),
         )
 
-      live_render(ctx, el, key, prev)
+      reconcile(ctx, el, key, prev)
     }
     SafeHtml(html) -> safe_html(ctx, html)
     Raw(text) -> raw(ctx, text)
@@ -138,13 +76,13 @@ fn element(
   attrs: List(Attribute),
   children: List(Element),
   prev: Option(RenderedElement),
-) -> RenderResult(RenderedElement) {
-  let RenderResult(ctx, rendered_attrs) =
+) -> ReconciledResult(RenderedElement) {
+  let ReconciledResult(ctx, rendered_attrs) =
     list.fold(
       attrs,
-      RenderResult(ctx, []),
+      ReconciledResult(ctx, []),
       fn(acc, current) {
-        let RenderResult(ctx, rendered_attrs) = acc
+        let ReconciledResult(ctx, rendered_attrs) = acc
 
         case current {
           Attribute(name, value) -> {
@@ -157,14 +95,14 @@ fn element(
                 error
               })
 
-            RenderResult(
+            ReconciledResult(
               ctx,
               [RenderedAttribute(name, value), ..rendered_attrs],
             )
           }
           Event(kind, identifiable_cb) -> {
             let #(ctx, id) = context.push_event_handler(ctx, identifiable_cb)
-            RenderResult(
+            ReconciledResult(
               ctx,
               [
                 RenderedEventHandler(kind, unique.to_string(id)),
@@ -173,7 +111,7 @@ fn element(
             )
           }
           ClientHook(id, name) -> {
-            RenderResult(
+            ReconciledResult(
               ctx,
               [RenderedClientHook(name, unique.to_string(id)), ..rendered_attrs],
             )
@@ -182,22 +120,22 @@ fn element(
       },
     )
 
-  let RenderResult(ctx, children) =
+  let ReconciledResult(ctx, children) =
     children
     |> list.index_fold(
-      RenderResult(ctx, []),
+      ReconciledResult(ctx, []),
       fn(acc, child, i) {
-        let RenderResult(ctx, rendered) = acc
+        let ReconciledResult(ctx, rendered) = acc
 
         let prev_child = find_prev_child(prev, child, i)
 
-        let RenderResult(ctx, rendered_child) =
-          live_render(ctx, child, None, prev_child)
-        RenderResult(ctx, [rendered_child, ..rendered])
+        let ReconciledResult(ctx, rendered_child) =
+          reconcile(ctx, child, None, prev_child)
+        ReconciledResult(ctx, [rendered_child, ..rendered])
       },
     )
 
-  RenderResult(
+  ReconciledResult(
     ctx,
     RenderedElement(
       tag,
@@ -213,23 +151,23 @@ fn fragment(
   key: Option(String),
   children: List(Element),
   prev: Option(RenderedElement),
-) -> RenderResult(RenderedElement) {
-  let RenderResult(ctx, children) =
+) -> ReconciledResult(RenderedElement) {
+  let ReconciledResult(ctx, children) =
     children
     |> list.index_fold(
-      RenderResult(ctx, []),
+      ReconciledResult(ctx, []),
       fn(acc, child, i) {
-        let RenderResult(ctx, rendered) = acc
+        let ReconciledResult(ctx, rendered) = acc
 
         let prev_child = find_prev_child(prev, child, i)
 
-        let RenderResult(ctx, rendered_child) =
-          live_render(ctx, child, None, prev_child)
-        RenderResult(ctx, [rendered_child, ..rendered])
+        let ReconciledResult(ctx, rendered_child) =
+          reconcile(ctx, child, None, prev_child)
+        ReconciledResult(ctx, [rendered_child, ..rendered])
       },
     )
 
-  RenderResult(ctx, RenderedFragment(key, list.reverse(children)))
+  ReconciledResult(ctx, RenderedFragment(key, list.reverse(children)))
 }
 
 fn component(
@@ -238,7 +176,7 @@ fn component(
   key: Option(String),
   props: Dynamic,
   prev: Option(RenderedElement),
-) -> RenderResult(RenderedElement) {
+) -> ReconciledResult(RenderedElement) {
   // Prepare ctx wip (work in progress) for component render
   let ctx = case prev {
     None ->
@@ -265,9 +203,9 @@ fn component(
     _ -> None
   }
 
-  let RenderResult(ctx, rendered_el) = live_render(ctx, el, None, prev_el)
+  let ReconciledResult(ctx, rendered_el) = reconcile(ctx, el, None, prev_el)
 
-  RenderResult(ctx, RenderedComponent(fc, key, props, hooks, rendered_el))
+  ReconciledResult(ctx, RenderedComponent(fc, key, props, hooks, rendered_el))
 }
 
 fn get_key(el: Element) -> Option(String) {
@@ -380,12 +318,12 @@ fn maybe_matching_el(
   }
 }
 
-fn safe_html(ctx: Context, html: String) -> RenderResult(RenderedElement) {
-  RenderResult(ctx, RenderedText(html))
+fn safe_html(ctx: Context, html: String) -> ReconciledResult(RenderedElement) {
+  ReconciledResult(ctx, RenderedText(html))
 }
 
-fn raw(ctx: Context, text: String) -> RenderResult(RenderedElement) {
-  RenderResult(ctx, RenderedText(text))
+fn raw(ctx: Context, text: String) -> ReconciledResult(RenderedElement) {
+  ReconciledResult(ctx, RenderedText(text))
 }
 
 pub fn traverse(

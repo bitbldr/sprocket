@@ -152,7 +152,7 @@ pub type Context {
     view: Element,
     wip: ComponentWip,
     handlers: List(IdentifiableHandler),
-    render_update: fn() -> Nil,
+    schedule_reconciliation: fn() -> Nil,
     update_hook: fn(Unique, fn(Hook) -> Hook) -> Nil,
     dispatch_event: fn(Unique, String, Option(String)) -> Result(Nil, Nil),
     cuid_channel: Subject(cuid.Message),
@@ -168,14 +168,14 @@ pub fn new(
   view: Element,
   cuid_channel: Subject(cuid.Message),
   dispatcher: Option(Dispatcher),
-  render_update: fn() -> Nil,
+  schedule_reconciliation: fn() -> Nil,
   update_hook: fn(Unique, fn(Hook) -> Hook) -> Nil,
 ) -> Context {
   Context(
     view: view,
     wip: ComponentWip(hooks: ordered_map.new(), index: 0, is_first_render: True),
     handlers: [],
-    render_update: render_update,
+    schedule_reconciliation: schedule_reconciliation,
     update_hook: update_hook,
     dispatch_event: fn(id, name, payload) {
       case dispatcher {

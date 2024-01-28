@@ -3,11 +3,12 @@ import gleam/string
 import gleam/int
 import gleam/map.{type Map}
 import gleam/option.{type Option, None, Some}
-import sprocket/render.{
+import sprocket/internal/reconcile.{
   type RenderedAttribute, type RenderedElement, RenderedAttribute,
   RenderedClientHook, RenderedComponent, RenderedElement, RenderedEventHandler,
   RenderedFragment, RenderedText,
 }
+import sprocket/internal/render.{type Renderer, Renderer}
 import gleam/json.{type Json}
 import sprocket/internal/render/json as json_renderer
 import sprocket/internal/constants

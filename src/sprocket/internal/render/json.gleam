@@ -3,12 +3,12 @@ import gleam/list
 import gleam/string
 import gleam/option.{type Option, None, Some}
 import gleam/json.{type Json}
-import sprocket/render.{
-  type IgnoreRule, type RenderedAttribute, type RenderedElement, type Renderer,
-  IgnoreAll, RenderedAttribute, RenderedClientHook, RenderedComponent,
-  RenderedElement, RenderedEventHandler, RenderedFragment, RenderedIgnoreUpdate,
-  RenderedText, Renderer,
+import sprocket/internal/reconcile.{
+  type IgnoreRule, type RenderedAttribute, type RenderedElement, IgnoreAll,
+  RenderedAttribute, RenderedClientHook, RenderedComponent, RenderedElement,
+  RenderedEventHandler, RenderedFragment, RenderedIgnoreUpdate, RenderedText,
 }
+import sprocket/internal/render.{type Renderer, Renderer}
 import sprocket/internal/constants
 
 pub fn renderer() -> Renderer(Json) {

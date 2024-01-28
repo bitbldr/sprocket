@@ -4,9 +4,10 @@ import gleam/option.{None, Some}
 import ids/cuid
 import sprocket/runtime.{type Runtime}
 import sprocket/context
-import sprocket/render.{
+import sprocket/internal/reconcile.{
   type RenderedElement, RenderedAttribute, RenderedElement, RenderedEventHandler,
 }
+import sprocket/internal/reconcilers/recursive
 import sprocket/html/render as html_render
 import sprocket/internal/utils/unique
 
@@ -36,7 +37,7 @@ pub fn render_event(spkt: Runtime, event: Event, html_id: String) {
   case runtime.get_rendered(spkt) {
     Some(rendered) -> {
       let found =
-        render.find(
+        recursive.find(
           rendered,
           fn(el: RenderedElement) {
             case el {
