@@ -54,8 +54,10 @@ pub opaque type Message {
   GetContext(reply_with: Subject(Context))
   GetView(reply_with: Subject(Element))
   GetUpdater(reply_with: Subject(Option(Updater(Patch))))
-  RenderUpdate
   GetHandler(reply_with: Subject(Result(IdentifiableHandler, Nil)), String)
+  GetClientHook(reply_with: Subject(Result(Hook, Nil)), String)
+  UpdateHookState(Unique, fn(Hook) -> Hook)
+  RenderUpdate
 }
 
 fn handle_message(message: Message, state: State) -> actor.Next(Message, State) {
@@ -143,6 +145,64 @@ fn handle_message(message: Message, state: State) -> actor.Next(Message, State) 
       actor.send(reply_with, handler)
 
       actor.continue(state)
+    }
+
+    GetClientHook(reply_with, id) -> {
+      let rendered = state.rendered
+
+      let result = case rendered {
+        Some(rendered) -> {
+          let hook =
+            find_rendered_hook(
+              rendered,
+              fn(hook) {
+                case hook {
+                  context.Client(i, _, _) -> unique.to_string(i) == id
+                  _ -> False
+                }
+              },
+            )
+
+          option.to_result(hook, Nil)
+        }
+        None -> {
+          Error(Nil)
+        }
+      }
+
+      actor.send(reply_with, result)
+
+      actor.continue(state)
+    }
+
+    UpdateHookState(hook_id, update_fn) -> {
+      let rendered = state.rendered
+
+      let updated =
+        option.map(
+          rendered,
+          fn(node) {
+            traverse_rendered_hooks(
+              node,
+              fn(hook) {
+                case hook {
+                  // this operation is only applicable to State hooks
+                  context.State(id, _) -> {
+                    case id == hook_id {
+                      True -> {
+                        update_fn(hook)
+                      }
+                      False -> hook
+                    }
+                  }
+                  _ -> hook
+                }
+              },
+            )
+          },
+        )
+
+      actor.continue(State(..state, rendered: updated))
     }
 
     RenderUpdate -> {
@@ -257,34 +317,27 @@ pub fn get_handler(actor, id: String) {
         "Error getting handler for id " <> id <> " from runtime actor",
       )
       io.debug(err)
-      panic
+      Error(Nil)
     }
   }
 }
 
 /// Get the client hook for a given id
 pub fn get_client_hook(actor, id: String) {
-  let rendered = get_rendered(actor)
-
-  case rendered {
-    Some(rendered) -> {
-      let hook =
-        find_rendered_hook(
-          rendered,
-          fn(hook) {
-            case hook {
-              context.Client(i, _, _) -> unique.to_string(i) == id
-              _ -> False
-            }
-          },
-        )
-
-      option.to_result(hook, Nil)
-    }
-    None -> {
+  case process.try_call(actor, GetClientHook(_, id), call_timeout) {
+    Ok(rendered) -> rendered
+    Error(err) -> {
+      logger.error(
+        "Error getting client hook for id " <> id <> " from runtime actor",
+      )
+      io.debug(err)
       Error(Nil)
     }
   }
+}
+
+fn update_hook_state(actor: Runtime, hook_id: Unique, updater: fn(Hook) -> Hook) {
+  actor.send(actor, UpdateHookState(hook_id, updater))
 }
 
 // TODO: remove this if possible
@@ -671,34 +724,4 @@ fn process_next_hook(
     }
     Error(_) -> acc
   }
-}
-
-fn update_hook_state(actor: Runtime, hook_id: Unique, updater: fn(Hook) -> Hook) {
-  let rendered = get_rendered(actor)
-
-  let rendered =
-    option.map(
-      rendered,
-      fn(node) {
-        traverse_rendered_hooks(
-          node,
-          fn(hook) {
-            case hook {
-              // this operation is only applicable to State hooks
-              context.State(id, _) -> {
-                case id == hook_id {
-                  True -> {
-                    updater(hook)
-                  }
-                  False -> hook
-                }
-              }
-              _ -> hook
-            }
-          },
-        )
-      },
-    )
-
-  update_state(actor, fn(state) { State(..state, rendered: rendered) })
 }
