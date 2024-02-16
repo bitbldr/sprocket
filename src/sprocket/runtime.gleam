@@ -3,7 +3,6 @@ import gleam/list
 import gleam/map.{type Map}
 import gleam/function.{identity}
 import gleam/otp/actor.{type StartError, Spec}
-import gleam/otp/task
 import gleam/erlang/process.{type Subject}
 import gleam/option.{type Option, None, Some}
 import ids/cuid
@@ -32,12 +31,6 @@ import sprocket/internal/utils/timer.{interval}
 pub type Runtime =
   Subject(Message)
 
-pub type ReconciliationStatus {
-  Idle
-  Pending
-  InProgress
-}
-
 pub opaque type State {
   State(
     id: Unique,
@@ -46,7 +39,6 @@ pub opaque type State {
     ctx: Context,
     updater: Option(Updater(Patch)),
     rendered: Option(RenderedElement),
-    reconciliation_status: ReconciliationStatus,
   )
 }
 
@@ -62,13 +54,8 @@ pub opaque type Message {
   GetContext(reply_with: Subject(Context))
   GetView(reply_with: Subject(Element))
   GetUpdater(reply_with: Subject(Option(Updater(Patch))))
-  SetReconciliationStatus(ReconciliationStatus)
-  GetReconciliationStatus(reply_with: Subject(ReconciliationStatus))
-  BeginReconciliation(
-    reply_with: Subject(
-      #(Context, Option(RenderedElement), Option(Updater(Patch))),
-    ),
-  )
+  RenderUpdate
+  GetHandler(reply_with: Subject(Result(IdentifiableHandler, Nil)), String)
 }
 
 fn handle_message(message: Message, state: State) -> actor.Next(Message, State) {
@@ -143,20 +130,54 @@ fn handle_message(message: Message, state: State) -> actor.Next(Message, State) 
       actor.continue(state)
     }
 
-    SetReconciliationStatus(status) -> {
-      actor.continue(State(..state, reconciliation_status: status))
-    }
+    GetHandler(reply_with, id) -> {
+      let handler =
+        list.find(
+          state.ctx.handlers,
+          fn(h) {
+            let IdentifiableHandler(i, _) = h
+            unique.to_string(i) == id
+          },
+        )
 
-    GetReconciliationStatus(reply_with) -> {
-      actor.send(reply_with, state.reconciliation_status)
+      actor.send(reply_with, handler)
 
       actor.continue(state)
     }
 
-    BeginReconciliation(reply_with) -> {
-      actor.send(reply_with, #(state.ctx, state.rendered, state.updater))
+    RenderUpdate -> {
+      let prev_rendered = state.rendered
+      let maybe_updater = state.updater
+      let view = state.ctx.view
 
-      actor.continue(State(..state, reconciliation_status: InProgress))
+      let #(ctx, rendered) = reconcile(state.ctx, view, prev_rendered)
+
+      case prev_rendered {
+        Some(prev_rendered) -> {
+          case maybe_updater {
+            Some(updater) -> {
+              let update = patch.create(prev_rendered, rendered)
+
+              // send the rendered update using updater
+              case updater.send(update) {
+                Ok(_) -> Nil
+                Error(_) -> {
+                  logger.error("Failed to send update patch!")
+                  Nil
+                }
+              }
+            }
+
+            _ -> Nil
+          }
+
+          run_cleanup_for_disposed_hooks(prev_rendered, rendered)
+        }
+
+        _ -> Nil
+      }
+
+      actor.continue(State(..state, ctx: ctx, rendered: Some(rendered)))
     }
   }
 }
@@ -171,9 +192,7 @@ pub fn start(
 ) -> Result(Runtime, StartError) {
   let init = fn() {
     let self = process.new_subject()
-    let schedule_reconciliation = fn() {
-      set_reconciliation_status(self, Pending)
-    }
+    let render_update = fn() { actor.send(self, RenderUpdate) }
     let update_hook = fn(id, updater) { update_hook_state(self, id, updater) }
 
     let state =
@@ -185,12 +204,11 @@ pub fn start(
           view,
           cuid_channel,
           dispatcher,
-          schedule_reconciliation,
+          render_update,
           update_hook,
         ),
         updater: updater,
         rendered: None,
-        reconciliation_status: Idle,
       )
 
     let selector = process.selecting(process.new_selector(), self, identity)
@@ -232,15 +250,16 @@ pub fn get_rendered(actor) {
 
 /// Get the event handler for a given id
 pub fn get_handler(actor, id: String) {
-  let ctx = get_context(actor)
-
-  list.find(
-    ctx.handlers,
-    fn(h) {
-      let IdentifiableHandler(i, _) = h
-      unique.to_string(i) == id
-    },
-  )
+  case process.try_call(actor, GetHandler(_, id), call_timeout) {
+    Ok(rendered) -> rendered
+    Error(err) -> {
+      logger.error(
+        "Error getting handler for id " <> id <> " from runtime actor",
+      )
+      io.debug(err)
+      panic
+    }
+  }
 }
 
 /// Get the client hook for a given id
@@ -268,6 +287,11 @@ pub fn get_client_hook(actor, id: String) {
   }
 }
 
+// TODO: remove this if possible
+fn update_state(actor, update_fn: fn(State) -> State) {
+  actor.send(actor, SetState(update_fn))
+}
+
 fn get_state(actor) -> State {
   case process.try_call(actor, GetState(_), call_timeout) {
     Ok(state) -> state
@@ -279,80 +303,11 @@ fn get_state(actor) -> State {
   }
 }
 
-fn update_state(actor, update_fn: fn(State) -> State) {
-  actor.send(actor, SetState(update_fn))
-}
-
-fn get_context(actor) -> Context {
-  case process.try_call(actor, GetContext(_), call_timeout) {
-    Ok(ctx) -> ctx
-    Error(err) -> {
-      logger.error("Error getting context from runtime actor")
-      io.debug(err)
-      panic
-    }
-  }
-}
-
-fn get_view(actor) -> Element {
-  case process.try_call(actor, GetView(_), call_timeout) {
-    Ok(view) -> view
-    Error(err) -> {
-      logger.error("Error getting view from runtime actor")
-      io.debug(err)
-      panic
-    }
-  }
-}
-
-fn get_updater(actor) -> Option(Updater(Patch)) {
-  case process.try_call(actor, GetUpdater(_), call_timeout) {
-    Ok(updater) -> updater
-    Error(err) -> {
-      logger.error("Error getting updater from runtime actor")
-      io.debug(err)
-      panic
-    }
-  }
-}
-
-fn get_reconciliation_status(actor) {
-  case process.try_call(actor, GetReconciliationStatus(_), call_timeout) {
-    Ok(status) -> status
-    Error(err) -> {
-      logger.error("Error getting reconciliation status from runtime actor")
-      io.debug(err)
-      panic
-    }
-  }
-}
-
-fn set_reconciliation_status(actor, status: ReconciliationStatus) {
-  actor.send(actor, SetReconciliationStatus(status))
-}
-
-fn begin_reconciliation(actor) {
-  case process.try_call(actor, BeginReconciliation(_), call_timeout) {
-    Ok(#(ctx, prev_rendered, updater)) -> {
-      let #(ctx, rendered) = do_reconciliation(ctx, prev_rendered, updater)
-
-      update_state(
-        actor,
-        fn(state) { State(..state, ctx: ctx, rendered: Some(rendered)) },
-      )
-    }
-    Error(err) -> {
-      logger.error("Error begining reconciliation")
-      io.debug(err)
-      panic
-    }
-  }
-}
-
-/// Render the view
+/// Render the view - should only be used for testing purposes
 pub fn render(actor) -> RenderedElement {
-  let #(ctx, rendered) =
-    reconcile(get_context(actor), get_view(actor), get_rendered(actor))
+  let State(ctx: ctx, rendered: rendered, ..) = get_state(actor)
+
+  let #(ctx, rendered) = reconcile(ctx, ctx.view, rendered)
 
   update_state(
     actor,
@@ -388,93 +343,6 @@ fn reconcile(
       #(ctx, reconciled)
     },
   )
-}
-
-pub fn maybe_reconcile(actor) {
-  case get_reconciliation_status(actor) {
-    Pending -> {
-      begin_reconciliation(actor)
-
-      case get_reconciliation_status(actor) {
-        Pending -> {
-          maybe_reconcile(actor)
-        }
-        InProgress -> {
-          set_reconciliation_status(actor, Idle)
-        }
-        Idle -> Nil
-      }
-    }
-    _ -> Nil
-  }
-}
-
-// /// Render the view and send an update Patch to the updater
-// fn schedule_reconciliation(actor) -> Nil {
-//   case get_reconciliation_status(actor) {
-//     Idle -> {
-//       set_reconciliation_status(actor, InProgress)
-
-//       let State(rendered: prev_rendered, ctx: ctx, updater: updater, ..) =
-//         get_state(actor)
-
-//       let #(ctx, rendered) = do_reconciliation(ctx, prev_rendered, updater)
-
-//       update_state(
-//         actor,
-//         fn(state) { State(..state, ctx: ctx, rendered: Some(rendered)) },
-//       )
-
-//       case get_reconciliation_status(actor) {
-//         Pending -> {
-//           schedule_reconciliation(actor)
-//         }
-//         InProgress -> {
-//           set_reconciliation_status(actor, Idle)
-//         }
-//         Idle -> Nil
-//       }
-//     }
-//     InProgress -> {
-//       set_reconciliation_status(actor, Pending)
-//     }
-//     Pending -> Nil
-//   }
-// }
-
-fn do_reconciliation(
-  ctx: Context,
-  prev_rendered: Option(RenderedElement),
-  maybe_updater: Option(Updater(Patch)),
-) -> #(Context, RenderedElement) {
-  let #(ctx, rendered) = reconcile(ctx, ctx.view, prev_rendered)
-
-  case prev_rendered {
-    Some(prev_rendered) -> {
-      case maybe_updater {
-        Some(updater) -> {
-          let update = patch.create(prev_rendered, rendered)
-
-          // send the rendered update using updater
-          case updater.send(update) {
-            Ok(_) -> Nil
-            Error(_) -> {
-              logger.error("Failed to send update patch!")
-              Nil
-            }
-          }
-        }
-
-        _ -> Nil
-      }
-
-      run_cleanup_for_disposed_hooks(prev_rendered, rendered)
-    }
-
-    _ -> Nil
-  }
-
-  #(ctx, rendered)
 }
 
 fn cleanup_hooks(rendered: RenderedElement) {

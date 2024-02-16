@@ -289,8 +289,6 @@ pub fn client_message(
               |> option.map(callback_param_from_string)
               |> handler_fn()
 
-              runtime.maybe_reconcile(sprocket)
-
               Ok(Nil)
             }
             _ -> {
@@ -351,7 +349,7 @@ fn connect(
   id: Unique,
   view: Element,
   ws_send: fn(String) -> Result(Nil, Nil),
-) {
+) -> Result(Nil, Nil) {
   let updater =
     Updater(send: fn(update) {
       let _ = ws_send(update_to_json(update, get_debug(ca)))
