@@ -42,7 +42,8 @@ pub opaque type State {
   )
 }
 
-// TODO: figure out how to make this private
+// TODO: it would be nice to be able to make this type private. But the get_state function needs to be
+// public in order to be used in the tests and therefore this type needs to be public as well.
 pub opaque type Message {
   Shutdown
   BeginSelfDestruct(Int)
