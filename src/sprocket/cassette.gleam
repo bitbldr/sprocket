@@ -12,7 +12,7 @@ import sprocket/runtime.{type Runtime}
 import sprocket/context.{
   type Element, Client, Dispatcher, Updater, callback_param_from_string,
 }
-import sprocket/internal/reconcile.{type RenderedElement}
+import sprocket/internal/reconcile.{type ReconciledElement}
 import sprocket/internal/render/json as json_renderer
 import sprocket/internal/patch.{type Patch}
 import sprocket/internal/logger
@@ -461,7 +461,7 @@ fn hook_event_to_json(
   |> json.to_string()
 }
 
-fn rendered_to_json(update: RenderedElement) -> String {
+fn rendered_to_json(update: ReconciledElement) -> String {
   json.preprocessed_array([
     json.string("ok"),
     json_renderer.renderer().render(update),

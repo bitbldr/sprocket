@@ -4,9 +4,10 @@ import gleam/string
 import gleam/option.{type Option, None, Some}
 import gleam/json.{type Json}
 import sprocket/internal/reconcile.{
-  type IgnoreRule, type RenderedAttribute, type RenderedElement, IgnoreAll,
-  RenderedAttribute, RenderedClientHook, RenderedComponent, RenderedElement,
-  RenderedEventHandler, RenderedFragment, RenderedIgnoreUpdate, RenderedText,
+  type IgnoreRule, type ReconciledAttribute, type ReconciledElement, IgnoreAll,
+  ReconciledAttribute, ReconciledClientHook, ReconciledComponent,
+  ReconciledElement, ReconciledEventHandler, ReconciledFragment,
+  ReconciledIgnoreUpdate, ReconciledText,
 }
 import sprocket/internal/render.{type Renderer, Renderer}
 import sprocket/internal/constants
@@ -15,14 +16,15 @@ pub fn renderer() -> Renderer(Json) {
   Renderer(render: fn(el) { render(el, None) })
 }
 
-fn render(el: RenderedElement, ignore: Option(IgnoreRule)) -> Json {
+fn render(el: ReconciledElement, ignore: Option(IgnoreRule)) -> Json {
   case el {
-    RenderedElement(tag: tag, key: key, attrs: attrs, children: children) ->
+    ReconciledElement(tag: tag, key: key, attrs: attrs, children: children) ->
       element(tag, key, ignore, attrs, children)
-    RenderedComponent(key: key, el: el, ..) -> component(key, ignore, el)
-    RenderedFragment(key, children: children) -> fragment(key, ignore, children)
-    RenderedIgnoreUpdate(rule, el) -> render(el, Some(rule))
-    RenderedText(text: t) -> text(t)
+    ReconciledComponent(key: key, el: el, ..) -> component(key, ignore, el)
+    ReconciledFragment(key, children: children) ->
+      fragment(key, ignore, children)
+    ReconciledIgnoreUpdate(rule, el) -> render(el, Some(rule))
+    ReconciledText(text: t) -> text(t)
   }
 }
 
@@ -30,17 +32,17 @@ fn element(
   tag: String,
   key: Option(String),
   ignore: Option(IgnoreRule),
-  attrs: List(RenderedAttribute),
-  children: List(RenderedElement),
+  attrs: List(ReconciledAttribute),
+  children: List(ReconciledElement),
 ) -> Json {
   let attrs =
     attrs
     |> list.flat_map(fn(attr) {
       case attr {
-        RenderedAttribute(name, value) -> {
+        ReconciledAttribute(name, value) -> {
           [#(name, json.string(value))]
         }
-        RenderedEventHandler(kind, id) -> {
+        ReconciledEventHandler(kind, id) -> {
           [
             #(
               string.concat([constants.event_attr_prefix, "-", kind]),
@@ -48,7 +50,7 @@ fn element(
             ),
           ]
         }
-        RenderedClientHook(name, id) -> {
+        ReconciledClientHook(name, id) -> {
           [
             #(
               string.concat([constants.client_hook_attr_prefix]),
@@ -91,7 +93,7 @@ fn element(
 fn component(
   key: Option(String),
   ignore: Option(IgnoreRule),
-  el: RenderedElement,
+  el: ReconciledElement,
 ) -> Json {
   [#("type", json.string("component"))]
   |> maybe_append_string("key", key)
@@ -102,7 +104,7 @@ fn component(
 fn fragment(
   key: Option(String),
   ignore: Option(IgnoreRule),
-  children: List(RenderedElement),
+  children: List(ReconciledElement),
 ) -> Json {
   let children =
     children

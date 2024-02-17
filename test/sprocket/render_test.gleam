@@ -8,10 +8,9 @@ import sprocket/html/elements.{a, div, fragment, text}
 import sprocket/html/attributes.{class, classes}
 import sprocket/hooks.{handler}
 import sprocket/internal/reconcile.{
-  RenderedAttribute, RenderedComponent, RenderedElement, RenderedEventHandler,
-  RenderedFragment, RenderedText,
+  ReconciledAttribute, ReconciledComponent, ReconciledElement,
+  ReconciledEventHandler, ReconciledFragment, ReconciledText,
 }
-import sprocket/internal/reconcilers/recursive
 import sprocket/internal/render/identity
 
 type TestProps {
@@ -53,23 +52,23 @@ pub fn basic_render_test() {
       identity.renderer(),
     )
 
-  let assert RenderedComponent(
+  let assert ReconciledComponent(
     _fc,
     _key,
     props,
     _hooks,
-    RenderedElement(
+    ReconciledElement(
       tag: "a",
       key: None,
       attrs: [
-        RenderedAttribute(
+        ReconciledAttribute(
           "class",
           "block p-2 text-blue-500 hover:text-blue-700 font-bold",
         ),
-        RenderedAttribute("href", "#"),
-        RenderedEventHandler("click", _),
+        ReconciledAttribute("href", "#"),
+        ReconciledEventHandler("click", _),
       ],
-      children: [RenderedText("Home")],
+      children: [ReconciledText("Home")],
     ),
   ) = rendered
 
@@ -118,39 +117,39 @@ pub fn render_with_fragment_test() {
       identity.renderer(),
     )
 
-  let assert RenderedComponent(
+  let assert ReconciledComponent(
     _fc,
     _key,
     props,
     _hooks,
-    RenderedFragment(
+    ReconciledFragment(
       None,
       [
-        RenderedElement(
+        ReconciledElement(
           tag: "a",
           key: None,
           attrs: [
-            RenderedAttribute(
+            ReconciledAttribute(
               "class",
               "block p-2 text-blue-500 hover:text-blue-700",
             ),
-            RenderedAttribute("href", "#one"),
-            RenderedEventHandler("click", _),
+            ReconciledAttribute("href", "#one"),
+            ReconciledEventHandler("click", _),
           ],
-          children: [RenderedText("One")],
+          children: [ReconciledText("One")],
         ),
-        RenderedElement(
+        ReconciledElement(
           tag: "a",
           key: None,
           attrs: [
-            RenderedAttribute(
+            ReconciledAttribute(
               "class",
               "block p-2 text-blue-500 hover:text-blue-700",
             ),
-            RenderedAttribute("href", "#two"),
-            RenderedEventHandler("click", _),
+            ReconciledAttribute("href", "#two"),
+            ReconciledEventHandler("click", _),
           ],
-          children: [RenderedText("Two")],
+          children: [ReconciledText("Two")],
         ),
       ],
     ),
@@ -215,33 +214,33 @@ pub fn renders_component_with_context_provider_test() {
       identity.renderer(),
     )
 
-  let assert RenderedElement(
+  let assert ReconciledElement(
     tag: "div",
     key: None,
-    attrs: [RenderedAttribute("class", "first div")],
+    attrs: [ReconciledAttribute("class", "first div")],
     children: [
-      RenderedElement(
+      ReconciledElement(
         tag: "div",
         key: None,
-        attrs: [RenderedAttribute("class", "second div")],
+        attrs: [ReconciledAttribute("class", "second div")],
         children: [
-          RenderedComponent(
+          ReconciledComponent(
             _fc,
             _key,
             _props,
             _hooks,
-            RenderedElement(
+            ReconciledElement(
               tag: "a",
               key: None,
               attrs: [
-                RenderedAttribute(
+                ReconciledAttribute(
                   "class",
                   "block p-2 text-blue-500 hover:text-blue-700 font-bold",
                 ),
-                RenderedAttribute("href", "#"),
-                RenderedEventHandler("click", _),
+                ReconciledAttribute("href", "#"),
+                ReconciledEventHandler("click", _),
               ],
-              children: [RenderedText("A different title")],
+              children: [ReconciledText("A different title")],
             ),
           ),
         ],

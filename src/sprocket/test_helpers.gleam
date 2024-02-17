@@ -5,7 +5,8 @@ import ids/cuid
 import sprocket/runtime.{type Runtime}
 import sprocket/context
 import sprocket/internal/reconcile.{
-  type RenderedElement, RenderedAttribute, RenderedElement, RenderedEventHandler,
+  type ReconciledElement, ReconciledAttribute, ReconciledElement,
+  ReconciledEventHandler,
 }
 import sprocket/internal/reconcilers/recursive
 import sprocket/html/render as html_render
@@ -39,15 +40,15 @@ pub fn render_event(spkt: Runtime, event: Event, html_id: String) {
       let found =
         recursive.find(
           rendered,
-          fn(el: RenderedElement) {
+          fn(el: ReconciledElement) {
             case el {
-              RenderedElement(_tag, _key, attrs, _children) -> {
+              ReconciledElement(_tag, _key, attrs, _children) -> {
                 // try and find id attr that matches the given id
                 let matching_id_attr =
                   attrs
                   |> list.find(fn(attr) {
                     case attr {
-                      RenderedAttribute("id", id) if id == html_id -> True
+                      ReconciledAttribute("id", id) if id == html_id -> True
                       _ -> False
                     }
                   })
@@ -63,7 +64,7 @@ pub fn render_event(spkt: Runtime, event: Event, html_id: String) {
         )
 
       case found {
-        Ok(RenderedElement(_tag, _key, attrs, _children)) -> {
+        Ok(ReconciledElement(_tag, _key, attrs, _children)) -> {
           let event_kind = case event {
             ClickEvent -> "click"
           }
@@ -73,13 +74,13 @@ pub fn render_event(spkt: Runtime, event: Event, html_id: String) {
             attrs
             |> list.find(fn(attr) {
               case attr {
-                RenderedEventHandler(kind, _id) if kind == event_kind -> True
+                ReconciledEventHandler(kind, _id) if kind == event_kind -> True
                 _ -> False
               }
             })
 
           case rendered_event_handler {
-            Ok(RenderedEventHandler(_kind, event_id)) -> {
+            Ok(ReconciledEventHandler(_kind, event_id)) -> {
               case runtime.get_handler(spkt, event_id) {
                 Ok(context.IdentifiableHandler(_, handler)) -> {
                   // call the event handler

@@ -5,7 +5,7 @@ import gleam/dynamic
 import gleam/option.{None, Some}
 import sprocket/context.{Element}
 import sprocket/internal/reconcile.{
-  RenderedAttribute, RenderedComponent, RenderedElement, RenderedText,
+  ReconciledAttribute, ReconciledComponent, ReconciledElement, ReconciledText,
 }
 import sprocket/internal/patch.{
   Change, Insert, Move, NoOp, Remove, Replace, Update, op_code,
@@ -20,54 +20,54 @@ pub fn text_change_test() {
   let props = dynamic.from([])
 
   let first =
-    RenderedComponent(
+    ReconciledComponent(
       fc: fc,
       key: None,
       props: props,
       hooks: ordered_map.new(),
-      el: RenderedElement(
+      el: ReconciledElement(
         tag: "div",
         key: None,
         attrs: [],
         children: [
-          RenderedElement(
+          ReconciledElement(
             tag: "p",
             key: None,
             attrs: [],
-            children: [RenderedText("Hello")],
+            children: [ReconciledText("Hello")],
           ),
-          RenderedElement(
+          ReconciledElement(
             tag: "p",
             key: None,
             attrs: [],
-            children: [RenderedText("World")],
+            children: [ReconciledText("World")],
           ),
         ],
       ),
     )
 
   let second =
-    RenderedComponent(
+    ReconciledComponent(
       fc: fc,
       key: None,
       props: props,
       hooks: ordered_map.new(),
-      el: RenderedElement(
+      el: ReconciledElement(
         tag: "div",
         key: None,
         attrs: [],
         children: [
-          RenderedElement(
+          ReconciledElement(
             tag: "p",
             key: None,
             attrs: [],
-            children: [RenderedText("Hello")],
+            children: [ReconciledText("Hello")],
           ),
-          RenderedElement(
+          ReconciledElement(
             tag: "p",
             key: None,
             attrs: [],
-            children: [RenderedText("Changed")],
+            children: [ReconciledText("Changed")],
           ),
         ],
       ),
@@ -101,36 +101,36 @@ pub fn first_fc_without_children_test() {
   let props = dynamic.from([])
 
   let first =
-    RenderedComponent(
+    ReconciledComponent(
       fc: fc,
       key: None,
       props: props,
       hooks: ordered_map.new(),
-      el: RenderedElement(tag: "div", key: None, attrs: [], children: []),
+      el: ReconciledElement(tag: "div", key: None, attrs: [], children: []),
     )
 
   let second =
-    RenderedComponent(
+    ReconciledComponent(
       fc: fc,
       key: None,
       props: props,
       hooks: ordered_map.new(),
-      el: RenderedElement(
+      el: ReconciledElement(
         tag: "div",
         key: None,
         attrs: [],
         children: [
-          RenderedElement(
+          ReconciledElement(
             tag: "p",
             key: None,
             attrs: [],
-            children: [RenderedText("Hello")],
+            children: [ReconciledText("Hello")],
           ),
-          RenderedElement(
+          ReconciledElement(
             tag: "p",
             key: None,
             attrs: [],
-            children: [RenderedText("Changed")],
+            children: [ReconciledText("Changed")],
           ),
         ],
       ),
@@ -147,11 +147,16 @@ pub fn first_fc_without_children_test() {
           Some([
             #(
               0,
-              Insert(RenderedElement("p", None, [], [RenderedText("Hello")])),
+              Insert(ReconciledElement("p", None, [], [ReconciledText("Hello")])),
             ),
             #(
               1,
-              Insert(RenderedElement("p", None, [], [RenderedText("Changed")])),
+              Insert(ReconciledElement(
+                "p",
+                None,
+                [],
+                [ReconciledText("Changed")],
+              )),
             ),
           ]),
         ),
@@ -165,66 +170,66 @@ pub fn add_child_test() {
   let props = dynamic.from([])
 
   let first =
-    RenderedComponent(
+    ReconciledComponent(
       fc: fc,
       key: None,
       props: props,
       hooks: ordered_map.new(),
-      el: RenderedElement(
+      el: ReconciledElement(
         tag: "div",
         key: None,
         attrs: [],
         children: [
-          RenderedElement(
+          ReconciledElement(
             tag: "p",
             key: None,
             attrs: [],
-            children: [RenderedText("Hello")],
+            children: [ReconciledText("Hello")],
           ),
-          RenderedElement(
+          ReconciledElement(
             tag: "p",
             key: None,
             attrs: [],
-            children: [RenderedText("World")],
+            children: [ReconciledText("World")],
           ),
         ],
       ),
     )
 
   let second =
-    RenderedComponent(
+    ReconciledComponent(
       fc: fc,
       key: None,
       props: props,
       hooks: ordered_map.new(),
-      el: RenderedElement(
+      el: ReconciledElement(
         tag: "div",
         key: None,
         attrs: [],
         children: [
-          RenderedElement(
+          ReconciledElement(
             tag: "p",
             key: None,
             attrs: [],
-            children: [RenderedText("Hello")],
+            children: [ReconciledText("Hello")],
           ),
-          RenderedElement(
+          ReconciledElement(
             tag: "p",
             key: None,
             attrs: [],
-            children: [RenderedText("Great")],
+            children: [ReconciledText("Great")],
           ),
-          RenderedElement(
+          ReconciledElement(
             tag: "p",
             key: None,
             attrs: [],
-            children: [RenderedText("Big")],
+            children: [ReconciledText("Big")],
           ),
-          RenderedElement(
+          ReconciledElement(
             tag: "p",
             key: None,
             attrs: [],
-            children: [RenderedText("World")],
+            children: [ReconciledText("World")],
           ),
         ],
       ),
@@ -242,20 +247,20 @@ pub fn add_child_test() {
             #(1, Update(attrs: None, children: Some([#(0, Change("Great"))]))),
             #(
               2,
-              Insert(RenderedElement(
+              Insert(ReconciledElement(
                 tag: "p",
                 key: None,
                 attrs: [],
-                children: [RenderedText("Big")],
+                children: [ReconciledText("Big")],
               )),
             ),
             #(
               3,
-              Insert(RenderedElement(
+              Insert(ReconciledElement(
                 tag: "p",
                 key: None,
                 attrs: [],
-                children: [RenderedText("World")],
+                children: [ReconciledText("World")],
               )),
             ),
           ]),
@@ -270,66 +275,66 @@ pub fn add_move_child_with_keys_test() {
   let props = dynamic.from([])
 
   let first =
-    RenderedComponent(
+    ReconciledComponent(
       fc: fc,
       key: None,
       props: props,
       hooks: ordered_map.new(),
-      el: RenderedElement(
+      el: ReconciledElement(
         tag: "div",
         key: None,
         attrs: [],
         children: [
-          RenderedElement(
+          ReconciledElement(
             tag: "p",
             key: Some("hello"),
             attrs: [],
-            children: [RenderedText("Hello")],
+            children: [ReconciledText("Hello")],
           ),
-          RenderedElement(
+          ReconciledElement(
             tag: "p",
             key: Some("world"),
             attrs: [],
-            children: [RenderedText("World")],
+            children: [ReconciledText("World")],
           ),
         ],
       ),
     )
 
   let second =
-    RenderedComponent(
+    ReconciledComponent(
       fc: fc,
       key: None,
       props: props,
       hooks: ordered_map.new(),
-      el: RenderedElement(
+      el: ReconciledElement(
         tag: "div",
         key: None,
         attrs: [],
         children: [
-          RenderedElement(
+          ReconciledElement(
             tag: "p",
             key: Some("hello"),
             attrs: [],
-            children: [RenderedText("Hello")],
+            children: [ReconciledText("Hello")],
           ),
-          RenderedElement(
+          ReconciledElement(
             tag: "p",
             key: Some("great"),
             attrs: [],
-            children: [RenderedText("Great")],
+            children: [ReconciledText("Great")],
           ),
-          RenderedElement(
+          ReconciledElement(
             tag: "p",
             key: Some("big"),
             attrs: [],
-            children: [RenderedText("Big")],
+            children: [ReconciledText("Big")],
           ),
-          RenderedElement(
+          ReconciledElement(
             tag: "p",
             key: Some("world"),
             attrs: [],
-            children: [RenderedText("World")],
+            children: [ReconciledText("World")],
           ),
         ],
       ),
@@ -346,20 +351,20 @@ pub fn add_move_child_with_keys_test() {
           children: Some([
             #(
               1,
-              Replace(RenderedElement(
+              Replace(ReconciledElement(
                 tag: "p",
                 key: Some("great"),
                 attrs: [],
-                children: [RenderedText("Great")],
+                children: [ReconciledText("Great")],
               )),
             ),
             #(
               2,
-              Insert(RenderedElement(
+              Insert(ReconciledElement(
                 tag: "p",
                 key: Some("big"),
                 attrs: [],
-                children: [RenderedText("Big")],
+                children: [ReconciledText("Big")],
               )),
             ),
             #(3, Move(from: 1, patch: NoOp)),
@@ -375,69 +380,69 @@ pub fn add_move_update_child_with_keys_test() {
   let props = dynamic.from([])
 
   let first =
-    RenderedComponent(
+    ReconciledComponent(
       fc: fc,
       key: None,
       props: props,
       hooks: ordered_map.new(),
-      el: RenderedElement(
+      el: ReconciledElement(
         tag: "div",
         key: None,
         attrs: [],
         children: [
-          RenderedElement(
+          ReconciledElement(
             tag: "p",
             key: Some("hello"),
             attrs: [],
-            children: [RenderedText("Hello")],
+            children: [ReconciledText("Hello")],
           ),
-          RenderedElement(
+          ReconciledElement(
             tag: "p",
             key: Some("world"),
-            attrs: [RenderedAttribute("class", "round")],
-            children: [RenderedText("World")],
+            attrs: [ReconciledAttribute("class", "round")],
+            children: [ReconciledText("World")],
           ),
         ],
       ),
     )
 
   let second =
-    RenderedComponent(
+    ReconciledComponent(
       fc: fc,
       key: None,
       props: props,
       hooks: ordered_map.new(),
-      el: RenderedElement(
+      el: ReconciledElement(
         tag: "div",
         key: None,
         attrs: [],
         children: [
-          RenderedElement(
+          ReconciledElement(
             tag: "p",
             key: Some("hello"),
             attrs: [],
-            children: [RenderedText("Hello")],
+            children: [ReconciledText("Hello")],
           ),
-          RenderedElement(
+          ReconciledElement(
             tag: "p",
             key: Some("great"),
             attrs: [],
-            children: [RenderedText("Great")],
+            children: [ReconciledText("Great")],
           ),
-          RenderedElement(
+          ReconciledElement(
             tag: "p",
             key: Some("big"),
             attrs: [],
-            children: [RenderedText("Big")],
+            children: [ReconciledText("Big")],
           ),
-          RenderedElement(
+          ReconciledElement(
             tag: "p",
             key: Some("world"),
             attrs: [
-              RenderedAttribute("class", "round"),
-              RenderedAttribute("class", "blue"),
+              ReconciledAttribute("class", "round"),
+              ReconciledAttribute("class", "blue"),
             ],
-            children: [RenderedText("Blue"), RenderedText("World")],
+            children: [ReconciledText("Blue"), ReconciledText("World")],
           ),
         ],
       ),
@@ -454,20 +459,20 @@ pub fn add_move_update_child_with_keys_test() {
           children: Some([
             #(
               1,
-              Replace(RenderedElement(
+              Replace(ReconciledElement(
                 tag: "p",
                 key: Some("great"),
                 attrs: [],
-                children: [RenderedText("Great")],
+                children: [ReconciledText("Great")],
               )),
             ),
             #(
               2,
-              Insert(RenderedElement(
+              Insert(ReconciledElement(
                 tag: "p",
                 key: Some("big"),
                 attrs: [],
-                children: [RenderedText("Big")],
+                children: [ReconciledText("Big")],
               )),
             ),
             #(
@@ -476,12 +481,12 @@ pub fn add_move_update_child_with_keys_test() {
                 from: 1,
                 patch: Update(
                   attrs: Some([
-                    RenderedAttribute("class", "round"),
-                    RenderedAttribute("class", "blue"),
+                    ReconciledAttribute("class", "round"),
+                    ReconciledAttribute("class", "blue"),
                   ]),
                   children: Some([
                     #(0, Change("Blue")),
-                    #(1, Insert(RenderedText("World"))),
+                    #(1, Insert(ReconciledText("World"))),
                   ]),
                 ),
               ),
@@ -498,66 +503,66 @@ pub fn add_move_replace_child_with_keys_test() {
   let props = dynamic.from([])
 
   let first =
-    RenderedComponent(
+    ReconciledComponent(
       fc: fc,
       key: None,
       props: props,
       hooks: ordered_map.new(),
-      el: RenderedElement(
+      el: ReconciledElement(
         tag: "div",
         key: None,
         attrs: [],
         children: [
-          RenderedElement(
+          ReconciledElement(
             tag: "p",
             key: Some("hello"),
             attrs: [],
-            children: [RenderedText("Hello")],
+            children: [ReconciledText("Hello")],
           ),
-          RenderedElement(
+          ReconciledElement(
             tag: "p",
             key: Some("world"),
             attrs: [],
-            children: [RenderedText("World")],
+            children: [ReconciledText("World")],
           ),
         ],
       ),
     )
 
   let second =
-    RenderedComponent(
+    ReconciledComponent(
       fc: fc,
       key: None,
       props: props,
       hooks: ordered_map.new(),
-      el: RenderedElement(
+      el: ReconciledElement(
         tag: "div",
         key: None,
         attrs: [],
         children: [
-          RenderedElement(
+          ReconciledElement(
             tag: "p",
             key: Some("hello"),
             attrs: [],
-            children: [RenderedText("Hello")],
+            children: [ReconciledText("Hello")],
           ),
-          RenderedElement(
+          ReconciledElement(
             tag: "p",
             key: Some("great"),
             attrs: [],
-            children: [RenderedText("Great")],
+            children: [ReconciledText("Great")],
           ),
-          RenderedElement(
+          ReconciledElement(
             tag: "p",
             key: Some("big"),
             attrs: [],
-            children: [RenderedText("Big")],
+            children: [ReconciledText("Big")],
           ),
-          RenderedElement(
+          ReconciledElement(
             tag: "div",
             key: Some("world"),
             attrs: [],
-            children: [RenderedText("Blue"), RenderedText("World")],
+            children: [ReconciledText("Blue"), ReconciledText("World")],
           ),
         ],
       ),
@@ -574,31 +579,31 @@ pub fn add_move_replace_child_with_keys_test() {
           children: Some([
             #(
               1,
-              Replace(RenderedElement(
+              Replace(ReconciledElement(
                 tag: "p",
                 key: Some("great"),
                 attrs: [],
-                children: [RenderedText("Great")],
+                children: [ReconciledText("Great")],
               )),
             ),
             #(
               2,
-              Insert(RenderedElement(
+              Insert(ReconciledElement(
                 tag: "p",
                 key: Some("big"),
                 attrs: [],
-                children: [RenderedText("Big")],
+                children: [ReconciledText("Big")],
               )),
             ),
             #(
               3,
               Move(
                 from: 1,
-                patch: Replace(RenderedElement(
+                patch: Replace(ReconciledElement(
                   tag: "div",
                   key: Some("world"),
                   attrs: [],
-                  children: [RenderedText("Blue"), RenderedText("World")],
+                  children: [ReconciledText("Blue"), ReconciledText("World")],
                 )),
               ),
             ),
@@ -614,84 +619,84 @@ pub fn remove_middle_child_in_list_with_keys_test() {
   let props = dynamic.from([])
 
   let first =
-    RenderedComponent(
+    ReconciledComponent(
       fc: fc,
       key: None,
       props: props,
       hooks: ordered_map.new(),
-      el: RenderedElement(
+      el: ReconciledElement(
         tag: "ul",
         key: None,
         attrs: [],
         children: [
-          RenderedElement(
+          ReconciledElement(
             tag: "li",
             key: Some("one"),
             attrs: [],
-            children: [RenderedText("One")],
+            children: [ReconciledText("One")],
           ),
-          RenderedElement(
+          ReconciledElement(
             tag: "li",
             key: Some("two"),
             attrs: [],
-            children: [RenderedText("Two")],
+            children: [ReconciledText("Two")],
           ),
-          RenderedElement(
+          ReconciledElement(
             tag: "li",
             key: Some("three"),
             attrs: [],
-            children: [RenderedText("Three")],
+            children: [ReconciledText("Three")],
           ),
-          RenderedElement(
+          ReconciledElement(
             tag: "li",
             key: Some("four"),
             attrs: [],
-            children: [RenderedText("Four")],
+            children: [ReconciledText("Four")],
           ),
-          RenderedElement(
+          ReconciledElement(
             tag: "li",
             key: Some("five"),
             attrs: [],
-            children: [RenderedText("Five")],
+            children: [ReconciledText("Five")],
           ),
         ],
       ),
     )
 
   let second =
-    RenderedComponent(
+    ReconciledComponent(
       fc: fc,
       key: None,
       props: props,
       hooks: ordered_map.new(),
-      el: RenderedElement(
+      el: ReconciledElement(
         tag: "ul",
         key: None,
         attrs: [],
         children: [
-          RenderedElement(
+          ReconciledElement(
             tag: "li",
             key: Some("one"),
             attrs: [],
-            children: [RenderedText("One")],
+            children: [ReconciledText("One")],
           ),
-          RenderedElement(
+          ReconciledElement(
             tag: "li",
             key: Some("two"),
             attrs: [],
-            children: [RenderedText("Two")],
+            children: [ReconciledText("Two")],
           ),
-          RenderedElement(
+          ReconciledElement(
             tag: "li",
             key: Some("four"),
             attrs: [],
-            children: [RenderedText("Four"), RenderedText("and a half")],
+            children: [ReconciledText("Four"), ReconciledText("and a half")],
           ),
-          RenderedElement(
+          ReconciledElement(
             tag: "li",
             key: Some("five"),
             attrs: [],
-            children: [RenderedText("Five")],
+            children: [ReconciledText("Five")],
           ),
         ],
       ),
@@ -712,7 +717,7 @@ pub fn remove_middle_child_in_list_with_keys_test() {
                 from: 3,
                 patch: Update(
                   attrs: None,
-                  children: Some([#(1, Insert(RenderedText("and a half")))]),
+                  children: Some([#(1, Insert(ReconciledText("and a half")))]),
                 ),
               ),
             ),
@@ -730,84 +735,84 @@ pub fn restore_full_list_from_partial_with_keys_test() {
   let props = dynamic.from([])
 
   let first =
-    RenderedComponent(
+    ReconciledComponent(
       fc: fc,
       key: None,
       props: props,
       hooks: ordered_map.new(),
-      el: RenderedElement(
+      el: ReconciledElement(
         tag: "ul",
         key: None,
         attrs: [],
         children: [
-          RenderedElement(
+          ReconciledElement(
             tag: "li",
             key: Some("one"),
             attrs: [],
-            children: [RenderedText("One")],
+            children: [ReconciledText("One")],
           ),
-          RenderedElement(
+          ReconciledElement(
             tag: "li",
             key: Some("two"),
             attrs: [],
-            children: [RenderedText("Two")],
+            children: [ReconciledText("Two")],
           ),
-          RenderedElement(
+          ReconciledElement(
             tag: "li",
             key: Some("four"),
             attrs: [],
-            children: [RenderedText("Four")],
+            children: [ReconciledText("Four")],
           ),
-          RenderedElement(
+          ReconciledElement(
             tag: "li",
             key: Some("five"),
             attrs: [],
-            children: [RenderedText("Five")],
+            children: [ReconciledText("Five")],
           ),
         ],
       ),
     )
 
   let second =
-    RenderedComponent(
+    ReconciledComponent(
       fc: fc,
       key: None,
       props: props,
       hooks: ordered_map.new(),
-      el: RenderedElement(
+      el: ReconciledElement(
         tag: "ul",
         key: None,
         attrs: [],
         children: [
-          RenderedElement(
+          ReconciledElement(
             tag: "li",
             key: Some("one"),
             attrs: [],
-            children: [RenderedText("One")],
+            children: [ReconciledText("One")],
           ),
-          RenderedElement(
+          ReconciledElement(
             tag: "li",
             key: Some("two"),
             attrs: [],
-            children: [RenderedText("Two")],
+            children: [ReconciledText("Two")],
           ),
-          RenderedElement(
+          ReconciledElement(
             tag: "li",
             key: Some("three"),
             attrs: [],
-            children: [RenderedText("Three")],
+            children: [ReconciledText("Three")],
           ),
-          RenderedElement(
+          ReconciledElement(
             tag: "li",
             key: Some("four"),
             attrs: [],
-            children: [RenderedText("Four")],
+            children: [ReconciledText("Four")],
           ),
-          RenderedElement(
+          ReconciledElement(
             tag: "li",
             key: Some("five"),
             attrs: [],
-            children: [RenderedText("Five")],
+            children: [ReconciledText("Five")],
           ),
         ],
       ),
@@ -824,11 +829,11 @@ pub fn restore_full_list_from_partial_with_keys_test() {
           children: Some([
             #(
               2,
-              Replace(RenderedElement(
+              Replace(ReconciledElement(
                 tag: "li",
                 key: Some("three"),
                 attrs: [],
-                children: [RenderedText("Three")],
+                children: [ReconciledText("Three")],
               )),
             ),
             #(3, Move(from: 2, patch: NoOp)),
@@ -845,79 +850,79 @@ pub fn remove_first_couple_items_in_list_with_keys_test() {
   let props = dynamic.from([])
 
   let first =
-    RenderedComponent(
+    ReconciledComponent(
       fc: fc,
       key: None,
       props: props,
       hooks: ordered_map.new(),
-      el: RenderedElement(
+      el: ReconciledElement(
         tag: "ul",
         key: None,
         attrs: [],
         children: [
-          RenderedElement(
+          ReconciledElement(
             tag: "li",
             key: Some("one"),
             attrs: [],
-            children: [RenderedText("One")],
+            children: [ReconciledText("One")],
           ),
-          RenderedElement(
+          ReconciledElement(
             tag: "li",
             key: Some("two"),
             attrs: [],
-            children: [RenderedText("Two")],
+            children: [ReconciledText("Two")],
           ),
-          RenderedElement(
+          ReconciledElement(
             tag: "li",
             key: Some("four"),
             attrs: [],
-            children: [RenderedText("Four")],
+            children: [ReconciledText("Four")],
           ),
-          RenderedElement(
+          ReconciledElement(
             tag: "li",
             key: Some("five"),
             attrs: [],
-            children: [RenderedText("Five")],
+            children: [ReconciledText("Five")],
           ),
         ],
       ),
     )
 
   let second =
-    RenderedComponent(
+    ReconciledComponent(
       fc: fc,
       key: None,
       props: props,
       hooks: ordered_map.new(),
-      el: RenderedElement(
+      el: ReconciledElement(
         tag: "ul",
         key: None,
         attrs: [],
         children: [
-          RenderedElement(
+          ReconciledElement(
             tag: "li",
             key: Some("three"),
             attrs: [],
-            children: [RenderedText("Three")],
+            children: [ReconciledText("Three")],
           ),
-          RenderedElement(
+          ReconciledElement(
             tag: "li",
             key: Some("four"),
             attrs: [],
-            children: [RenderedText("Four")],
+            children: [ReconciledText("Four")],
           ),
-          RenderedElement(
+          ReconciledElement(
             tag: "li",
             key: Some("five"),
             attrs: [],
             children: [
-              RenderedText("Five"),
-              RenderedComponent(
+              ReconciledText("Five"),
+              ReconciledComponent(
                 fc,
                 None,
                 props,
                 ordered_map.new(),
-                RenderedText("and some change"),
+                ReconciledText("and some change"),
               ),
             ],
           ),
@@ -936,11 +941,11 @@ pub fn remove_first_couple_items_in_list_with_keys_test() {
           children: Some([
             #(
               0,
-              Replace(RenderedElement(
+              Replace(ReconciledElement(
                 tag: "li",
                 key: Some("three"),
                 attrs: [],
-                children: [RenderedText("Three")],
+                children: [ReconciledText("Three")],
               )),
             ),
             #(1, Move(from: 2, patch: NoOp)),
@@ -953,12 +958,12 @@ pub fn remove_first_couple_items_in_list_with_keys_test() {
                   children: Some([
                     #(
                       1,
-                      Insert(RenderedComponent(
+                      Insert(ReconciledComponent(
                         fc,
                         None,
                         props,
                         ordered_map.new(),
-                        RenderedText("and some change"),
+                        ReconciledText("and some change"),
                       )),
                     ),
                   ]),
@@ -978,78 +983,78 @@ pub fn noop_test() {
   let props = dynamic.from([])
 
   let first =
-    RenderedComponent(
+    ReconciledComponent(
       fc: fc,
       key: None,
       props: props,
       hooks: ordered_map.new(),
-      el: RenderedElement(
+      el: ReconciledElement(
         tag: "ul",
         key: None,
         attrs: [],
         children: [
-          RenderedElement(
+          ReconciledElement(
             tag: "li",
             key: Some("one"),
             attrs: [],
-            children: [RenderedText("One")],
+            children: [ReconciledText("One")],
           ),
-          RenderedElement(
+          ReconciledElement(
             tag: "li",
             key: Some("two"),
             attrs: [],
-            children: [RenderedText("Two")],
+            children: [ReconciledText("Two")],
           ),
-          RenderedElement(
+          ReconciledElement(
             tag: "li",
             key: Some("four"),
             attrs: [],
-            children: [RenderedText("Four")],
+            children: [ReconciledText("Four")],
           ),
-          RenderedElement(
+          ReconciledElement(
             tag: "li",
             key: Some("five"),
             attrs: [],
-            children: [RenderedText("Five")],
+            children: [ReconciledText("Five")],
           ),
         ],
       ),
     )
 
   let second =
-    RenderedComponent(
+    ReconciledComponent(
       fc: fc,
       key: None,
       props: props,
       hooks: ordered_map.new(),
-      el: RenderedElement(
+      el: ReconciledElement(
         tag: "ul",
         key: None,
         attrs: [],
         children: [
-          RenderedElement(
+          ReconciledElement(
             tag: "li",
             key: Some("one"),
             attrs: [],
-            children: [RenderedText("One")],
+            children: [ReconciledText("One")],
           ),
-          RenderedElement(
+          ReconciledElement(
             tag: "li",
             key: Some("two"),
             attrs: [],
-            children: [RenderedText("Two")],
+            children: [ReconciledText("Two")],
           ),
-          RenderedElement(
+          ReconciledElement(
             tag: "li",
             key: Some("four"),
             attrs: [],
-            children: [RenderedText("Four")],
+            children: [ReconciledText("Four")],
           ),
-          RenderedElement(
+          ReconciledElement(
             tag: "li",
             key: Some("five"),
             attrs: [],
-            children: [RenderedText("Five")],
+            children: [ReconciledText("Five")],
           ),
         ],
       ),
@@ -1064,96 +1069,96 @@ pub fn shift_list_with_keys_test() {
   let props = dynamic.from([])
 
   let first =
-    RenderedComponent(
+    ReconciledComponent(
       fc: fc,
       key: None,
       props: props,
       hooks: ordered_map.new(),
-      el: RenderedElement(
+      el: ReconciledElement(
         tag: "ul",
         key: None,
         attrs: [],
         children: [
-          RenderedElement(
+          ReconciledElement(
             tag: "li",
             key: Some("one"),
             attrs: [],
-            children: [RenderedText("One")],
+            children: [ReconciledText("One")],
           ),
-          RenderedElement(
+          ReconciledElement(
             tag: "li",
             key: Some("two"),
             attrs: [],
-            children: [RenderedText("Two")],
+            children: [ReconciledText("Two")],
           ),
-          RenderedElement(
+          ReconciledElement(
             tag: "li",
             key: Some("four"),
             attrs: [],
-            children: [RenderedText("Four")],
+            children: [ReconciledText("Four")],
           ),
-          RenderedElement(
+          ReconciledElement(
             tag: "li",
             key: Some("five"),
             attrs: [],
-            children: [RenderedText("Five")],
+            children: [ReconciledText("Five")],
           ),
         ],
       ),
     )
 
   let second =
-    RenderedComponent(
+    ReconciledComponent(
       fc: fc,
       key: None,
       props: props,
       hooks: ordered_map.new(),
-      el: RenderedElement(
+      el: ReconciledElement(
         tag: "ul",
         key: None,
         attrs: [],
         children: [
-          RenderedElement(
+          ReconciledElement(
             tag: "li",
             key: Some("uno"),
             attrs: [],
-            children: [RenderedText("Uno")],
+            children: [ReconciledText("Uno")],
           ),
-          RenderedElement(
+          ReconciledElement(
             tag: "li",
             key: Some("dos"),
             attrs: [],
-            children: [RenderedText("Dos")],
+            children: [ReconciledText("Dos")],
           ),
-          RenderedElement(
+          ReconciledElement(
             tag: "li",
             key: Some("tres"),
             attrs: [],
-            children: [RenderedText("Tres")],
+            children: [ReconciledText("Tres")],
           ),
-          RenderedElement(
+          ReconciledElement(
             tag: "li",
             key: Some("one"),
             attrs: [],
-            children: [RenderedText("One")],
+            children: [ReconciledText("One")],
           ),
-          RenderedElement(
+          ReconciledElement(
             tag: "li",
             key: Some("two"),
             attrs: [],
-            children: [RenderedText("Two")],
+            children: [ReconciledText("Two")],
           ),
-          RenderedElement(
+          ReconciledElement(
             tag: "li",
             key: Some("four"),
             attrs: [],
-            children: [RenderedText("Four")],
+            children: [ReconciledText("Four")],
           ),
-          RenderedElement(
+          ReconciledElement(
             tag: "li",
             key: Some("five"),
             attrs: [],
-            children: [RenderedText("Five")],
+            children: [ReconciledText("Five")],
           ),
         ],
       ),
@@ -1170,29 +1175,29 @@ pub fn shift_list_with_keys_test() {
           children: Some([
             #(
               0,
-              Replace(RenderedElement(
+              Replace(ReconciledElement(
                 tag: "li",
                 key: Some("uno"),
                 attrs: [],
-                children: [RenderedText("Uno")],
+                children: [ReconciledText("Uno")],
               )),
             ),
             #(
               1,
-              Replace(RenderedElement(
+              Replace(ReconciledElement(
                 tag: "li",
                 key: Some("dos"),
                 attrs: [],
-                children: [RenderedText("Dos")],
+                children: [ReconciledText("Dos")],
               )),
             ),
             #(
               2,
-              Replace(RenderedElement(
+              Replace(ReconciledElement(
                 tag: "li",
                 key: Some("tres"),
                 attrs: [],
-                children: [RenderedText("Tres")],
+                children: [ReconciledText("Tres")],
               )),
             ),
             #(3, Move(from: 0, patch: NoOp)),
@@ -1211,57 +1216,57 @@ pub fn attribute_change_test() {
   let props = dynamic.from([])
 
   let first =
-    RenderedComponent(
+    ReconciledComponent(
       fc: fc,
       key: None,
       props: props,
       hooks: ordered_map.new(),
-      el: RenderedElement(
+      el: ReconciledElement(
         tag: "div",
         key: None,
         attrs: [],
         children: [
-          RenderedElement(
+          ReconciledElement(
             tag: "p",
             key: None,
-            attrs: [RenderedAttribute("class", "bold")],
-            children: [RenderedText("Hello")],
+            attrs: [ReconciledAttribute("class", "bold")],
+            children: [ReconciledText("Hello")],
           ),
-          RenderedElement(
+          ReconciledElement(
             tag: "p",
             key: None,
-            attrs: [RenderedAttribute("class", "italic")],
-            children: [RenderedText("World")],
+            attrs: [ReconciledAttribute("class", "italic")],
+            children: [ReconciledText("World")],
           ),
         ],
       ),
     )
 
   let second =
-    RenderedComponent(
+    ReconciledComponent(
       fc: fc,
       key: None,
       props: props,
       hooks: ordered_map.new(),
-      el: RenderedElement(
+      el: ReconciledElement(
         tag: "div",
         key: None,
         attrs: [],
         children: [
-          RenderedElement(
+          ReconciledElement(
             tag: "p",
             key: None,
             attrs: [
-              RenderedAttribute("class", "bold"),
-              RenderedAttribute("class", "italic"),
+              ReconciledAttribute("class", "bold"),
+              ReconciledAttribute("class", "italic"),
             ],
-            children: [RenderedText("Hello")],
+            children: [ReconciledText("Hello")],
           ),
-          RenderedElement(
+          ReconciledElement(
             tag: "p",
             key: None,
             attrs: [],
-            children: [RenderedText("Changed")],
+            children: [ReconciledText("Changed")],
           ),
         ],
       ),
@@ -1280,8 +1285,8 @@ pub fn attribute_change_test() {
               0,
               Update(
                 attrs: Some([
-                  RenderedAttribute("class", "bold"),
-                  RenderedAttribute("class", "italic"),
+                  ReconciledAttribute("class", "bold"),
+                  ReconciledAttribute("class", "italic"),
                 ]),
                 children: None,
               ),
@@ -1306,21 +1311,21 @@ pub fn fc_change_test() {
   let fc1 = fn(ctx, _) { #(ctx, empty_element) }
 
   let first =
-    RenderedComponent(
+    ReconciledComponent(
       fc: fc1,
       key: None,
       props: props,
       hooks: ordered_map.new(),
-      el: RenderedElement(
+      el: ReconciledElement(
         tag: "div",
         key: None,
         attrs: [],
         children: [
-          RenderedElement(
+          ReconciledElement(
             tag: "p",
             key: None,
             attrs: [],
-            children: [RenderedText("Original Functional Component")],
+            children: [ReconciledText("Original Functional Component")],
           ),
         ],
       ),
@@ -1329,54 +1334,54 @@ pub fn fc_change_test() {
   let fc2 = fn(ctx, _) { #(ctx, empty_element) }
 
   let second =
-    RenderedComponent(
+    ReconciledComponent(
       fc: fc2,
       key: None,
       props: props,
       hooks: ordered_map.new(),
-      el: RenderedElement(
+      el: ReconciledElement(
         tag: "div",
         key: None,
         attrs: [],
         children: [
-          RenderedElement(
+          ReconciledElement(
             tag: "p",
             key: None,
             attrs: [],
-            children: [RenderedText("Functional Component")],
+            children: [ReconciledText("Functional Component")],
           ),
-          RenderedElement(
+          ReconciledElement(
             tag: "p",
             key: None,
             attrs: [],
-            children: [RenderedText("Changed")],
+            children: [ReconciledText("Changed")],
           ),
         ],
       ),
     )
 
   patch.create(first, second)
-  |> should.equal(Replace(RenderedComponent(
+  |> should.equal(Replace(ReconciledComponent(
     fc: fc2,
     key: None,
     props: props,
     hooks: ordered_map.new(),
-    el: RenderedElement(
+    el: ReconciledElement(
       tag: "div",
       key: None,
       attrs: [],
       children: [
-        RenderedElement(
+        ReconciledElement(
           tag: "p",
           key: None,
           attrs: [],
-          children: [RenderedText("Functional Component")],
+          children: [ReconciledText("Functional Component")],
         ),
-        RenderedElement(
+        ReconciledElement(
           tag: "p",
           key: None,
           attrs: [],
-          children: [RenderedText("Changed")],
+          children: [ReconciledText("Changed")],
         ),
       ],
     ),
@@ -1389,21 +1394,21 @@ pub fn fc_props_change_test() {
   let original_props = dynamic.from(["hello"])
 
   let first =
-    RenderedComponent(
+    ReconciledComponent(
       fc: fc,
       key: None,
       props: original_props,
       hooks: ordered_map.new(),
-      el: RenderedElement(
+      el: ReconciledElement(
         tag: "div",
         key: None,
         attrs: [],
         children: [
-          RenderedElement(
+          ReconciledElement(
             tag: "p",
             key: None,
             attrs: [],
-            children: [RenderedText("Original Functional Component")],
+            children: [ReconciledText("Original Functional Component")],
           ),
         ],
       ),
@@ -1412,54 +1417,54 @@ pub fn fc_props_change_test() {
   let new_props = dynamic.from(["changed"])
 
   let second =
-    RenderedComponent(
+    ReconciledComponent(
       fc: fc,
       key: None,
       props: new_props,
       hooks: ordered_map.new(),
-      el: RenderedElement(
+      el: ReconciledElement(
         tag: "div",
         key: None,
         attrs: [],
         children: [
-          RenderedElement(
+          ReconciledElement(
             tag: "p",
             key: None,
             attrs: [],
-            children: [RenderedText("Functional Component")],
+            children: [ReconciledText("Functional Component")],
           ),
-          RenderedElement(
+          ReconciledElement(
             tag: "p",
             key: None,
             attrs: [],
-            children: [RenderedText("Props Changed")],
+            children: [ReconciledText("Props Changed")],
           ),
         ],
       ),
     )
 
   patch.create(first, second)
-  |> should.equal(Replace(RenderedComponent(
+  |> should.equal(Replace(ReconciledComponent(
     fc: fc,
     key: None,
     props: new_props,
     hooks: ordered_map.new(),
-    el: RenderedElement(
+    el: ReconciledElement(
       tag: "div",
       key: None,
       attrs: [],
       children: [
-        RenderedElement(
+        ReconciledElement(
           tag: "p",
           key: None,
           attrs: [],
-          children: [RenderedText("Functional Component")],
+          children: [ReconciledText("Functional Component")],
         ),
-        RenderedElement(
+        ReconciledElement(
           tag: "p",
           key: None,
           attrs: [],
-          children: [RenderedText("Props Changed")],
+          children: [ReconciledText("Props Changed")],
         ),
       ],
     ),
@@ -1471,66 +1476,66 @@ pub fn patch_to_json_test() {
   let props = dynamic.from([])
 
   let first =
-    RenderedComponent(
+    ReconciledComponent(
       fc: fc,
       key: None,
       props: props,
       hooks: ordered_map.new(),
-      el: RenderedElement(
+      el: ReconciledElement(
         tag: "div",
         key: None,
         attrs: [],
         children: [
-          RenderedElement(
+          ReconciledElement(
             tag: "p",
             key: Some("hello"),
             attrs: [],
-            children: [RenderedText("Hello")],
+            children: [ReconciledText("Hello")],
           ),
-          RenderedElement(
+          ReconciledElement(
             tag: "p",
             key: Some("world"),
             attrs: [],
-            children: [RenderedText("World")],
+            children: [ReconciledText("World")],
           ),
         ],
       ),
     )
 
   let second =
-    RenderedComponent(
+    ReconciledComponent(
       fc: fc,
       key: None,
       props: props,
       hooks: ordered_map.new(),
-      el: RenderedElement(
+      el: ReconciledElement(
         tag: "div",
         key: None,
         attrs: [],
         children: [
-          RenderedElement(
+          ReconciledElement(
             tag: "p",
             key: Some("hello"),
             attrs: [],
-            children: [RenderedText("Hello")],
+            children: [ReconciledText("Hello")],
           ),
-          RenderedElement(
+          ReconciledElement(
             tag: "p",
             key: Some("great"),
             attrs: [],
-            children: [RenderedText("Great")],
+            children: [ReconciledText("Great")],
           ),
-          RenderedElement(
+          ReconciledElement(
             tag: "p",
             key: Some("big"),
             attrs: [],
-            children: [RenderedText("Big")],
+            children: [ReconciledText("Big")],
           ),
-          RenderedElement(
+          ReconciledElement(
             tag: "p",
             key: Some("world"),
             attrs: [],
-            children: [RenderedText("World")],
+            children: [ReconciledText("World")],
           ),
         ],
       ),
@@ -1588,39 +1593,39 @@ pub fn patch_to_json_replace_list_with_component_test() {
   let props = dynamic.from([])
 
   let first =
-    RenderedComponent(
+    ReconciledComponent(
       fc: fc,
       key: None,
       props: props,
       hooks: ordered_map.new(),
-      el: RenderedElement(
+      el: ReconciledElement(
         tag: "div",
         key: None,
         attrs: [],
         children: [
-          RenderedElement(
+          ReconciledElement(
             tag: "p",
             key: Some("hello"),
             attrs: [],
-            children: [RenderedText("Hello")],
+            children: [ReconciledText("Hello")],
           ),
-          RenderedElement(
+          ReconciledElement(
             tag: "p",
             key: Some("great"),
             attrs: [],
-            children: [RenderedText("Great")],
+            children: [ReconciledText("Great")],
           ),
-          RenderedElement(
+          ReconciledElement(
             tag: "p",
             key: Some("big"),
             attrs: [],
-            children: [RenderedText("big")],
+            children: [ReconciledText("big")],
           ),
-          RenderedElement(
+          ReconciledElement(
             tag: "p",
             key: Some("world"),
             attrs: [],
-            children: [RenderedText("World")],
+            children: [ReconciledText("World")],
           ),
         ],
       ),
@@ -1629,28 +1634,33 @@ pub fn patch_to_json_replace_list_with_component_test() {
   let fc2 = fn(ctx, _) { #(ctx, empty_element) }
 
   let second =
-    RenderedComponent(
+    ReconciledComponent(
       fc: fc,
       key: None,
       props: props,
       hooks: ordered_map.new(),
-      el: RenderedElement(
+      el: ReconciledElement(
         tag: "div",
         key: None,
         attrs: [],
         children: [
-          RenderedElement(
+          ReconciledElement(
             tag: "p",
             key: Some("hello"),
             attrs: [],
-            children: [RenderedText("Hello")],
+            children: [ReconciledText("Hello")],
           ),
-          RenderedComponent(
+          ReconciledComponent(
             fc: fc2,
             key: Some("fc2"),
             props: props,
             hooks: ordered_map.new(),
-            el: RenderedElement(tag: "div", key: None, attrs: [], children: []),
+            el: ReconciledElement(
+              tag: "div",
+              key: None,
+              attrs: [],
+              children: [],
+            ),
           ),
         ],
       ),
@@ -1707,10 +1717,10 @@ pub fn op_code_test() {
   op_code(Update(None, None), False)
   |> should.equal("1")
 
-  op_code(Replace(RenderedElement("div", None, [], [])), False)
+  op_code(Replace(ReconciledElement("div", None, [], [])), False)
   |> should.equal("2")
 
-  op_code(Insert(RenderedElement("div", None, [], [])), False)
+  op_code(Insert(ReconciledElement("div", None, [], [])), False)
   |> should.equal("3")
 
   op_code(Remove, False)
@@ -1728,10 +1738,10 @@ pub fn op_code_test() {
   op_code(Update(None, None), True)
   |> should.equal("Update")
 
-  op_code(Replace(RenderedElement("div", None, [], [])), True)
+  op_code(Replace(ReconciledElement("div", None, [], [])), True)
   |> should.equal("Replace")
 
-  op_code(Insert(RenderedElement("div", None, [], [])), True)
+  op_code(Insert(ReconciledElement("div", None, [], [])), True)
   |> should.equal("Insert")
 
   op_code(Remove, True)

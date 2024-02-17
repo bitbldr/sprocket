@@ -10,23 +10,23 @@ import sprocket/context.{
   Fragment, IgnoreUpdate, Keyed, Provider, Raw, SafeHtml,
 }
 import sprocket/internal/reconcile.{
-  type ReconciledResult, type RenderedAttribute, type RenderedElement, IgnoreAll,
-  ReconciledResult, RenderedAttribute, RenderedClientHook, RenderedComponent,
-  RenderedElement, RenderedEventHandler, RenderedFragment, RenderedIgnoreUpdate,
-  RenderedText,
+  type ReconciledAttribute, type ReconciledElement, type ReconciledResult,
+  IgnoreAll, ReconciledAttribute, ReconciledClientHook, ReconciledComponent,
+  ReconciledElement, ReconciledEventHandler, ReconciledFragment,
+  ReconciledIgnoreUpdate, ReconciledResult, ReconciledText,
 }
 import sprocket/internal/utils/unique
 import sprocket/internal/utils/ordered_map
 import sprocket/internal/logger
 
-// Reconciles the given element into a RenderedElement tree against the previous rendered element.
-// Returns the updated ctx and a stateful RenderedElement tree.
+// Reconciles the given element into a ReconciledElement tree against the previous rendered element.
+// Returns the updated ctx and a stateful ReconciledElement tree.
 pub fn reconcile(
   ctx: Context,
   el: Element,
   key: Option(String),
-  prev: Option(RenderedElement),
-) -> ReconciledResult(RenderedElement) {
+  prev: Option(ReconciledElement),
+) -> ReconciledResult(ReconciledElement) {
   // TODO: detect infinite render loop - render_count > SOME_THRESHOLD then panic "Possible infinite rerender loop"
 
   case el {
@@ -45,13 +45,13 @@ pub fn reconcile(
         Some(prev) -> {
           // since we're ignoring updates, no need to rerender children
           // just return the previous rendered element as ignored
-          ReconciledResult(ctx, RenderedIgnoreUpdate(IgnoreAll, prev))
+          ReconciledResult(ctx, ReconciledIgnoreUpdate(IgnoreAll, prev))
         }
         None -> {
           // render the element on first render, ignore on subsequent renders
           let ReconciledResult(ctx, rendered) = reconcile(ctx, el, key, prev)
 
-          ReconciledResult(ctx, RenderedIgnoreUpdate(IgnoreAll, rendered))
+          ReconciledResult(ctx, ReconciledIgnoreUpdate(IgnoreAll, rendered))
         }
       }
     }
@@ -75,8 +75,8 @@ fn element(
   key: Option(String),
   attrs: List(Attribute),
   children: List(Element),
-  prev: Option(RenderedElement),
-) -> ReconciledResult(RenderedElement) {
+  prev: Option(ReconciledElement),
+) -> ReconciledResult(ReconciledElement) {
   let ReconciledResult(ctx, rendered_attrs) =
     list.fold(
       attrs,
@@ -97,7 +97,7 @@ fn element(
 
             ReconciledResult(
               ctx,
-              [RenderedAttribute(name, value), ..rendered_attrs],
+              [ReconciledAttribute(name, value), ..rendered_attrs],
             )
           }
           Event(kind, identifiable_cb) -> {
@@ -105,7 +105,7 @@ fn element(
             ReconciledResult(
               ctx,
               [
-                RenderedEventHandler(kind, unique.to_string(id)),
+                ReconciledEventHandler(kind, unique.to_string(id)),
                 ..rendered_attrs
               ],
             )
@@ -113,7 +113,10 @@ fn element(
           ClientHook(id, name) -> {
             ReconciledResult(
               ctx,
-              [RenderedClientHook(name, unique.to_string(id)), ..rendered_attrs],
+              [
+                ReconciledClientHook(name, unique.to_string(id)),
+                ..rendered_attrs
+              ],
             )
           }
         }
@@ -137,7 +140,7 @@ fn element(
 
   ReconciledResult(
     ctx,
-    RenderedElement(
+    ReconciledElement(
       tag,
       key,
       list.reverse(rendered_attrs),
@@ -150,8 +153,8 @@ fn fragment(
   ctx: Context,
   key: Option(String),
   children: List(Element),
-  prev: Option(RenderedElement),
-) -> ReconciledResult(RenderedElement) {
+  prev: Option(ReconciledElement),
+) -> ReconciledResult(ReconciledElement) {
   let ReconciledResult(ctx, children) =
     children
     |> list.index_fold(
@@ -167,7 +170,7 @@ fn fragment(
       },
     )
 
-  ReconciledResult(ctx, RenderedFragment(key, list.reverse(children)))
+  ReconciledResult(ctx, ReconciledFragment(key, list.reverse(children)))
 }
 
 fn component(
@@ -175,14 +178,14 @@ fn component(
   fc: AbstractFunctionalComponent,
   key: Option(String),
   props: Dynamic,
-  prev: Option(RenderedElement),
-) -> ReconciledResult(RenderedElement) {
+  prev: Option(ReconciledElement),
+) -> ReconciledResult(ReconciledElement) {
   // Prepare ctx wip (work in progress) for component render
   let ctx = case prev {
     None ->
       // There is no previous rendered element, so this is the first render
       Context(..ctx, wip: ComponentWip(ordered_map.new(), 0, True))
-    Some(RenderedComponent(_, _, _, hooks, _)) ->
+    Some(ReconciledComponent(_, _, _, hooks, _)) ->
       // There is a previous rendered element, so use the previously rendered hooks
       Context(..ctx, wip: ComponentWip(hooks, 0, False))
     Some(_) -> {
@@ -199,13 +202,13 @@ fn component(
   let hooks = ctx.wip.hooks
 
   let prev_el = case prev {
-    Some(RenderedComponent(_, _, _, _, el)) -> Some(el)
+    Some(ReconciledComponent(_, _, _, _, el)) -> Some(el)
     _ -> None
   }
 
   let ReconciledResult(ctx, rendered_el) = reconcile(ctx, el, None, prev_el)
 
-  ReconciledResult(ctx, RenderedComponent(fc, key, props, hooks, rendered_el))
+  ReconciledResult(ctx, ReconciledComponent(fc, key, props, hooks, rendered_el))
 }
 
 fn get_key(el: Element) -> Option(String) {
@@ -220,7 +223,7 @@ fn get_key(el: Element) -> Option(String) {
 
 // Attempts to find a previous child by key, otherwise by matching function component at given index.
 // If no previous child is found, returns None
-fn find_prev_child(prev: Option(RenderedElement), child: Element, index: Int) {
+fn find_prev_child(prev: Option(ReconciledElement), child: Element, index: Int) {
   let child_key = get_key(child)
   option.or(
     get_prev_matching_child_by_key(prev, child_key),
@@ -229,14 +232,14 @@ fn find_prev_child(prev: Option(RenderedElement), child: Element, index: Int) {
 }
 
 fn get_prev_matching_child_by_key(
-  prev: Option(RenderedElement),
+  prev: Option(ReconciledElement),
   key: Option(String),
-) -> Option(RenderedElement) {
+) -> Option(ReconciledElement) {
   case prev, key {
-    Some(RenderedElement(_, _, _, children)), Some(key) -> {
+    Some(ReconciledElement(_, _, _, children)), Some(key) -> {
       find_by_key(children, key)
     }
-    Some(RenderedFragment(_, children)), Some(key) -> {
+    Some(ReconciledFragment(_, children)), Some(key) -> {
       find_by_key(children, key)
     }
     _, _ -> None
@@ -249,9 +252,9 @@ fn find_by_key(children, key) {
     children,
     fn(child) {
       case child {
-        RenderedComponent(_, Some(child_key), _, _, _) -> child_key == key
-        RenderedElement(_, Some(child_key), _, _) -> child_key == key
-        RenderedFragment(Some(child_key), _) -> child_key == key
+        ReconciledComponent(_, Some(child_key), _, _, _) -> child_key == key
+        ReconciledElement(_, Some(child_key), _, _) -> child_key == key
+        ReconciledFragment(Some(child_key), _) -> child_key == key
         _ -> False
       }
     },
@@ -260,12 +263,12 @@ fn find_by_key(children, key) {
 }
 
 fn get_prev_matching_child_by_index(
-  prev: Option(RenderedElement),
+  prev: Option(ReconciledElement),
   child: Element,
   index: Int,
-) -> Option(RenderedElement) {
+) -> Option(ReconciledElement) {
   case prev {
-    Some(RenderedElement(_, _, _, children)) -> {
+    Some(ReconciledElement(_, _, _, children)) -> {
       case list.at(children, index) {
         Ok(prev_child) -> {
           maybe_matching_el(prev_child, child)
@@ -273,7 +276,7 @@ fn get_prev_matching_child_by_index(
         Error(Nil) -> None
       }
     }
-    Some(RenderedFragment(_, children)) -> {
+    Some(ReconciledFragment(_, children)) -> {
       case list.at(children, index) {
         Ok(prev_child) -> {
           maybe_matching_el(prev_child, child)
@@ -286,25 +289,25 @@ fn get_prev_matching_child_by_index(
 }
 
 fn maybe_matching_el(
-  prev_child: RenderedElement,
+  prev_child: ReconciledElement,
   child: Element,
-) -> Option(RenderedElement) {
+) -> Option(ReconciledElement) {
   let child_key = get_key(child)
 
   case prev_child, child {
-    RenderedElement(prev_tag, prev_key, _, _), Element(tag, ..) -> {
+    ReconciledElement(prev_tag, prev_key, _, _), Element(tag, ..) -> {
       case prev_tag == tag && prev_key == child_key {
         True -> Some(prev_child)
         False -> None
       }
     }
-    RenderedComponent(prev_fc, prev_key, _, _, _), Component(fc, ..) -> {
+    ReconciledComponent(prev_fc, prev_key, _, _, _), Component(fc, ..) -> {
       case prev_fc == fc && prev_key == child_key {
         True -> Some(prev_child)
         False -> None
       }
     }
-    RenderedFragment(prev_key, _), Fragment(..) -> {
+    ReconciledFragment(prev_key, _), Fragment(..) -> {
       case prev_key == child_key {
         True -> Some(prev_child)
         False -> None
@@ -318,32 +321,32 @@ fn maybe_matching_el(
   }
 }
 
-fn safe_html(ctx: Context, html: String) -> ReconciledResult(RenderedElement) {
-  ReconciledResult(ctx, RenderedText(html))
+fn safe_html(ctx: Context, html: String) -> ReconciledResult(ReconciledElement) {
+  ReconciledResult(ctx, ReconciledText(html))
 }
 
-fn raw(ctx: Context, text: String) -> ReconciledResult(RenderedElement) {
-  ReconciledResult(ctx, RenderedText(text))
+fn raw(ctx: Context, text: String) -> ReconciledResult(ReconciledElement) {
+  ReconciledResult(ctx, ReconciledText(text))
 }
 
 pub fn traverse(
-  el: RenderedElement,
-  updater: fn(RenderedElement) -> RenderedElement,
-) -> RenderedElement {
+  el: ReconciledElement,
+  updater: fn(ReconciledElement) -> ReconciledElement,
+) -> ReconciledElement {
   case updater(el) {
-    RenderedComponent(fc, key, props, hooks, el) -> {
-      RenderedComponent(fc, key, props, hooks, traverse(el, updater))
+    ReconciledComponent(fc, key, props, hooks, el) -> {
+      ReconciledComponent(fc, key, props, hooks, traverse(el, updater))
     }
-    RenderedElement(tag, key, attrs, children) -> {
-      RenderedElement(
+    ReconciledElement(tag, key, attrs, children) -> {
+      ReconciledElement(
         tag,
         key,
         attrs,
         list.map(children, fn(child) { traverse(child, updater) }),
       )
     }
-    RenderedFragment(key, children) -> {
-      RenderedFragment(
+    ReconciledFragment(key, children) -> {
+      ReconciledFragment(
         key,
         list.map(children, fn(child) { traverse(child, updater) }),
       )
@@ -353,17 +356,17 @@ pub fn traverse(
 }
 
 pub fn find(
-  el: RenderedElement,
-  matches: fn(RenderedElement) -> Bool,
-) -> Result(RenderedElement, Nil) {
+  el: ReconciledElement,
+  matches: fn(ReconciledElement) -> Bool,
+) -> Result(ReconciledElement, Nil) {
   case matches(el) {
     True -> Ok(el)
     False -> {
       case el {
-        RenderedComponent(_fc, _key, _props, _hooks, el) -> {
+        ReconciledComponent(_fc, _key, _props, _hooks, el) -> {
           find(el, matches)
         }
-        RenderedElement(_tag, _key, _attrs, children) -> {
+        ReconciledElement(_tag, _key, _attrs, children) -> {
           list.find(
             children,
             fn(child) {
@@ -374,7 +377,7 @@ pub fn find(
             },
           )
         }
-        RenderedFragment(_key, children) -> {
+        ReconciledFragment(_key, children) -> {
           list.find(
             children,
             fn(child) {
@@ -392,21 +395,21 @@ pub fn find(
 }
 
 pub fn append_attribute(
-  el: RenderedElement,
-  attr: RenderedAttribute,
-) -> RenderedElement {
+  el: ReconciledElement,
+  attr: ReconciledAttribute,
+) -> ReconciledElement {
   case el {
-    RenderedComponent(fc, key, props, hooks, el) -> {
+    ReconciledComponent(fc, key, props, hooks, el) -> {
       // we need to append the attribute to the component's element
-      RenderedComponent(fc, key, props, hooks, append_attribute(el, attr))
+      ReconciledComponent(fc, key, props, hooks, append_attribute(el, attr))
     }
-    RenderedElement(tag, key, attrs, children) -> {
-      RenderedElement(tag, key, list.append(attrs, [attr]), children)
+    ReconciledElement(tag, key, attrs, children) -> {
+      ReconciledElement(tag, key, list.append(attrs, [attr]), children)
     }
-    RenderedFragment(key, children) -> {
+    ReconciledFragment(key, children) -> {
       // since a fragment is a list of elements, we need to append the attribute to the
       // element's children
-      RenderedFragment(
+      ReconciledFragment(
         key,
         list.map(children, fn(child) { append_attribute(child, attr) }),
       )

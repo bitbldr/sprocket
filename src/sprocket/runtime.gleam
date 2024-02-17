@@ -16,8 +16,8 @@ import sprocket/context.{
   OnUpdate, Reducer, Unchanged, WithDeps, compare_deps,
 }
 import sprocket/internal/reconcile.{
-  type RenderedElement, ReconciledResult, RenderedComponent, RenderedElement,
-  RenderedFragment,
+  type ReconciledElement, ReconciledComponent, ReconciledElement,
+  ReconciledFragment, ReconciledResult,
 }
 import sprocket/internal/reconcilers/recursive
 import sprocket/internal/patch.{type Patch}
@@ -38,7 +38,7 @@ pub opaque type State {
     cancel_shutdown: Option(fn() -> Nil),
     ctx: Context,
     updater: Option(Updater(Patch)),
-    rendered: Option(RenderedElement),
+    rendered: Option(ReconciledElement),
   )
 }
 
@@ -50,7 +50,7 @@ pub opaque type Message {
   CancelSelfDestruct
   GetState(reply_with: Subject(State))
   SetState(fn(State) -> State)
-  GetRendered(reply_with: Subject(Option(RenderedElement)))
+  GetReconciled(reply_with: Subject(Option(ReconciledElement)))
   GetId(reply_with: Subject(Unique))
   GetContext(reply_with: Subject(Context))
   GetView(reply_with: Subject(Element))
@@ -103,7 +103,7 @@ fn handle_message(message: Message, state: State) -> actor.Next(Message, State) 
       actor.continue(update_fn(state))
     }
 
-    GetRendered(reply_with) -> {
+    GetReconciled(reply_with) -> {
       actor.send(reply_with, state.rendered)
 
       actor.continue(state)
@@ -303,9 +303,9 @@ pub fn get_id(actor) -> Unique {
 
 /// Get the previously rendered view from the actor. This is useful for testing.
 pub fn get_rendered(actor) {
-  logger.debug("process.try_call GetRendered")
+  logger.debug("process.try_call GetReconciled")
 
-  case process.try_call(actor, GetRendered(_), call_timeout) {
+  case process.try_call(actor, GetReconciled(_), call_timeout) {
     Ok(rendered) -> rendered
     Error(err) -> {
       logger.error("Error getting rendered view from runtime actor")
@@ -380,7 +380,7 @@ fn render_update(actor) {
 }
 
 /// Render the view - should only be used for testing purposes
-pub fn render(actor) -> RenderedElement {
+pub fn render(actor) -> ReconciledElement {
   let State(ctx: ctx, rendered: rendered, ..) = get_state(actor)
 
   let #(ctx, rendered) = reconcile(ctx, ctx.view, rendered)
@@ -396,8 +396,8 @@ pub fn render(actor) -> RenderedElement {
 fn reconcile(
   ctx: Context,
   view: Element,
-  prev: Option(RenderedElement),
-) -> #(Context, RenderedElement) {
+  prev: Option(ReconciledElement),
+) -> #(Context, ReconciledElement) {
   timer.timed_operation(
     "runtime.reconcile",
     fn() {
@@ -421,7 +421,7 @@ fn reconcile(
   )
 }
 
-fn cleanup_hooks(rendered: RenderedElement) {
+fn cleanup_hooks(rendered: ReconciledElement) {
   // cleanup hooks
   build_hooks_map(rendered, map.new())
   |> map.values()
@@ -442,8 +442,8 @@ fn cleanup_hooks(rendered: RenderedElement) {
 }
 
 fn run_cleanup_for_disposed_hooks(
-  prev_rendered: RenderedElement,
-  rendered: RenderedElement,
+  prev_rendered: ReconciledElement,
+  rendered: ReconciledElement,
 ) {
   let prev_hooks = build_hooks_map(prev_rendered, map.new())
   let new_hooks = build_hooks_map(rendered, map.new())
@@ -472,11 +472,11 @@ fn run_cleanup_for_disposed_hooks(
 }
 
 fn build_hooks_map(
-  node: RenderedElement,
+  node: ReconciledElement,
   acc: Map(Unique, Hook),
 ) -> Map(Unique, Hook) {
   case node {
-    RenderedComponent(_fc, _key, _props, hooks, el) -> {
+    ReconciledComponent(_fc, _key, _props, hooks, el) -> {
       // add hooks from this node
       let acc =
         ordered_map.fold(
@@ -513,7 +513,7 @@ fn build_hooks_map(
       // add hooks from child element
       build_hooks_map(el, acc)
     }
-    RenderedElement(_tag, _key, _hooks, children) -> {
+    ReconciledElement(_tag, _key, _hooks, children) -> {
       // add hooks from children
       list.fold(
         children,
@@ -521,7 +521,7 @@ fn build_hooks_map(
         fn(acc, child) { map.merge(acc, build_hooks_map(child, acc)) },
       )
     }
-    RenderedFragment(_key, children) -> {
+    ReconciledFragment(_key, children) -> {
       // add hooks from children
       list.fold(
         children,
@@ -533,7 +533,7 @@ fn build_hooks_map(
   }
 }
 
-fn run_effects(rendered: RenderedElement) -> RenderedElement {
+fn run_effects(rendered: ReconciledElement) -> ReconciledElement {
   process_state_hooks(
     rendered,
     fn(hook) {
@@ -621,18 +621,18 @@ type HookProcessor =
 
 // traverse the rendered tree and process all hooks using the given function
 fn process_state_hooks(
-  rendered: RenderedElement,
+  rendered: ReconciledElement,
   process_hook: HookProcessor,
-) -> RenderedElement {
+) -> ReconciledElement {
   traverse_rendered_hooks(rendered, process_hook)
 }
 
 fn find_rendered_hook(
-  node: RenderedElement,
+  node: ReconciledElement,
   find_by: fn(Hook) -> Bool,
 ) -> Option(Hook) {
   case node {
-    RenderedComponent(_fc, _key, _props, hooks, el) -> {
+    ReconciledComponent(_fc, _key, _props, hooks, el) -> {
       case
         ordered_map.find(hooks, fn(keyed_item) { find_by(keyed_item.value) })
       {
@@ -642,7 +642,7 @@ fn find_rendered_hook(
         }
       }
     }
-    RenderedElement(_tag, _key, _hooks, children) -> {
+    ReconciledElement(_tag, _key, _hooks, children) -> {
       list.fold(
         children,
         None,
@@ -654,7 +654,7 @@ fn find_rendered_hook(
         },
       )
     }
-    RenderedFragment(_key, children) -> {
+    ReconciledFragment(_key, children) -> {
       list.fold(
         children,
         None,
@@ -670,12 +670,12 @@ fn find_rendered_hook(
   }
 }
 
-fn traverse_rendered_hooks(node: RenderedElement, process_hook: HookProcessor) {
+fn traverse_rendered_hooks(node: ReconciledElement, process_hook: HookProcessor) {
   case node {
-    RenderedComponent(fc, key, props, hooks, el) -> {
+    ReconciledComponent(fc, key, props, hooks, el) -> {
       let processed_hooks = process_hooks(hooks, process_hook)
 
-      RenderedComponent(
+      ReconciledComponent(
         fc,
         key,
         props,
@@ -683,7 +683,7 @@ fn traverse_rendered_hooks(node: RenderedElement, process_hook: HookProcessor) {
         traverse_rendered_hooks(el, process_hook),
       )
     }
-    RenderedElement(tag, key, hooks, children) -> {
+    ReconciledElement(tag, key, hooks, children) -> {
       let r_children =
         list.fold(
           children,
@@ -693,9 +693,9 @@ fn traverse_rendered_hooks(node: RenderedElement, process_hook: HookProcessor) {
           },
         )
 
-      RenderedElement(tag, key, hooks, list.reverse(r_children))
+      ReconciledElement(tag, key, hooks, list.reverse(r_children))
     }
-    RenderedFragment(key, children) -> {
+    ReconciledFragment(key, children) -> {
       let r_children =
         list.fold(
           children,
@@ -705,7 +705,7 @@ fn traverse_rendered_hooks(node: RenderedElement, process_hook: HookProcessor) {
           },
         )
 
-      RenderedFragment(key, list.reverse(r_children))
+      ReconciledFragment(key, list.reverse(r_children))
     }
     _ -> node
   }

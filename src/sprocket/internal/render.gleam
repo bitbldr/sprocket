@@ -1,5 +1,5 @@
-import sprocket/internal/reconcile.{type RenderedElement}
+import sprocket/internal/reconcile.{type ReconciledElement}
 
 pub type Renderer(result) {
-  Renderer(render: fn(RenderedElement) -> result)
+  Renderer(render: fn(ReconciledElement) -> result)
 }

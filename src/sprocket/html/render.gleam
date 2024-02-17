@@ -2,9 +2,10 @@ import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/string_builder.{type StringBuilder}
 import sprocket/internal/reconcile.{
-  type RenderedAttribute, type RenderedElement, RenderedAttribute,
-  RenderedClientHook, RenderedComponent, RenderedElement, RenderedEventHandler,
-  RenderedFragment, RenderedIgnoreUpdate, RenderedText,
+  type ReconciledAttribute, type ReconciledElement, ReconciledAttribute,
+  ReconciledClientHook, ReconciledComponent, ReconciledElement,
+  ReconciledEventHandler, ReconciledFragment, ReconciledIgnoreUpdate,
+  ReconciledText,
 }
 import sprocket/internal/reconcilers/recursive.{traverse}
 import sprocket/internal/render.{type Renderer, Renderer}
@@ -14,22 +15,22 @@ pub fn renderer() -> Renderer(String) {
   Renderer(render: fn(el) { string_builder.to_string(render(el)) })
 }
 
-fn render(el: RenderedElement) -> StringBuilder {
+fn render(el: ReconciledElement) -> StringBuilder {
   case el {
-    RenderedElement(tag: tag, key: key, attrs: attrs, children: children) ->
+    ReconciledElement(tag: tag, key: key, attrs: attrs, children: children) ->
       element(tag, key, attrs, children)
-    RenderedComponent(el: el, ..) -> component(el)
-    RenderedFragment(children: children, ..) -> fragment(children)
-    RenderedIgnoreUpdate(_, el) -> render(el)
-    RenderedText(text: t) -> text(t)
+    ReconciledComponent(el: el, ..) -> component(el)
+    ReconciledFragment(children: children, ..) -> fragment(children)
+    ReconciledIgnoreUpdate(_, el) -> render(el)
+    ReconciledText(text: t) -> text(t)
   }
 }
 
 fn element(
   tag: String,
   key: Option(String),
-  attrs: List(RenderedAttribute),
-  children: List(RenderedElement),
+  attrs: List(ReconciledAttribute),
+  children: List(ReconciledElement),
 ) -> StringBuilder {
   let rendered_attrs =
     attrs
@@ -37,13 +38,13 @@ fn element(
       string_builder.new(),
       fn(acc, attr) {
         case attr {
-          RenderedAttribute(name, value) -> {
+          ReconciledAttribute(name, value) -> {
             string_builder.append_builder(
               acc,
               string_builder.from_strings([" ", name, "=\"", value, "\""]),
             )
           }
-          RenderedEventHandler(kind, id) -> {
+          ReconciledEventHandler(kind, id) -> {
             string_builder.append_builder(
               acc,
               string_builder.from_strings([
@@ -57,7 +58,7 @@ fn element(
               ]),
             )
           }
-          RenderedClientHook(name, id) -> {
+          ReconciledClientHook(name, id) -> {
             string_builder.append_builder(
               acc,
               string_builder.from_strings([
@@ -105,11 +106,11 @@ fn element(
   ])
 }
 
-fn component(el: RenderedElement) {
+fn component(el: ReconciledElement) {
   render(el)
 }
 
-fn fragment(children: List(RenderedElement)) {
+fn fragment(children: List(ReconciledElement)) {
   children
   |> list.fold(
     string_builder.new(),
@@ -127,19 +128,19 @@ type InjectElementOperation {
 }
 
 fn inject_element(
-  root: RenderedElement,
+  root: ReconciledElement,
   target_tag: String,
-  inject_element: RenderedElement,
+  inject_element: ReconciledElement,
   insert_op: InjectElementOperation,
-) -> RenderedElement {
+) -> ReconciledElement {
   // TODO: implement and use a more efficient traverse_until that can stop
   // traversing once it finds the element it's looking for.
   traverse(
     root,
     fn(el) {
       case el {
-        RenderedElement(tag: tag, key: key, attrs: attrs, children: children) if tag == target_tag -> {
-          RenderedElement(
+        ReconciledElement(tag: tag, key: key, attrs: attrs, children: children) if tag == target_tag -> {
+          ReconciledElement(
             tag: target_tag,
             key: key,
             attrs: attrs,
@@ -156,16 +157,16 @@ fn inject_element(
 }
 
 fn inject_attribute(
-  root: RenderedElement,
+  root: ReconciledElement,
   target_tag: String,
-  inject_attr: RenderedAttribute,
-) -> RenderedElement {
+  inject_attr: ReconciledAttribute,
+) -> ReconciledElement {
   traverse(
     root,
     fn(el) {
       case el {
-        RenderedElement(tag: _tag, key: key, attrs: attrs, children: children) -> {
-          RenderedElement(
+        ReconciledElement(tag: _tag, key: key, attrs: attrs, children: children) -> {
+          ReconciledElement(
             tag: target_tag,
             key: key,
             attrs: attrs
@@ -173,7 +174,7 @@ fn inject_attribute(
               [],
               fn(acc, attr) {
                 case attr, inject_attr {
-                  RenderedAttribute(name, ..), RenderedAttribute(
+                  ReconciledAttribute(name, ..), ReconciledAttribute(
                     inject_attr_name,
                     ..,
                   ) if name == inject_attr_name -> {

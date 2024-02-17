@@ -4,33 +4,33 @@ import sprocket/context.{
   type AbstractFunctionalComponent, type ComponentHooks, type Context, Context,
 }
 
-pub type RenderedAttribute {
-  RenderedAttribute(name: String, value: String)
-  RenderedEventHandler(kind: String, id: String)
-  RenderedClientHook(name: String, id: String)
+pub type ReconciledAttribute {
+  ReconciledAttribute(name: String, value: String)
+  ReconciledEventHandler(kind: String, id: String)
+  ReconciledClientHook(name: String, id: String)
 }
 
 pub type IgnoreRule {
   IgnoreAll
 }
 
-pub type RenderedElement {
-  RenderedElement(
+pub type ReconciledElement {
+  ReconciledElement(
     tag: String,
     key: Option(String),
-    attrs: List(RenderedAttribute),
-    children: List(RenderedElement),
+    attrs: List(ReconciledAttribute),
+    children: List(ReconciledElement),
   )
-  RenderedComponent(
+  ReconciledComponent(
     fc: AbstractFunctionalComponent,
     key: Option(String),
     props: Dynamic,
     hooks: ComponentHooks,
-    el: RenderedElement,
+    el: ReconciledElement,
   )
-  RenderedFragment(key: Option(String), children: List(RenderedElement))
-  RenderedIgnoreUpdate(rule: IgnoreRule, el: RenderedElement)
-  RenderedText(text: String)
+  ReconciledFragment(key: Option(String), children: List(ReconciledElement))
+  ReconciledIgnoreUpdate(rule: IgnoreRule, el: ReconciledElement)
+  ReconciledText(text: String)
 }
 
 pub type ReconciledResult(a) {

@@ -4,11 +4,10 @@ import gleam/int
 import gleam/map.{type Map}
 import gleam/option.{type Option, None, Some}
 import sprocket/internal/reconcile.{
-  type RenderedAttribute, type RenderedElement, RenderedAttribute,
-  RenderedClientHook, RenderedComponent, RenderedElement, RenderedEventHandler,
-  RenderedFragment, RenderedText,
+  type ReconciledAttribute, type ReconciledElement, ReconciledAttribute,
+  ReconciledClientHook, ReconciledComponent, ReconciledElement,
+  ReconciledEventHandler, ReconciledFragment, ReconciledText,
 }
-import sprocket/internal/render.{type Renderer, Renderer}
 import gleam/json.{type Json}
 import sprocket/internal/render/json as json_renderer
 import sprocket/internal/constants
@@ -16,11 +15,11 @@ import sprocket/internal/constants
 pub type Patch {
   NoOp
   Update(
-    attrs: Option(List(RenderedAttribute)),
+    attrs: Option(List(ReconciledAttribute)),
     children: Option(List(#(Int, Patch))),
   )
-  Replace(el: RenderedElement)
-  Insert(el: RenderedElement)
+  Replace(el: ReconciledElement)
+  Insert(el: ReconciledElement)
   Remove
   Change(text: String)
   Move(from: Int, patch: Patch)
@@ -37,15 +36,15 @@ pub type Patch {
 //  - Remove: the old element should be removed from the DOM
 //  - Change: the old element's text should be changed to the new element's text
 //  - Move: the old element should be moved to a new position in the DOM
-pub fn create(old: RenderedElement, new: RenderedElement) -> Patch {
+pub fn create(old: ReconciledElement, new: ReconciledElement) -> Patch {
   case old, new {
     // old and new tags are the same
-    RenderedElement(
+    ReconciledElement(
       tag: old_tag,
       key: old_key,
       attrs: old_attrs,
       children: old_children,
-    ), RenderedElement(
+    ), ReconciledElement(
       tag: new_tag,
       key: new_key,
       attrs: new_attrs,
@@ -79,13 +78,13 @@ pub fn create(old: RenderedElement, new: RenderedElement) -> Patch {
       }
     }
     // old and new components and props are the same
-    RenderedComponent(
+    ReconciledComponent(
       fc: old_fc,
       key: _old_key,
       props: old_props,
       hooks: _old_hooks,
       el: old_el,
-    ), RenderedComponent(
+    ), ReconciledComponent(
       fc: new_fc,
       key: _key,
       props: new_props,
@@ -94,7 +93,7 @@ pub fn create(old: RenderedElement, new: RenderedElement) -> Patch {
     ) if old_fc == new_fc && old_props == new_props -> {
       // functional components and props are the same, so check the child element
 
-      // In the future, we will want to introduce a RenderedMemo variant where we can
+      // In the future, we will want to introduce a ReconciledMemo variant where we can
       // short circuit the diffing process if both old and new function and props match
       // and only render the new component if the functional component or props have changed.
       case create(old_el, new_el) {
@@ -106,7 +105,7 @@ pub fn create(old: RenderedElement, new: RenderedElement) -> Patch {
         }
       }
     }
-    RenderedFragment(key: _old_key, children: old_children), RenderedFragment(
+    ReconciledFragment(key: _old_key, children: old_children), ReconciledFragment(
       key: _key,
       children: new_children,
     ) -> {
@@ -120,7 +119,7 @@ pub fn create(old: RenderedElement, new: RenderedElement) -> Patch {
       }
     }
     // text nodes
-    RenderedText(text: old_text), RenderedText(text: new_text) -> {
+    ReconciledText(text: old_text), ReconciledText(text: new_text) -> {
       case old_text == new_text {
         True -> {
           // nodes are the same
@@ -144,9 +143,9 @@ pub fn create(old: RenderedElement, new: RenderedElement) -> Patch {
 // TODO: This implementation could be optimized to return a diff of changed attributes. For now, we
 // return all attributes if at least one attribute has changed.
 fn compare_attributes(
-  old_attributes: List(RenderedAttribute),
-  new_attributes: List(RenderedAttribute),
-) -> Option(List(RenderedAttribute)) {
+  old_attributes: List(ReconciledAttribute),
+  new_attributes: List(ReconciledAttribute),
+) -> Option(List(ReconciledAttribute)) {
   compare_attributes_helper(build_attrs_map(old_attributes), new_attributes)
 }
 
@@ -160,9 +159,9 @@ fn compare_attributes(
 // all attributes is returned. At the root of the recursion, the function will return all attributes
 // if at least one attribute has changed, or None if no attributes have changed.
 fn compare_attributes_helper(
-  old_attributes: Map(String, RenderedAttribute),
-  new_attributes: List(RenderedAttribute),
-) -> Option(List(RenderedAttribute)) {
+  old_attributes: Map(String, ReconciledAttribute),
+  new_attributes: List(ReconciledAttribute),
+) -> Option(List(ReconciledAttribute)) {
   case new_attributes {
     [new_attr, ..rest_new] -> {
       // lookup the old attribute by key, since its position in the list may have changed
@@ -210,13 +209,13 @@ fn compare_attributes_helper(
 
 fn attr_key(attribute) {
   case attribute {
-    RenderedAttribute(name: name, ..) -> {
+    ReconciledAttribute(name: name, ..) -> {
       name
     }
-    RenderedEventHandler(id: id, ..) -> {
+    ReconciledEventHandler(id: id, ..) -> {
       id
     }
-    RenderedClientHook(id: id, ..) -> {
+    ReconciledClientHook(id: id, ..) -> {
       id
     }
   }
@@ -231,14 +230,14 @@ fn build_attrs_map(attributes) {
 }
 
 fn build_key_map(
-  children: List(RenderedElement),
-) -> Map(String, #(Int, RenderedElement)) {
+  children: List(ReconciledElement),
+) -> Map(String, #(Int, ReconciledElement)) {
   children
   |> list.index_fold(
     map.new(),
     fn(acc, child, index) {
       case child {
-        RenderedElement(key: Some(key), ..) -> {
+        ReconciledElement(key: Some(key), ..) -> {
           map.insert(acc, key, #(index, child))
         }
         _ -> {
@@ -277,8 +276,8 @@ fn compare_child_at_index(
 // use the key of the children to determine if they are the same or not regardless
 // of their position in the list.
 fn compare_children(
-  old_children: List(RenderedElement),
-  new_children: List(RenderedElement),
+  old_children: List(ReconciledElement),
+  new_children: List(ReconciledElement),
 ) -> Option(List(#(Int, Patch))) {
   let old_key_map = build_key_map(old_children)
   let new_key_map = build_key_map(new_children)
@@ -292,8 +291,8 @@ fn compare_children(
       fn(acc, child, index) {
         case child {
           #(
-            Some(RenderedElement(key: Some(old_key), ..)),
-            Some(RenderedElement(key: Some(_key), ..)),
+            Some(ReconciledElement(key: Some(old_key), ..)),
+            Some(ReconciledElement(key: Some(_key), ..)),
           ) -> {
             // if both children have keys, then we can check if the key exists in the new key map
             case map.get(new_key_map, old_key) {
@@ -327,7 +326,7 @@ fn compare_children(
     fn(acc, new_child, index) {
       case new_child {
         // check if element has a key
-        RenderedElement(key: Some(key), ..) -> {
+        ReconciledElement(key: Some(key), ..) -> {
           // check if it exists in the key map
           case map.get(old_key_map, key) {
             Ok(found) -> {
@@ -491,14 +490,14 @@ pub fn patch_to_json(patch: Patch, debug: Bool) -> Json {
   }
 }
 
-fn attrs_to_json(attrs: List(RenderedAttribute)) -> Json {
+fn attrs_to_json(attrs: List(ReconciledAttribute)) -> Json {
   attrs
   |> list.flat_map(fn(attr) {
     case attr {
-      RenderedAttribute(name, value) -> {
+      ReconciledAttribute(name, value) -> {
         [#(name, json.string(value))]
       }
-      RenderedEventHandler(kind, id) -> {
+      ReconciledEventHandler(kind, id) -> {
         [
           #(
             string.concat([constants.event_attr_prefix, "-", kind]),
@@ -506,7 +505,7 @@ fn attrs_to_json(attrs: List(RenderedAttribute)) -> Json {
           ),
         ]
       }
-      RenderedClientHook(name, id) -> {
+      ReconciledClientHook(name, id) -> {
         [
           #(constants.event_attr_prefix, json.string(name)),
           #(
