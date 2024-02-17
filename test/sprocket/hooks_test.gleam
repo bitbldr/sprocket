@@ -83,7 +83,7 @@ fn inc_on_every_update_counter(ctx: Context, _props) {
   // Define a reducer to handle events and update the state
   use ctx, Model(count: count), dispatch <- reducer(ctx, initial(), update)
 
-  // Example effect with an empty list of dependencies, runs once on mount
+  // Example effect that runs on every update
   use ctx <- effect(
     ctx,
     fn() {
