@@ -10,9 +10,14 @@ import {
 import { render, Providers } from "./render";
 import { applyPatch } from "./patch";
 import { EventIdentifier } from "./events";
-import { initClientHookProvider } from "./hooks";
+import { initClientHookProvider, Hook } from "./hooks";
 
-export { ClientHook } from "./hooks";
+export type ClientHook = {
+  create?: (hook: Hook) => void;
+  insert?: (hook: Hook) => void;
+  update?: (hook: Hook) => void;
+  destroy?: (hook: Hook) => void;
+};
 
 type Patcher = (
   oldVNode: VNode | Element | DocumentFragment,
