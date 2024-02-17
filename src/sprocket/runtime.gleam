@@ -253,7 +253,7 @@ pub fn start(
 ) -> Result(Runtime, StartError) {
   let init = fn() {
     let self = process.new_subject()
-    let render_update = fn() { actor.send(self, RenderUpdate) }
+    let render_update = fn() { render_update(self) }
     let update_hook = fn(id, updater) { update_hook_state(self, id, updater) }
 
     let state =
@@ -282,11 +282,15 @@ pub fn start(
 
 /// Stop a runtime actor
 pub fn stop(actor) {
+  logger.debug("actor.send Shutdown")
+
   actor.send(actor, Shutdown)
 }
 
 /// Returns true if the actor matches a given websocket connection
 pub fn get_id(actor) -> Unique {
+  logger.debug("process.try_call GetId")
+
   case process.try_call(actor, GetId(_), call_timeout) {
     Ok(id) -> id
     Error(err) -> {
@@ -299,6 +303,8 @@ pub fn get_id(actor) -> Unique {
 
 /// Get the previously rendered view from the actor. This is useful for testing.
 pub fn get_rendered(actor) {
+  logger.debug("process.try_call GetRendered")
+
   case process.try_call(actor, GetRendered(_), call_timeout) {
     Ok(rendered) -> rendered
     Error(err) -> {
@@ -311,6 +317,8 @@ pub fn get_rendered(actor) {
 
 /// Get the event handler for a given id
 pub fn get_handler(actor, id: String) {
+  logger.debug("process.try_call GetHandler")
+
   case process.try_call(actor, GetHandler(_, id), call_timeout) {
     Ok(rendered) -> rendered
     Error(err) -> {
@@ -325,6 +333,8 @@ pub fn get_handler(actor, id: String) {
 
 /// Get the client hook for a given id
 pub fn get_client_hook(actor, id: String) {
+  logger.debug("process.try_call GetClientHook")
+
   case process.try_call(actor, GetClientHook(_, id), call_timeout) {
     Ok(rendered) -> rendered
     Error(err) -> {
@@ -338,15 +348,21 @@ pub fn get_client_hook(actor, id: String) {
 }
 
 fn update_hook_state(actor: Runtime, hook_id: Unique, updater: fn(Hook) -> Hook) {
+  logger.debug("actor.send UpdateHookState")
+
   actor.send(actor, UpdateHookState(hook_id, updater))
 }
 
 // TODO: remove this if possible
 fn update_state(actor, update_fn: fn(State) -> State) {
+  logger.debug("actor.send SetState")
+
   actor.send(actor, SetState(update_fn))
 }
 
 fn get_state(actor) -> State {
+  logger.debug("process.try_call GetState")
+
   case process.try_call(actor, GetState(_), call_timeout) {
     Ok(state) -> state
     Error(err) -> {
@@ -355,6 +371,12 @@ fn get_state(actor) -> State {
       panic
     }
   }
+}
+
+fn render_update(actor) {
+  logger.debug("actor.send RenderUpdate")
+
+  actor.send(actor, RenderUpdate)
 }
 
 /// Render the view - should only be used for testing purposes

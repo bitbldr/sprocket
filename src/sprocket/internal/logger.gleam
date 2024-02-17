@@ -36,3 +36,7 @@ pub fn warn(message: String) -> Nil {
 pub fn error(message: String) -> Nil {
   log(Error, message)
 }
+
+pub fn debug(message: String) -> Nil {
+  log(Debug, message)
+}
