@@ -1,6 +1,6 @@
 import gleam/io
 import gleam/list
-import gleam/map
+import gleam/dict
 import gleam/result
 import gleam/option.{type Option, None, Some}
 import gleam/dynamic.{type Dynamic}
@@ -59,7 +59,7 @@ pub fn reconcile(
       let ctx =
         Context(
           ..ctx,
-          providers: map.insert(ctx.providers, provider_key, value),
+          providers: dict.insert(ctx.providers, provider_key, value),
         )
 
       reconcile(ctx, el, key, prev)
@@ -78,65 +78,52 @@ fn element(
   prev: Option(ReconciledElement),
 ) -> ReconciledResult(ReconciledElement) {
   let ReconciledResult(ctx, rendered_attrs) =
-    list.fold(
-      attrs,
-      ReconciledResult(ctx, []),
-      fn(acc, current) {
-        let ReconciledResult(ctx, rendered_attrs) = acc
+    list.fold(attrs, ReconciledResult(ctx, []), fn(acc, current) {
+      let ReconciledResult(ctx, rendered_attrs) = acc
 
-        case current {
-          Attribute(name, value) -> {
-            let assert Ok(value) =
-              dynamic.string(value)
-              |> result.map_error(fn(error) {
-                logger.error(
-                  "render.element: failed to convert attribute value to string",
-                )
-                error
-              })
+      case current {
+        Attribute(name, value) -> {
+          let assert Ok(value) =
+            dynamic.string(value)
+            |> result.map_error(fn(error) {
+              logger.error(
+                "render.element: failed to convert attribute value to string",
+              )
+              error
+            })
 
-            ReconciledResult(
-              ctx,
-              [ReconciledAttribute(name, value), ..rendered_attrs],
-            )
-          }
-          Event(kind, identifiable_cb) -> {
-            let #(ctx, id) = context.push_event_handler(ctx, identifiable_cb)
-            ReconciledResult(
-              ctx,
-              [
-                ReconciledEventHandler(kind, unique.to_string(id)),
-                ..rendered_attrs
-              ],
-            )
-          }
-          ClientHook(id, name) -> {
-            ReconciledResult(
-              ctx,
-              [
-                ReconciledClientHook(name, unique.to_string(id)),
-                ..rendered_attrs
-              ],
-            )
-          }
+          ReconciledResult(ctx, [
+            ReconciledAttribute(name, value),
+            ..rendered_attrs
+          ])
         }
-      },
-    )
+        Event(kind, identifiable_cb) -> {
+          let #(ctx, id) = context.push_event_handler(ctx, identifiable_cb)
+          ReconciledResult(ctx, [
+            ReconciledEventHandler(kind, unique.to_string(id)),
+            ..rendered_attrs
+          ])
+        }
+        ClientHook(id, name) -> {
+          ReconciledResult(ctx, [
+            ReconciledClientHook(name, unique.to_string(id)),
+            ..rendered_attrs
+          ])
+        }
+      }
+    })
 
   let ReconciledResult(ctx, children) =
     children
-    |> list.index_fold(
-      ReconciledResult(ctx, []),
-      fn(acc, child, i) {
-        let ReconciledResult(ctx, rendered) = acc
+    |> list.index_fold(ReconciledResult(ctx, []), fn(acc, child, i) {
+      let ReconciledResult(ctx, rendered) = acc
 
-        let prev_child = find_prev_child(prev, child, i)
+      let prev_child = find_prev_child(prev, child, i)
 
-        let ReconciledResult(ctx, rendered_child) =
-          reconcile(ctx, child, None, prev_child)
-        ReconciledResult(ctx, [rendered_child, ..rendered])
-      },
-    )
+      let ReconciledResult(ctx, rendered_child) =
+        reconcile(ctx, child, None, prev_child)
+      ReconciledResult(ctx, [rendered_child, ..rendered])
+    })
 
   ReconciledResult(
     ctx,
@@ -157,18 +144,15 @@ fn fragment(
 ) -> ReconciledResult(ReconciledElement) {
   let ReconciledResult(ctx, children) =
     children
-    |> list.index_fold(
-      ReconciledResult(ctx, []),
-      fn(acc, child, i) {
-        let ReconciledResult(ctx, rendered) = acc
+    |> list.index_fold(ReconciledResult(ctx, []), fn(acc, child, i) {
+      let ReconciledResult(ctx, rendered) = acc
 
-        let prev_child = find_prev_child(prev, child, i)
+      let prev_child = find_prev_child(prev, child, i)
 
-        let ReconciledResult(ctx, rendered_child) =
-          reconcile(ctx, child, None, prev_child)
-        ReconciledResult(ctx, [rendered_child, ..rendered])
-      },
-    )
+      let ReconciledResult(ctx, rendered_child) =
+        reconcile(ctx, child, None, prev_child)
+      ReconciledResult(ctx, [rendered_child, ..rendered])
+    })
 
   ReconciledResult(ctx, ReconciledFragment(key, list.reverse(children)))
 }
@@ -248,17 +232,14 @@ fn get_prev_matching_child_by_key(
 
 fn find_by_key(children, key) {
   // find a child by given key
-  list.find(
-    children,
-    fn(child) {
-      case child {
-        ReconciledComponent(_, Some(child_key), _, _, _) -> child_key == key
-        ReconciledElement(_, Some(child_key), _, _) -> child_key == key
-        ReconciledFragment(Some(child_key), _) -> child_key == key
-        _ -> False
-      }
-    },
-  )
+  list.find(children, fn(child) {
+    case child {
+      ReconciledComponent(_, Some(child_key), _, _, _) -> child_key == key
+      ReconciledElement(_, Some(child_key), _, _) -> child_key == key
+      ReconciledFragment(Some(child_key), _) -> child_key == key
+      _ -> False
+    }
+  })
   |> option.from_result()
 }
 
@@ -367,26 +348,20 @@ pub fn find(
           find(el, matches)
         }
         ReconciledElement(_tag, _key, _attrs, children) -> {
-          list.find(
-            children,
-            fn(child) {
-              case find(child, matches) {
-                Ok(_child) -> True
-                Error(_) -> False
-              }
-            },
-          )
+          list.find(children, fn(child) {
+            case find(child, matches) {
+              Ok(_child) -> True
+              Error(_) -> False
+            }
+          })
         }
         ReconciledFragment(_key, children) -> {
-          list.find(
-            children,
-            fn(child) {
-              case find(child, matches) {
-                Ok(_child) -> True
-                Error(_) -> False
-              }
-            },
-          )
+          list.find(children, fn(child) {
+            case find(child, matches) {
+              Ok(_child) -> True
+              Error(_) -> False
+            }
+          })
         }
         _ -> Error(Nil)
       }

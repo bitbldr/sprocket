@@ -38,30 +38,27 @@ pub fn render_event(spkt: Runtime, event: Event, html_id: String) {
   case runtime.get_rendered(spkt) {
     Some(rendered) -> {
       let found =
-        recursive.find(
-          rendered,
-          fn(el: ReconciledElement) {
-            case el {
-              ReconciledElement(_tag, _key, attrs, _children) -> {
-                // try and find id attr that matches the given id
-                let matching_id_attr =
-                  attrs
-                  |> list.find(fn(attr) {
-                    case attr {
-                      ReconciledAttribute("id", id) if id == html_id -> True
-                      _ -> False
-                    }
-                  })
+        recursive.find(rendered, fn(el: ReconciledElement) {
+          case el {
+            ReconciledElement(_tag, _key, attrs, _children) -> {
+              // try and find id attr that matches the given id
+              let matching_id_attr =
+                attrs
+                |> list.find(fn(attr) {
+                  case attr {
+                    ReconciledAttribute("id", id) if id == html_id -> True
+                    _ -> False
+                  }
+                })
 
-                case matching_id_attr {
-                  Ok(_) -> True
-                  _ -> False
-                }
+              case matching_id_attr {
+                Ok(_) -> True
+                _ -> False
               }
-              _ -> False
             }
-          },
-        )
+            _ -> False
+          }
+        })
 
       case found {
         Ok(ReconciledElement(_tag, _key, attrs, _children)) -> {
@@ -95,7 +92,7 @@ pub fn render_event(spkt: Runtime, event: Event, html_id: String) {
             }
           }
         }
-        Error(_) -> {
+        _ -> {
           io.debug("no match")
           panic
         }

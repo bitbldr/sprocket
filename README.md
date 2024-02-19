@@ -16,18 +16,17 @@ language built on the venerable BEAM (Erlang Virtual Machine).
 
 An initial static view is rendered as HTML on the "first paint" which then establishes a connection to the server over a
 WebSocket to facilitate sending browser events and receiving view update diffs. These updates are
-patched into a client-side in-memory representation of the DOM and rendered to the browser using
-morphdom. Declarative views are built using functional components that accept props and re-render
-each time those props change and reducers are used for state management using strongly-typed models
-and message structs.
+patched into a client-side in-memory representation of the DOM and efficiently rendered to the
+browser DOM. Declarative views are built using functional components that accept props and re-render
+each time those props change. Contextual hooks are used for state management, e.g. `state` and `reducer`.
 
-Under the hood, a reducer is a lightweight [Gleam
+Under the hood, a reducer hook is a lightweight [Gleam
 Actor](https://hexdocs.pm/gleam_otp/0.1.3/gleam/otp/actor/) OTP process (i.e. gen_server) and
 changes to the state (via dispatch) result in a re-render of the view.
 
-Component interfaces snap together and are used to create higher-level views. Data flow is
-"uni-directional" in that **State** always flows down into components as props while **Events**
-flow up out of components through event handlers (which are also passed in as props, e.g.
+Typed component interfaces snap together and are used to create higher-level views. Data flow is
+"uni-directional" in that **State** always flows down into components as props and **Events**
+bubble up through event handler functions (which are also passed in as props, e.g.
 `on_some_event("Something happened")`). 
 
 This library is currently in a **proof of concept** state and should be considered highly unstable.
@@ -186,10 +185,10 @@ Sprocket is still in its early stages and has a roadmap for future development. 
 - [x] Build out full set of base HTML functions for components
 - [x] ~~Explore other http and websocket server options~~ Core library is now web server agnostic
 - [ ] Add support for additional event types to handle various user interactions
-- [ ] Expand the available hooks to enable more flexible component behavior
+- [x] Expand the available hooks to enable more flexible component behavior
 - [ ] Convert client TypeScript to gleam
 - [ ] Improve unit test coverage to ensure code quality and reliability
-- [ ] Provide extensive documentation of modules and API for easier adoption
+- [x] Provide extensive documentation of modules and simplify API
 - [ ] Optimize performance to enhance responsiveness and scalability
 - [ ] Investigate extending to support more than just web views, such as native desktop, iOS, and Android applications.
 

@@ -65,10 +65,9 @@ fn handle_message(message: Message, state: State) -> actor.Next(Message, State) 
 
     GetSprocket(reply_with, id) -> {
       let spkt =
-        list.find(
-          state.sprockets,
-          fn(s) { unique.equals(runtime.get_id(s), id) },
-        )
+        list.find(state.sprockets, fn(s) {
+          unique.equals(runtime.get_id(s), id)
+        })
 
       process.send(reply_with, spkt)
 
@@ -77,10 +76,9 @@ fn handle_message(message: Message, state: State) -> actor.Next(Message, State) 
 
     PopSprocket(reply_with, id) -> {
       let sprocket =
-        list.find(
-          state.sprockets,
-          fn(s) { unique.equals(runtime.get_id(s), id) },
-        )
+        list.find(state.sprockets, fn(s) {
+          unique.equals(runtime.get_id(s), id)
+        })
 
       case sprocket {
         Ok(sprocket) -> {
@@ -98,7 +96,9 @@ fn handle_message(message: Message, state: State) -> actor.Next(Message, State) 
 
         Error(_) -> {
           logger.error(
-            "Failed to pop sprocket with id: " <> unique.to_string(id) <> " from cassette",
+            "Failed to pop sprocket with id: "
+              <> unique.to_string(id)
+              <> " from cassette",
           )
 
           process.send(reply_with, Error(Nil))
@@ -313,12 +313,9 @@ pub fn client_message(
                 ws_send(hook_event_to_json(hook_id, event, payload))
               }
 
-              option.map(
-                handle_event,
-                fn(handle_event) {
-                  handle_event(name, payload, reply_dispatcher)
-                },
-              )
+              option.map(handle_event, fn(handle_event) {
+                handle_event(name, payload, reply_dispatcher)
+              })
 
               Ok(Nil)
             }
@@ -337,6 +334,12 @@ pub fn client_message(
     Error(e) -> {
       logger.error("Error decoding message")
       io.debug(e)
+
+      Error(Nil)
+    }
+    _ -> {
+      logger.error("Unexpected payload type")
+      io.debug(msg)
 
       Error(Nil)
     }

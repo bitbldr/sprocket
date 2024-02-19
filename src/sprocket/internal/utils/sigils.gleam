@@ -1,4 +1,4 @@
-import gleam/map.{type Map}
+import gleam/dict.{type Dict}
 
 /// Takes a string and a map of interpolations and returns a new string with the
 /// interpolations applied.
@@ -7,6 +7,6 @@ import gleam/map.{type Map}
 /// ```
 ///   let assert "Hello World!" = "Hello {name}!" |> s_strfmt({"name": "World"})
 /// ```
-pub fn s_strfmt(_str: String, _interpolations: Map(String, String)) {
+pub fn s_strfmt(_str: String, _interpolations: Dict(String, String)) {
   todo
 }

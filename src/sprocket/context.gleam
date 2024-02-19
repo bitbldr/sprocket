@@ -1,6 +1,6 @@
 import gleam/int
 import gleam/list
-import gleam/map.{type Map}
+import gleam/dict.{type Dict}
 import gleam/option.{type Option, None, Some}
 import gleam/erlang/process.{type Subject}
 import gleam/dynamic.{type Dynamic}
@@ -128,13 +128,10 @@ pub fn compare_deps(
 
     Ok(zipped_deps) -> {
       case
-        list.all(
-          zipped_deps,
-          fn(z) {
-            let #(a, b) = z
-            a == b
-          },
-        )
+        list.all(zipped_deps, fn(z) {
+          let #(a, b) = z
+          a == b
+        })
       {
         True -> Unchanged
         _ -> Changed(deps)
@@ -156,7 +153,7 @@ pub type Context {
     update_hook: fn(Unique, fn(Hook) -> Hook) -> Nil,
     dispatch_event: fn(Unique, String, Option(String)) -> Result(Nil, Nil),
     cuid_channel: Subject(cuid.Message),
-    providers: Map(String, Dynamic),
+    providers: Dict(String, Dynamic),
   )
 }
 
@@ -185,7 +182,7 @@ pub fn new(
       }
     },
     cuid_channel: cuid_channel,
-    providers: map.new(),
+    providers: dict.new(),
   )
 }
 
@@ -214,12 +211,10 @@ pub fn fetch_or_init_hook(
       case ctx.wip.is_first_render {
         True -> Nil
         False -> {
-          logger.error(
-            "
+          logger.error("
             Hook not found for index: " <> int.to_string(index) <> ". This indicates a hook was dynamically
             created since first render which is not allowed.
-          ",
-          )
+          ")
 
           // TODO: handle this error more gracefully in production environments
           panic
@@ -269,13 +264,10 @@ pub fn get_event_handler(
   id: Unique,
 ) -> #(Context, Result(IdentifiableHandler, Nil)) {
   let handler =
-    list.find(
-      ctx.handlers,
-      fn(h) {
-        let IdentifiableHandler(i, _) = h
-        i == id
-      },
-    )
+    list.find(ctx.handlers, fn(h) {
+      let IdentifiableHandler(i, _) = h
+      i == id
+    })
 
   #(ctx, handler)
 }

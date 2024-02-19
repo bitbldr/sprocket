@@ -1,7 +1,7 @@
 import gleam/list
 import gleam/string
 import gleam/int
-import gleam/map.{type Map}
+import gleam/dict.{type Dict}
 import gleam/option.{type Option, None, Some}
 import sprocket/internal/reconcile.{
   type ReconciledAttribute, type ReconciledElement, ReconciledAttribute,
@@ -150,28 +150,28 @@ fn compare_attributes(
 }
 
 // Helper function takes a list of old and new attributes and optionally returns a list of changed
-// attributes. Since this function is called recursively, it takes a map of old attributes keyed by
+// attributes. Since this function is called recursively, it takes a dict of old attributes keyed by
 // their name to make it easier to lookup the old attribute by name. If the attribute is not found
-// in the map, it is considered new. If the attribute is found in the map, it is compared to the new
+// in the dict, it is considered new. If the attribute is found in the dict, it is compared to the new
 // attribute to see if it has changed.
 //
 // If the function returns Some, it means that at least one attribute has changed and the list of
 // all attributes is returned. At the root of the recursion, the function will return all attributes
 // if at least one attribute has changed, or None if no attributes have changed.
 fn compare_attributes_helper(
-  old_attributes: Map(String, ReconciledAttribute),
+  old_attributes: Dict(String, ReconciledAttribute),
   new_attributes: List(ReconciledAttribute),
 ) -> Option(List(ReconciledAttribute)) {
   case new_attributes {
     [new_attr, ..rest_new] -> {
       // lookup the old attribute by key, since its position in the list may have changed
-      case map.get(old_attributes, attr_key(new_attr)) {
+      case dict.get(old_attributes, attr_key(new_attr)) {
         Ok(old_attr) -> {
           case old_attr == new_attr {
             True -> {
               case
                 compare_attributes_helper(
-                  map.delete(old_attributes, attr_key(old_attr)),
+                  dict.delete(old_attributes, attr_key(old_attr)),
                   rest_new,
                 )
               {
@@ -194,13 +194,13 @@ fn compare_attributes_helper(
       }
     }
     _ -> {
-      case map.size(old_attributes), list.length(new_attributes) {
-        0, 0 -> {
-          None
-        }
+      case dict.size(old_attributes), list.length(new_attributes) {
         old_size, new_size if old_size > new_size -> {
           // some attributes have been removed
           Some(new_attributes)
+        }
+        _, _ -> {
+          None
         }
       }
     }
@@ -223,37 +223,33 @@ fn attr_key(attribute) {
 
 fn build_attrs_map(attributes) {
   attributes
-  |> list.fold(
-    map.new(),
-    fn(acc, attr) { map.insert(acc, attr_key(attr), attr) },
-  )
+  |> list.fold(dict.new(), fn(acc, attr) {
+    dict.insert(acc, attr_key(attr), attr)
+  })
 }
 
 fn build_key_map(
   children: List(ReconciledElement),
-) -> Map(String, #(Int, ReconciledElement)) {
+) -> Dict(String, #(Int, ReconciledElement)) {
   children
-  |> list.index_fold(
-    map.new(),
-    fn(acc, child, index) {
-      case child {
-        ReconciledElement(key: Some(key), ..) -> {
-          map.insert(acc, key, #(index, child))
-        }
-        _ -> {
-          acc
-        }
+  |> list.index_fold(dict.new(), fn(acc, child, index) {
+    case child {
+      ReconciledElement(key: Some(key), ..) -> {
+        dict.insert(acc, key, #(index, child))
       }
-    },
-  )
+      _ -> {
+        acc
+      }
+    }
+  })
 }
 
 fn compare_child_at_index(
-  acc: Map(Int, Patch),
+  acc: Dict(Int, Patch),
   old_children,
   new_child,
   index,
-) -> Map(Int, Patch) {
+) -> Dict(Int, Patch) {
   case list.at(old_children, index) {
     Ok(old_child) -> {
       case create(old_child, new_child) {
@@ -261,12 +257,12 @@ fn compare_child_at_index(
           acc
         }
         patch -> {
-          map.insert(acc, index, patch)
+          dict.insert(acc, index, patch)
         }
       }
     }
     Error(Nil) -> {
-      map.insert(acc, index, Insert(new_child))
+      dict.insert(acc, index, Insert(new_child))
     }
   }
 }
@@ -286,87 +282,81 @@ fn compare_children(
   // or replaces, but the next step will update those accordingly
   let removals =
     zip_all(old_children, new_children)
-    |> list.index_fold(
-      map.new(),
-      fn(acc, child, index) {
-        case child {
-          #(
-            Some(ReconciledElement(key: Some(old_key), ..)),
-            Some(ReconciledElement(key: Some(_key), ..)),
-          ) -> {
-            // if both children have keys, then we can check if the key exists in the new key map
-            case map.get(new_key_map, old_key) {
-              Ok(_) -> {
-                // key exists in the new key map so the child has not been removed
-                acc
-              }
-              Error(Nil) -> {
-                // key does not exist in the new key map, so the child has been removed
-                map.insert(acc, index, Remove)
-              }
-            }
-          }
-          #(_, None) -> {
-            // This is a case where the new children list is shorter than the old which
-            // means that the last child in the old list has either been moved or removed.
-            // In either case, this indicates the end of the list so we want to remove
-            map.insert(acc, index, Remove)
-          }
-          _ -> {
-            // we can't determine if this child has been removed or not, so just continue
-            acc
-          }
-        }
-      },
-    )
-
-  new_children
-  |> list.index_fold(
-    removals,
-    fn(acc, new_child, index) {
-      case new_child {
-        // check if element has a key
-        ReconciledElement(key: Some(key), ..) -> {
-          // check if it exists in the key map
-          case map.get(old_key_map, key) {
-            Ok(found) -> {
-              let #(old_index, old_child) = found
-
-              let child_patch = create(old_child, new_child)
-
-              case index == old_index {
-                True -> {
-                  // if the index is the same, then the element has not moved
-                  map.insert(acc, index, child_patch)
-                }
-                False -> {
-                  map.insert(acc, index, Move(old_index, child_patch))
-                }
-              }
+    |> list.index_fold(dict.new(), fn(acc, child, index) {
+      case child {
+        #(
+          Some(ReconciledElement(key: Some(old_key), ..)),
+          Some(ReconciledElement(key: Some(_key), ..)),
+        ) -> {
+          // if both children have keys, then we can check if the key exists in the new key map
+          case dict.get(new_key_map, old_key) {
+            Ok(_) -> {
+              // key exists in the new key map so the child has not been removed
+              acc
             }
             Error(Nil) -> {
-              compare_child_at_index(acc, old_children, new_child, index)
+              // key does not exist in the new key map, so the child has been removed
+              dict.insert(acc, index, Remove)
             }
           }
         }
+        #(_, None) -> {
+          // This is a case where the new children list is shorter than the old which
+          // means that the last child in the old list has either been moved or removed.
+          // In either case, this indicates the end of the list so we want to remove
+          dict.insert(acc, index, Remove)
+        }
         _ -> {
-          // theres no key, so we want to do a best effort approach here and try to compare
-          // the children without keys based on their position in the list
-          compare_child_at_index(acc, old_children, new_child, index)
+          // we can't determine if this child has been removed or not, so just continue
+          acc
         }
       }
-    },
-  )
-  |> map.filter(fn(_k, child_el) {
+    })
+
+  new_children
+  |> list.index_fold(removals, fn(acc, new_child, index) {
+    case new_child {
+      // check if element has a key
+      ReconciledElement(key: Some(key), ..) -> {
+        // check if it exists in the key map
+        case dict.get(old_key_map, key) {
+          Ok(found) -> {
+            let #(old_index, old_child) = found
+
+            let child_patch = create(old_child, new_child)
+
+            case index == old_index {
+              True -> {
+                // if the index is the same, then the element has not moved
+                dict.insert(acc, index, child_patch)
+              }
+              False -> {
+                dict.insert(acc, index, Move(old_index, child_patch))
+              }
+            }
+          }
+          Error(Nil) -> {
+            compare_child_at_index(acc, old_children, new_child, index)
+          }
+        }
+      }
+      _ -> {
+        // theres no key, so we want to do a best effort approach here and try to compare
+        // the children without keys based on their position in the list
+        compare_child_at_index(acc, old_children, new_child, index)
+      }
+    }
+  })
+  |> dict.filter(fn(_k, child_el) {
     case child_el {
       NoOp -> False
       _ -> True
     }
   })
   |> fn(diff_map) {
-    case map.size(diff_map) > 0 {
+    case dict.size(diff_map) > 0 {
       True -> {
-        Some(map.to_list(diff_map))
+        Some(dict.to_list(diff_map))
       }
       False -> {
         None

@@ -67,7 +67,7 @@ fn element(
 
   let children =
     children
-    |> list.index_map(fn(i, child) { #(int.to_string(i), render(child, None)) })
+    |> list.index_map(fn(child, i) { #(int.to_string(i), render(child, None)) })
 
   [
     #("type", json.string("element")),
@@ -77,14 +77,11 @@ fn element(
   |> maybe_append_string("key", key)
   |> maybe_append_string(
     "ignore",
-    option.map(
-      ignore,
-      fn(rule) {
-        case rule {
-          IgnoreAll -> "all"
-        }
-      },
-    ),
+    option.map(ignore, fn(rule) {
+      case rule {
+        IgnoreAll -> "all"
+      }
+    }),
   )
   |> list.append(children)
   |> json.object()
@@ -108,7 +105,7 @@ fn fragment(
 ) -> Json {
   let children =
     children
-    |> list.index_map(fn(i, child) {
+    |> list.index_map(fn(child, i) {
       #(int.to_string(i), render(child, ignore))
     })
 
