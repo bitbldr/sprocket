@@ -371,13 +371,13 @@ fn render_update(actor) {
 pub fn render(actor) -> ReconciledElement {
   let State(ctx: ctx, rendered: rendered, ..) = get_state(actor)
 
-  let #(ctx, rendered) = reconcile(ctx, ctx.view, rendered)
+  let #(ctx, reconciled) = reconcile(ctx, ctx.view, rendered)
 
   update_state(actor, fn(state) {
-    State(..state, ctx: ctx, rendered: Some(rendered))
+    State(..state, ctx: ctx, rendered: Some(reconciled))
   })
 
-  rendered
+  reconciled
 }
 
 fn reconcile(

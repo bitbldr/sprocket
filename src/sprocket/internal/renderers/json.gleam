@@ -12,8 +12,8 @@ import sprocket/internal/reconcile.{
 import sprocket/internal/render.{type Renderer, Renderer}
 import sprocket/internal/constants
 
-pub fn renderer() -> Renderer(Json) {
-  Renderer(render: fn(el) { render(el, None) })
+pub fn json_renderer() -> Renderer(Json) {
+  Renderer(render: fn(el: ReconciledElement) { render(el, None) })
 }
 
 fn render(el: ReconciledElement, ignore: Option(IgnoreRule)) -> Json {

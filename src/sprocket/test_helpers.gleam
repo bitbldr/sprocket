@@ -9,7 +9,8 @@ import sprocket/internal/reconcile.{
   ReconciledEventHandler,
 }
 import sprocket/internal/reconcilers/recursive
-import sprocket/html/render as html_render
+import sprocket/internal/render.{renderer}
+import sprocket/internal/renderers/html.{html_renderer}
 import sprocket/internal/utils/unique
 
 pub fn live(view) {
@@ -21,11 +22,11 @@ pub fn live(view) {
 }
 
 pub fn render_html(spkt) {
-  let renderer = html_render.renderer()
+  use render_html <- renderer(html_renderer())
 
   let html =
     runtime.render(spkt)
-    |> renderer.render()
+    |> render_html()
 
   #(spkt, html)
 }

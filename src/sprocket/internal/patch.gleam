@@ -3,13 +3,14 @@ import gleam/string
 import gleam/int
 import gleam/dict.{type Dict}
 import gleam/option.{type Option, None, Some}
+import gleam/json.{type Json}
 import sprocket/internal/reconcile.{
   type ReconciledAttribute, type ReconciledElement, ReconciledAttribute,
   ReconciledClientHook, ReconciledComponent, ReconciledElement,
   ReconciledEventHandler, ReconciledFragment, ReconciledText,
 }
-import gleam/json.{type Json}
-import sprocket/internal/render/json as json_renderer
+import sprocket/internal/render.{Renderer, renderer} as _
+import sprocket/internal/renderers/json.{json_renderer} as _
 import sprocket/internal/constants
 
 pub type Patch {
@@ -438,6 +439,8 @@ pub fn op_code(op: Patch, debug: Bool) -> String {
 }
 
 pub fn patch_to_json(patch: Patch, debug: Bool) -> Json {
+  use render_json <- renderer(json_renderer())
+
   case patch {
     NoOp -> {
       json.preprocessed_array([json.string(op_code(patch, debug))])
@@ -452,13 +455,13 @@ pub fn patch_to_json(patch: Patch, debug: Bool) -> Json {
     Replace(el) -> {
       json.preprocessed_array([
         json.string(op_code(patch, debug)),
-        json_renderer.renderer().render(el),
+        render_json(el),
       ])
     }
     Insert(el) -> {
       json.preprocessed_array([
         json.string(op_code(patch, debug)),
-        json_renderer.renderer().render(el),
+        render_json(el),
       ])
     }
     Remove -> {

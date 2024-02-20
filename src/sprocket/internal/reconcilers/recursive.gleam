@@ -11,13 +11,24 @@ import sprocket/context.{
 }
 import sprocket/internal/reconcile.{
   type ReconciledAttribute, type ReconciledElement, type ReconciledResult,
-  IgnoreAll, ReconciledAttribute, ReconciledClientHook, ReconciledComponent,
-  ReconciledElement, ReconciledEventHandler, ReconciledFragment,
-  ReconciledIgnoreUpdate, ReconciledResult, ReconciledText,
+  type Reconciler, IgnoreAll, ReconciledAttribute, ReconciledClientHook,
+  ReconciledComponent, ReconciledElement, ReconciledEventHandler,
+  ReconciledFragment, ReconciledIgnoreUpdate, ReconciledResult, ReconciledText,
+  Reconciler,
 }
 import sprocket/internal/utils/unique
 import sprocket/internal/utils/ordered_map
 import sprocket/internal/logger
+
+pub fn recursive_reconciler() -> Reconciler {
+  Reconciler(reconcile: fn(
+    ctx: Context,
+    el: Element,
+    prev: Option(ReconciledElement),
+  ) {
+    reconcile(ctx, el, None, prev)
+  })
+}
 
 // Reconciles the given element into a ReconciledElement tree against the previous rendered element.
 // Returns the updated ctx and a stateful ReconciledElement tree.
@@ -26,7 +37,7 @@ pub fn reconcile(
   el: Element,
   key: Option(String),
   prev: Option(ReconciledElement),
-) -> ReconciledResult(ReconciledElement) {
+) -> ReconciledResult {
   // TODO: detect infinite render loop - render_count > SOME_THRESHOLD then panic "Possible infinite rerender loop"
 
   case el {
@@ -76,10 +87,10 @@ fn element(
   attrs: List(Attribute),
   children: List(Element),
   prev: Option(ReconciledElement),
-) -> ReconciledResult(ReconciledElement) {
-  let ReconciledResult(ctx, rendered_attrs) =
-    list.fold(attrs, ReconciledResult(ctx, []), fn(acc, current) {
-      let ReconciledResult(ctx, rendered_attrs) = acc
+) -> ReconciledResult {
+  let #(ctx, rendered_attrs) =
+    list.fold(attrs, #(ctx, []), fn(acc, current) {
+      let #(ctx, rendered_attrs) = acc
 
       case current {
         Attribute(name, value) -> {
@@ -92,20 +103,17 @@ fn element(
               error
             })
 
-          ReconciledResult(ctx, [
-            ReconciledAttribute(name, value),
-            ..rendered_attrs
-          ])
+          #(ctx, [ReconciledAttribute(name, value), ..rendered_attrs])
         }
         Event(kind, identifiable_cb) -> {
           let #(ctx, id) = context.push_event_handler(ctx, identifiable_cb)
-          ReconciledResult(ctx, [
+          #(ctx, [
             ReconciledEventHandler(kind, unique.to_string(id)),
             ..rendered_attrs
           ])
         }
         ClientHook(id, name) -> {
-          ReconciledResult(ctx, [
+          #(ctx, [
             ReconciledClientHook(name, unique.to_string(id)),
             ..rendered_attrs
           ])
@@ -113,16 +121,17 @@ fn element(
       }
     })
 
-  let ReconciledResult(ctx, children) =
+  let #(ctx, children) =
     children
-    |> list.index_fold(ReconciledResult(ctx, []), fn(acc, child, i) {
-      let ReconciledResult(ctx, rendered) = acc
+    |> list.index_fold(#(ctx, []), fn(acc, child, i) {
+      let #(ctx, rendered) = acc
 
       let prev_child = find_prev_child(prev, child, i)
 
       let ReconciledResult(ctx, rendered_child) =
         reconcile(ctx, child, None, prev_child)
-      ReconciledResult(ctx, [rendered_child, ..rendered])
+
+      #(ctx, [rendered_child, ..rendered])
     })
 
   ReconciledResult(
@@ -141,17 +150,18 @@ fn fragment(
   key: Option(String),
   children: List(Element),
   prev: Option(ReconciledElement),
-) -> ReconciledResult(ReconciledElement) {
-  let ReconciledResult(ctx, children) =
+) -> ReconciledResult {
+  let #(ctx, children) =
     children
-    |> list.index_fold(ReconciledResult(ctx, []), fn(acc, child, i) {
-      let ReconciledResult(ctx, rendered) = acc
+    |> list.index_fold(#(ctx, []), fn(acc, child, i) {
+      let #(ctx, rendered) = acc
 
       let prev_child = find_prev_child(prev, child, i)
 
       let ReconciledResult(ctx, rendered_child) =
         reconcile(ctx, child, None, prev_child)
-      ReconciledResult(ctx, [rendered_child, ..rendered])
+
+      #(ctx, [rendered_child, ..rendered])
     })
 
   ReconciledResult(ctx, ReconciledFragment(key, list.reverse(children)))
@@ -163,7 +173,7 @@ fn component(
   key: Option(String),
   props: Dynamic,
   prev: Option(ReconciledElement),
-) -> ReconciledResult(ReconciledElement) {
+) -> ReconciledResult {
   // Prepare ctx wip (work in progress) for component render
   let ctx = case prev {
     None ->
@@ -302,11 +312,11 @@ fn maybe_matching_el(
   }
 }
 
-fn safe_html(ctx: Context, html: String) -> ReconciledResult(ReconciledElement) {
+fn safe_html(ctx: Context, html: String) -> ReconciledResult {
   ReconciledResult(ctx, ReconciledText(html))
 }
 
-fn raw(ctx: Context, text: String) -> ReconciledResult(ReconciledElement) {
+fn raw(ctx: Context, text: String) -> ReconciledResult {
   ReconciledResult(ctx, ReconciledText(text))
 }
 

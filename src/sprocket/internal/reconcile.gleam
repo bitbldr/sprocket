@@ -1,7 +1,8 @@
 import gleam/option.{type Option}
 import gleam/dynamic.{type Dynamic}
 import sprocket/context.{
-  type AbstractFunctionalComponent, type ComponentHooks, type Context, Context,
+  type AbstractFunctionalComponent, type ComponentHooks, type Context,
+  type Element, Context,
 }
 
 pub type ReconciledAttribute {
@@ -33,6 +34,17 @@ pub type ReconciledElement {
   ReconciledText(text: String)
 }
 
-pub type ReconciledResult(a) {
-  ReconciledResult(ctx: Context, reconciled: a)
+pub type ReconciledResult {
+  ReconciledResult(ctx: Context, reconciled: ReconciledElement)
+}
+
+pub type Reconciler {
+  Reconciler(
+    reconcile: fn(Context, Element, Option(ReconciledElement)) ->
+      ReconciledResult,
+  )
+}
+
+pub fn reconciler(reconciler: Reconciler, cb: fn(Reconciler) -> a) -> a {
+  cb(reconciler)
 }

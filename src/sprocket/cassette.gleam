@@ -3,7 +3,7 @@ import gleam/list
 import gleam/result
 import gleam/dynamic.{type Dynamic, field, optional_field}
 import gleam/option.{type Option, None, Some}
-import gleam/json
+import gleam/json.{type Json}
 import gleam/function.{identity}
 import gleam/erlang/process.{type Subject}
 import gleam/otp/actor.{type StartError, Spec}
@@ -13,7 +13,8 @@ import sprocket/context.{
   type Element, Client, Dispatcher, Updater, callback_param_from_string,
 }
 import sprocket/internal/reconcile.{type ReconciledElement}
-import sprocket/internal/render/json as json_renderer
+import sprocket/internal/render.{Renderer, renderer} as _
+import sprocket/internal/renderers/json.{json_renderer} as _
 import sprocket/internal/patch.{type Patch}
 import sprocket/internal/logger
 import sprocket/internal/constants.{call_timeout}
@@ -389,7 +390,10 @@ fn connect(
   // intitial live render
   let rendered = runtime.render(sprocket)
 
-  ws_send(rendered_to_json(rendered))
+  ws_send(
+    rendered_to_json(rendered)
+    |> json.to_string(),
+  )
 }
 
 fn decode_join(data: Dynamic) {
@@ -464,12 +468,10 @@ fn hook_event_to_json(
   |> json.to_string()
 }
 
-fn rendered_to_json(update: ReconciledElement) -> String {
-  json.preprocessed_array([
-    json.string("ok"),
-    json_renderer.renderer().render(update),
-  ])
-  |> json.to_string()
+fn rendered_to_json(update: ReconciledElement) -> Json {
+  use render_json <- renderer(json_renderer())
+
+  json.preprocessed_array([json.string("ok"), render_json(update)])
 }
 
 type ConnectError {

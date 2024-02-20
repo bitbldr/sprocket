@@ -5,7 +5,8 @@ import sprocket/context.{type Element}
 import sprocket/cassette.{type Cassette, type CassetteOpts}
 import sprocket/internal/reconcile.{type ReconciledResult, ReconciledResult}
 import sprocket/internal/reconcilers/recursive.{reconcile}
-import sprocket/internal/render.{type Renderer}
+import sprocket/internal/render.{type Renderer, renderer}
+import sprocket/internal/renderers/html.{html_renderer}
 import sprocket/internal/utils/unique
 import sprocket/internal/logger
 
@@ -55,8 +56,10 @@ pub fn cleanup(ca: Cassette, id: String) {
   cassette.pop_sprocket(ca, unique.from_string(id))
 }
 
-// Renders the given element as a stateless element using the provided renderer.
-pub fn render(el: Element, renderer: Renderer(r)) -> r {
+// Renders the given element as a stateless element to html.
+pub fn render_html(el: Element) -> String {
+  use render_html <- renderer(html_renderer())
+
   // Internally this function uses the reconciler with an empty previous element
   // and a placeholder ctx but then discards the ctx and returns the result.
   let assert Ok(cuid_channel) =
@@ -67,16 +70,12 @@ pub fn render(el: Element, renderer: Renderer(r)) -> r {
     })
 
   let ctx =
-    context.new(
-      el,
-      cuid_channel,
-      None,
-      fn() { Nil },
-      fn(_index, _updater) { Nil },
-    )
+    context.new(el, cuid_channel, None, fn() { Nil }, fn(_index, _updater) {
+      Nil
+    })
 
   let ReconciledResult(reconciled: reconciled, ..) =
     reconcile(ctx, el, None, None)
 
-  renderer.render(reconciled)
+  render_html(reconciled)
 }

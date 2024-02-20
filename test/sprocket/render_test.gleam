@@ -11,7 +11,8 @@ import sprocket/internal/reconcile.{
   ReconciledAttribute, ReconciledComponent, ReconciledElement,
   ReconciledEventHandler, ReconciledFragment, ReconciledText,
 }
-import sprocket/internal/render/identity
+import sprocket/internal/render.{renderer}
+import sprocket/internal/renderers/identity.{identity_renderer}
 
 type TestProps {
   TestProps(title: String, href: String, is_active: Bool)
@@ -49,7 +50,7 @@ pub fn basic_render_test() {
         test_component,
         TestProps(title: "Home", href: "/", is_active: True),
       ),
-      identity.renderer(),
+      identity_renderer(),
     )
 
   let assert ReconciledComponent(
@@ -73,11 +74,9 @@ pub fn basic_render_test() {
   ) = rendered
 
   props
-  |> should.equal(dynamic.from(TestProps(
-    title: "Home",
-    href: "/",
-    is_active: True,
-  )))
+  |> should.equal(
+    dynamic.from(TestProps(title: "Home", href: "/", is_active: True)),
+  )
 }
 
 fn test_component_with_fragment(ctx: Context, _props: TestProps) {
@@ -114,7 +113,7 @@ pub fn render_with_fragment_test() {
         test_component_with_fragment,
         TestProps(title: "Home", href: "/", is_active: True),
       ),
-      identity.renderer(),
+      identity_renderer(),
     )
 
   let assert ReconciledComponent(
@@ -193,25 +192,19 @@ fn test_component_with_context_title(ctx: Context, props: TestProps) {
 pub fn renders_component_with_context_provider_test() {
   let rendered =
     sprocket.render(
-      div(
-        [class("first div")],
-        [
-          context.provider(
-            "title",
-            TitleContext(title: "A different title"),
-            div(
-              [class("second div")],
-              [
-                component(
-                  test_component_with_context_title,
-                  TestProps(title: "Home", href: "/", is_active: True),
-                ),
-              ],
+      div([class("first div")], [
+        context.provider(
+          "title",
+          TitleContext(title: "A different title"),
+          div([class("second div")], [
+            component(
+              test_component_with_context_title,
+              TestProps(title: "Home", href: "/", is_active: True),
             ),
-          ),
-        ],
-      ),
-      identity.renderer(),
+          ]),
+        ),
+      ]),
+      identity_renderer(),
     )
 
   let assert ReconciledElement(
