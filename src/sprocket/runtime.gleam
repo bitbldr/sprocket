@@ -1,5 +1,6 @@
 import gleam/io
 import gleam/list
+import gleam/result
 import gleam/dict.{type Dict}
 import gleam/function.{identity}
 import gleam/otp/actor.{type StartError, Spec}
@@ -12,8 +13,9 @@ import sprocket/context.{
   type ComponentHooks, type Context, type Dispatcher, type EffectCleanup,
   type EffectResult, type Element, type Hook, type HookDependencies,
   type HookTrigger, type IdentifiableHandler, type Updater, Callback, Changed,
-  Context, Effect, EffectResult, Handler, IdentifiableHandler, Memo, OnMount,
-  OnUpdate, Reducer, Unchanged, WithDeps, compare_deps,
+  Client, Context, Dispatcher, Effect, EffectResult, Handler,
+  IdentifiableHandler, Memo, OnMount, OnUpdate, Reducer, Unchanged, Updater,
+  WithDeps, compare_deps,
 }
 import sprocket/internal/reconcile.{
   type ReconciledElement, ReconciledComponent, ReconciledElement,
@@ -26,19 +28,17 @@ import sprocket/internal/utils/ordered_map.{
 }
 import sprocket/internal/utils/unique.{type Unique}
 import sprocket/internal/exceptions.{throw_on_unexpected_hook_result}
-import sprocket/internal/utils/timer.{interval}
+import sprocket/internal/utils/timer
 
 pub type Runtime =
   Subject(Message)
 
 pub opaque type State {
   State(
-    id: Unique,
-    self: Runtime,
-    cancel_shutdown: Option(fn() -> Nil),
     ctx: Context,
     updater: Option(Updater(Patch)),
     rendered: Option(ReconciledElement),
+    cuid_channel: Subject(cuid.Message),
   )
 }
 
@@ -46,12 +46,9 @@ pub opaque type State {
 // public in order to be used in the tests and therefore this type needs to be public as well.
 pub opaque type Message {
   Shutdown
-  BeginSelfDestruct(Int)
-  CancelSelfDestruct
   GetState(reply_with: Subject(State))
   SetState(fn(State) -> State)
   GetReconciled(reply_with: Subject(Option(ReconciledElement)))
-  GetId(reply_with: Subject(Unique))
   GetContext(reply_with: Subject(Context))
   GetView(reply_with: Subject(Element))
   GetUpdater(reply_with: Subject(Option(Updater(Patch))))
@@ -59,6 +56,7 @@ pub opaque type Message {
   GetClientHook(reply_with: Subject(Result(Hook, Nil)), String)
   UpdateHookState(Unique, fn(Hook) -> Hook)
   RenderUpdate
+  GetCUIDChannel(reply_with: Subject(Subject(cuid.Message)))
 }
 
 fn handle_message(message: Message, state: State) -> actor.Next(Message, State) {
@@ -75,24 +73,6 @@ fn handle_message(message: Message, state: State) -> actor.Next(Message, State) 
       actor.Stop(process.Normal)
     }
 
-    BeginSelfDestruct(timeout) -> {
-      let cancel = interval(timeout, fn() { actor.send(state.self, Shutdown) })
-
-      actor.continue(State(..state, cancel_shutdown: Some(cancel)))
-    }
-
-    CancelSelfDestruct -> {
-      case state.cancel_shutdown {
-        Some(cancel) -> {
-          cancel()
-          actor.continue(State(..state, cancel_shutdown: None))
-        }
-        _ -> actor.continue(state)
-      }
-
-      actor.continue(state)
-    }
-
     GetState(reply_with) -> {
       actor.send(reply_with, state)
 
@@ -105,12 +85,6 @@ fn handle_message(message: Message, state: State) -> actor.Next(Message, State) 
 
     GetReconciled(reply_with) -> {
       actor.send(reply_with, state.rendered)
-
-      actor.continue(state)
-    }
-
-    GetId(reply_with) -> {
-      actor.send(reply_with, state.id)
 
       actor.continue(state)
     }
@@ -228,14 +202,17 @@ fn handle_message(message: Message, state: State) -> actor.Next(Message, State) 
 
       actor.continue(State(..state, ctx: ctx, rendered: Some(rendered)))
     }
+
+    GetCUIDChannel(reply_with) -> {
+      process.send(reply_with, state.cuid_channel)
+      actor.continue(state)
+    }
   }
 }
 
 /// Start a new runtime actor
 pub fn start(
-  id: Unique,
   view: Element,
-  cuid_channel: Subject(cuid.Message),
   updater: Option(Updater(Patch)),
   dispatcher: Option(Dispatcher),
 ) -> Result(Runtime, StartError) {
@@ -244,11 +221,15 @@ pub fn start(
     let render_update = fn() { render_update(self) }
     let update_hook = fn(id, updater) { update_hook_state(self, id, updater) }
 
+    let assert Ok(cuid_channel) =
+      cuid.start()
+      |> result.map_error(fn(error) {
+        logger.error("runtime.start: error starting cuid process")
+        error
+      })
+
     let state =
       State(
-        id: id,
-        self: self,
-        cancel_shutdown: None,
         ctx: context.new(
           view,
           cuid_channel,
@@ -258,6 +239,7 @@ pub fn start(
         ),
         updater: updater,
         rendered: None,
+        cuid_channel: cuid_channel,
       )
 
     let selector = process.selecting(process.new_selector(), self, identity)
@@ -273,20 +255,6 @@ pub fn stop(actor) {
   logger.debug("actor.send Shutdown")
 
   actor.send(actor, Shutdown)
-}
-
-/// Returns true if the actor matches a given websocket connection
-pub fn get_id(actor) -> Unique {
-  logger.debug("process.try_call GetId")
-
-  case process.try_call(actor, GetId(_), call_timeout) {
-    Ok(id) -> id
-    Error(err) -> {
-      logger.error("Error getting id from runtime actor")
-      io.debug(err)
-      panic
-    }
-  }
 }
 
 /// Get the previously rendered view from the actor. This is useful for testing.

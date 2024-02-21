@@ -1,7 +1,6 @@
 import gleam/io
 import gleam/list
 import gleam/option.{None, Some}
-import ids/cuid
 import sprocket/runtime.{type Runtime}
 import sprocket/context
 import sprocket/internal/reconcile.{
@@ -11,12 +10,9 @@ import sprocket/internal/reconcile.{
 import sprocket/internal/reconcilers/recursive
 import sprocket/internal/render.{renderer}
 import sprocket/internal/renderers/html.{html_renderer}
-import sprocket/internal/utils/unique
 
 pub fn live(view) {
-  let assert Ok(cuid_channel) = cuid.start()
-  let assert Ok(spkt) =
-    runtime.start(unique.uuid(), view, cuid_channel, None, None)
+  let assert Ok(spkt) = runtime.start(view, None, None)
 
   spkt
 }

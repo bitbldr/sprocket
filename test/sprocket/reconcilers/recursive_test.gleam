@@ -1,18 +1,35 @@
 import gleam/dynamic
 import gleam/option.{None, Some}
 import gleeunit/should
-import sprocket
-import sprocket/context.{type Context}
+import ids/cuid
+import sprocket/context.{type Context, type Element}
 import sprocket/component.{component, render}
 import sprocket/html/elements.{a, div, fragment, text}
 import sprocket/html/attributes.{class, classes}
 import sprocket/hooks.{handler}
+import sprocket/internal/reconcilers/recursive.{reconcile}
 import sprocket/internal/reconcile.{
-  ReconciledAttribute, ReconciledComponent, ReconciledElement,
-  ReconciledEventHandler, ReconciledFragment, ReconciledText,
+  type ReconciledElement, ReconciledAttribute, ReconciledComponent,
+  ReconciledElement, ReconciledEventHandler, ReconciledFragment,
+  ReconciledResult, ReconciledText,
 }
-import sprocket/internal/render.{renderer}
-import sprocket/internal/renderers/identity.{identity_renderer}
+
+// Renders the given element as a stateless element to html.
+pub fn render_el(el: Element) -> ReconciledElement {
+  // Internally this function uses the reconciler with an empty previous element
+  // and a placeholder ctx but then discards the ctx and returns the result.
+  let assert Ok(cuid_channel) = cuid.start()
+
+  let ctx =
+    context.new(el, cuid_channel, None, fn() { Nil }, fn(_index, _updater) {
+      Nil
+    })
+
+  let ReconciledResult(reconciled: reconciled, ..) =
+    reconcile(ctx, el, None, None)
+
+  reconciled
+}
 
 type TestProps {
   TestProps(title: String, href: String, is_active: Bool)
@@ -45,13 +62,10 @@ fn test_component(ctx: Context, props: TestProps) {
 // gleeunit test functions end in `_test`
 pub fn basic_render_test() {
   let rendered =
-    sprocket.render(
-      component(
-        test_component,
-        TestProps(title: "Home", href: "/", is_active: True),
-      ),
-      identity_renderer(),
-    )
+    render_el(component(
+      test_component,
+      TestProps(title: "Home", href: "/", is_active: True),
+    ))
 
   let assert ReconciledComponent(
     _fc,
@@ -108,13 +122,10 @@ fn test_component_with_fragment(ctx: Context, _props: TestProps) {
 
 pub fn render_with_fragment_test() {
   let rendered =
-    sprocket.render(
-      component(
-        test_component_with_fragment,
-        TestProps(title: "Home", href: "/", is_active: True),
-      ),
-      identity_renderer(),
-    )
+    render_el(component(
+      test_component_with_fragment,
+      TestProps(title: "Home", href: "/", is_active: True),
+    ))
 
   let assert ReconciledComponent(
     _fc,
@@ -191,7 +202,7 @@ fn test_component_with_context_title(ctx: Context, props: TestProps) {
 
 pub fn renders_component_with_context_provider_test() {
   let rendered =
-    sprocket.render(
+    render_el(
       div([class("first div")], [
         context.provider(
           "title",
@@ -204,7 +215,6 @@ pub fn renders_component_with_context_provider_test() {
           ]),
         ),
       ]),
-      identity_renderer(),
     )
 
   let assert ReconciledElement(
