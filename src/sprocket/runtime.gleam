@@ -276,7 +276,7 @@ pub fn get_handler(actor, id: String) {
   logger.debug("process.try_call GetHandler")
 
   case process.try_call(actor, GetHandler(_, id), call_timeout) {
-    Ok(rendered) -> rendered
+    Ok(handler) -> handler
     Error(err) -> {
       logger.error(
         "Error getting handler for id " <> id <> " from runtime actor",
@@ -292,7 +292,7 @@ pub fn get_client_hook(actor, id: String) {
   logger.debug("process.try_call GetClientHook")
 
   case process.try_call(actor, GetClientHook(_, id), call_timeout) {
-    Ok(rendered) -> rendered
+    Ok(client_hook) -> client_hook
     Error(err) -> {
       logger.error(
         "Error getting client hook for id " <> id <> " from runtime actor",

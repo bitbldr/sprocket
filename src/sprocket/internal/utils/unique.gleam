@@ -1,6 +1,6 @@
 import gleam/result
 import gleam/erlang/process.{type Subject}
-import ids/cuid.{type Message}
+import ids/cuid
 import ids/uuid
 import sprocket/internal/logger
 
@@ -19,13 +19,13 @@ pub fn uuid() -> Unique {
   Unique(id: id)
 }
 
-pub fn cuid(channel: Subject(Message)) -> Unique {
+pub fn cuid(channel: Subject(cuid.Message)) -> Unique {
   let id = cuid.generate(channel)
 
   Unique(id: id)
 }
 
-pub fn slug(channel: Subject(Message), label: String) -> Unique {
+pub fn slug(channel: Subject(cuid.Message), label: String) -> Unique {
   let id = label <> "-" <> cuid.slug(channel)
 
   Unique(id: id)
