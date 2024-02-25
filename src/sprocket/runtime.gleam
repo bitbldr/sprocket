@@ -1,6 +1,7 @@
 import gleam/io
 import gleam/list
 import gleam/result
+import gleam/dynamic.{type Dynamic}
 import gleam/dict.{type Dict}
 import gleam/function.{identity}
 import gleam/otp/actor.{type StartError, Spec}
@@ -15,7 +16,7 @@ import sprocket/context.{
   type HookTrigger, type IdentifiableHandler, type Updater, Callback, Changed,
   Client, Context, Dispatcher, Effect, EffectResult, Handler,
   IdentifiableHandler, Memo, OnMount, OnUpdate, Reducer, Unchanged, Updater,
-  WithDeps, compare_deps,
+  WithDeps, callback_param_from_string, compare_deps,
 }
 import sprocket/internal/reconcile.{
   type ReconciledElement, ReconciledComponent, ReconciledElement,
@@ -57,8 +58,13 @@ pub opaque type Message {
   GetContext(reply_with: Subject(Context))
   GetView(reply_with: Subject(Element))
   GetUpdater(reply_with: Subject(Updater(RenderedUpdate)))
-  GetHandler(reply_with: Subject(Result(IdentifiableHandler, Nil)), String)
-  GetClientHook(reply_with: Subject(Result(Hook, Nil)), String)
+  ProcessEvent(id: String, payload: Option(String))
+  ProcessClientHook(
+    id: String,
+    event: String,
+    payload: Option(Dynamic),
+    reply_dispatcher: fn(String, Option(String)) -> Result(Nil, Nil),
+  )
   UpdateHookState(Unique, fn(Hook) -> Hook)
   Reconcile(reply_with: Subject(ReconciledElement))
   RenderUpdate
@@ -113,20 +119,32 @@ fn handle_message(message: Message, state: State) -> actor.Next(Message, State) 
       actor.continue(state)
     }
 
-    GetHandler(reply_with, id) -> {
+    ProcessEvent(id, payload) -> {
       let handler =
         list.find(state.ctx.handlers, fn(h) {
           let IdentifiableHandler(i, _) = h
           unique.to_string(i) == id
         })
 
-      actor.send(reply_with, handler)
+      case handler {
+        Ok(context.IdentifiableHandler(_, handler_fn)) -> {
+          // call the event handler function
+          payload
+          |> option.map(callback_param_from_string)
+          |> handler_fn()
 
-      actor.continue(state)
+          actor.continue(state)
+        }
+        _ -> {
+          logger.error("No handler found with id: " <> id)
+
+          actor.continue(state)
+        }
+      }
     }
 
-    GetClientHook(reply_with, id) -> {
-      let result = case state.reconciled {
+    ProcessClientHook(id, event, payload, reply_dispatcher) -> {
+      let client_hook = case state.reconciled {
         Some(reconciled) -> {
           let hook =
             find_reconciled_hook(reconciled, fn(hook) {
@@ -139,13 +157,28 @@ fn handle_message(message: Message, state: State) -> actor.Next(Message, State) 
           option.to_result(hook, Nil)
         }
         None -> {
+          logger.error(
+            "Runtime must be reconciled before processing client hooks",
+          )
+
           Error(Nil)
         }
       }
 
-      actor.send(reply_with, result)
+      case client_hook {
+        Ok(Client(_id, _name, handle_event)) -> {
+          option.map(handle_event, fn(handle_event) {
+            handle_event(event, payload, reply_dispatcher)
+          })
 
-      actor.continue(state)
+          actor.continue(state)
+        }
+        _ -> {
+          logger.error("No client hook found with id: " <> id)
+
+          actor.continue(state)
+        }
+      }
     }
 
     UpdateHookState(hook_id, update_fn) -> {
@@ -235,8 +268,16 @@ pub fn start(
 ) -> Result(Runtime, StartError) {
   let init = fn() {
     let self = process.new_subject()
-    let render_update = fn() { actor.send(self, RenderUpdate) }
-    let update_hook = fn(id, updater) { update_hook_state(self, id, updater) }
+    let render_update = fn() {
+      logger.debug("actor.send RenderUpdate")
+
+      actor.send(self, RenderUpdate)
+    }
+    let update_hook = fn(id, updater) {
+      logger.debug("actor.send UpdateHookState")
+
+      actor.send(self, UpdateHookState(id, updater))
+    }
 
     let assert Ok(cuid_channel) =
       cuid.start()
@@ -289,62 +330,24 @@ pub fn get_rendered(actor) {
 }
 
 /// Get the event handler for a given id
-pub fn get_handler(actor, id: String) {
-  logger.debug("process.try_call GetHandler")
+pub fn process_event(actor, id: String, payload: Option(String)) {
+  logger.debug("process.try_call HandleEvent")
 
-  case process.try_call(actor, GetHandler(_, id), call_timeout) {
-    Ok(handler) -> handler
-    Error(err) -> {
-      logger.error(
-        "Error getting handler for id " <> id <> " from runtime actor",
-      )
-      io.debug(err)
-      Error(Nil)
-    }
-  }
+  actor.send(actor, ProcessEvent(id, payload))
 }
 
 /// Get the client hook for a given id
-pub fn get_client_hook(actor, id: String) {
+pub fn process_client_hook(
+  actor,
+  id: String,
+  event: String,
+  payload: Option(Dynamic),
+  reply_dispatcher: fn(String, Option(String)) -> Result(Nil, Nil),
+) {
   logger.debug("process.try_call GetClientHook")
 
-  case process.try_call(actor, GetClientHook(_, id), call_timeout) {
-    Ok(client_hook) -> client_hook
-    Error(err) -> {
-      logger.error(
-        "Error getting client hook for id " <> id <> " from runtime actor",
-      )
-      io.debug(err)
-      Error(Nil)
-    }
-  }
+  actor.send(actor, ProcessClientHook(id, event, payload, reply_dispatcher))
 }
-
-fn update_hook_state(actor: Runtime, hook_id: Unique, updater: fn(Hook) -> Hook) {
-  logger.debug("actor.send UpdateHookState")
-
-  actor.send(actor, UpdateHookState(hook_id, updater))
-}
-
-// // TODO: remove this if possible
-// fn update_state(actor, update_fn: fn(State) -> State) {
-//   logger.debug("actor.send SetState")
-
-//   actor.send(actor, SetState(update_fn))
-// }
-
-// fn get_state(actor) -> State {
-//   logger.debug("process.try_call GetState")
-
-//   case process.try_call(actor, GetState(_), call_timeout) {
-//     Ok(state) -> state
-//     Error(err) -> {
-//       logger.error("Error getting state from runtime actor")
-//       io.debug(err)
-//       panic
-//     }
-//   }
-// }
 
 pub fn render_update(actor) {
   logger.debug("actor.send RenderUpdate")

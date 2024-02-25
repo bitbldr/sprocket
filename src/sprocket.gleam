@@ -6,10 +6,7 @@ import ids/cuid
 import sprocket/runtime.{
   type RenderedUpdate, type Runtime, FullUpdate, PatchUpdate,
 }
-import sprocket/context.{
-  type Dispatcher, type Element, type IdentifiableHandler, Client, Dispatcher,
-  IdentifiableHandler, Updater, callback_param_from_string,
-}
+import sprocket/context.{type Dispatcher, type Element, Dispatcher, Updater}
 import sprocket/internal/reconcile.{type ReconciledResult, ReconciledResult}
 import sprocket/internal/reconcilers/recursive.{reconcile}
 import sprocket/internal/render.{renderer} as _
@@ -77,8 +74,6 @@ pub fn handle_ws(spkt: Sprocket, msg: String) -> Result(Response, String) {
     )
   {
     Ok(#("join", JoinPayload(csrf))) -> {
-      logger.info("New client joined")
-
       case spkt.csrf_validator(csrf) {
         Ok(_) ->
           case connect(spkt) {
@@ -98,49 +93,27 @@ pub fn handle_ws(spkt: Sprocket, msg: String) -> Result(Response, String) {
       }
     }
     Ok(#("event", EventPayload(kind, event_id, value))) -> {
-      logger.info("Event: " <> kind <> " " <> event_id)
+      logger.debug("Event: " <> kind <> " " <> event_id)
 
       use runtime <- require_runtime(spkt)
 
-      case runtime.get_handler(runtime, event_id) {
-        Ok(context.IdentifiableHandler(_, handler_fn)) -> {
-          // call the event handler function
-          value
-          |> option.map(callback_param_from_string)
-          |> handler_fn()
+      runtime.process_event(runtime, event_id, value)
 
-          Ok(Empty)
-        }
-        _ -> {
-          logger.error("Error: no handler defined for id: " <> event_id)
-
-          Ok(Empty)
-        }
-      }
+      Ok(Empty)
     }
-    Ok(#("hook:event", HookEventPayload(hook_id, name, payload))) -> {
-      logger.info("Hook Event: " <> hook_id <> " " <> name)
+    Ok(#("hook:event", HookEventPayload(id, event, payload))) -> {
+      logger.debug("Hook Event: " <> event <> " " <> id)
 
       use runtime <- require_runtime(spkt)
 
-      case runtime.get_client_hook(runtime, hook_id) {
-        Ok(Client(_id, _name, handle_event)) -> {
-          // TODO: implement reply dispatcher
-          let reply_dispatcher = fn(event, payload) {
-            hook_event_to_json(hook_id, event, payload)
-            |> spkt.ws_send()
-          }
-
-          option.map(handle_event, fn(handle_event) {
-            handle_event(name, payload, reply_dispatcher)
-          })
-
-          Ok(Empty)
-        }
-        _ -> {
-          Error("No client hook defined for id: " <> hook_id)
-        }
+      let reply_dispatcher = fn(event, payload) {
+        hook_event_to_json(id, event, payload)
+        |> spkt.ws_send()
       }
+
+      runtime.process_client_hook(runtime, id, event, payload, reply_dispatcher)
+
+      Ok(Empty)
     }
     Error(_) -> {
       logger.error("Error decoding message: " <> msg)

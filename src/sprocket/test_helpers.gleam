@@ -75,13 +75,7 @@ pub fn render_event(spkt: Runtime, event: Event, html_id: String) {
 
           case rendered_event_handler {
             Ok(ReconciledEventHandler(_kind, event_id)) -> {
-              case runtime.get_handler(spkt, event_id) {
-                Ok(context.IdentifiableHandler(_, handler)) -> {
-                  // call the event handler
-                  handler(None)
-                }
-                _ -> Nil
-              }
+              runtime.process_event(spkt, event_id, None)
             }
             _ -> {
               io.debug("no event handler")

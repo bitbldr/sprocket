@@ -88,7 +88,7 @@ fn complete_timed_operation(op: TimedOperation) -> Int {
   }
 
   string.concat([op.label, " completed in ", formatted_elapsed])
-  |> logger.info
+  |> logger.debug
 
   elapsed
 }
