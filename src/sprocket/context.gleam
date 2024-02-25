@@ -186,7 +186,7 @@ pub fn new(
   )
 }
 
-pub fn reset_for_render(ctx: Context) {
+pub fn prepare_for_reconciliation(ctx: Context) {
   Context(..ctx, handlers: [])
 }
 

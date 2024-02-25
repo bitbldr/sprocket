@@ -2,7 +2,7 @@ import gleam/io
 import gleam/list
 import gleam/option.{None, Some}
 import sprocket/runtime.{type Runtime}
-import sprocket/context
+import sprocket/context.{Updater}
 import sprocket/internal/reconcile.{
   type ReconciledElement, ReconciledAttribute, ReconciledElement,
   ReconciledEventHandler,
@@ -12,7 +12,7 @@ import sprocket/internal/render.{renderer}
 import sprocket/internal/renderers/html.{html_renderer}
 
 pub fn live(view) {
-  let assert Ok(spkt) = runtime.start(view, None, None)
+  let assert Ok(spkt) = runtime.start(view, Updater(fn(_) { Ok(Nil) }), None)
 
   spkt
 }
@@ -21,7 +21,7 @@ pub fn render_html(spkt) {
   use render_html <- renderer(html_renderer())
 
   let html =
-    runtime.render(spkt)
+    runtime.reconcile(spkt)
     |> render_html()
 
   #(spkt, html)

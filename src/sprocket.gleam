@@ -3,19 +3,19 @@ import gleam/option.{type Option, None, Some}
 import gleam/dynamic.{type Dynamic, field, optional_field}
 import gleam/json.{type Json}
 import ids/cuid
-import sprocket/runtime.{type Runtime}
+import sprocket/runtime.{
+  type RenderedUpdate, type Runtime, FullUpdate, PatchUpdate,
+}
 import sprocket/context.{
   type Dispatcher, type Element, type IdentifiableHandler, Client, Dispatcher,
   IdentifiableHandler, Updater, callback_param_from_string,
 }
-import sprocket/internal/reconcile.{
-  type ReconciledElement, type ReconciledResult, ReconciledResult,
-}
+import sprocket/internal/reconcile.{type ReconciledResult, ReconciledResult}
 import sprocket/internal/reconcilers/recursive.{reconcile}
 import sprocket/internal/render.{renderer} as _
 import sprocket/internal/renderers/json.{json_renderer} as _
 import sprocket/internal/renderers/html.{html_renderer}
-import sprocket/internal/patch.{type Patch}
+import sprocket/internal/patch
 import sprocket/internal/logger
 
 pub type WSSend =
@@ -32,7 +32,7 @@ pub type Sprocket {
   Sprocket(
     runtime: Option(Runtime),
     view: Element,
-    send_update: WSSend,
+    ws_send: WSSend,
     csrf_validator: CSRFValidator,
     opts: Option(SprocketOpts),
   )
@@ -40,14 +40,14 @@ pub type Sprocket {
 
 pub fn new(
   view: Element,
-  send_update: WSSend,
+  ws_send: WSSend,
   csrf_validator: CSRFValidator,
   opts: Option(SprocketOpts),
 ) -> Sprocket {
   Sprocket(
     runtime: None,
     view: view,
-    send_update: send_update,
+    ws_send: ws_send,
     csrf_validator: csrf_validator,
     opts: opts,
   )
@@ -91,7 +91,7 @@ pub fn handle_ws(spkt: Sprocket, msg: String) -> Result(Response, String) {
           let _ =
             InvalidCSRFToken
             |> error_to_json()
-            |> spkt.send_update()
+            |> spkt.ws_send()
 
           Error("Invalid CSRF token")
         }
@@ -128,7 +128,7 @@ pub fn handle_ws(spkt: Sprocket, msg: String) -> Result(Response, String) {
           // TODO: implement reply dispatcher
           let reply_dispatcher = fn(event, payload) {
             hook_event_to_json(hook_id, event, payload)
-            |> spkt.send_update()
+            |> spkt.ws_send()
           }
 
           option.map(handle_event, fn(handle_event) {
@@ -176,36 +176,28 @@ fn connect(spkt: Sprocket) -> Result(Runtime, Nil) {
 
   let updater =
     Updater(send: fn(update) {
-      let _ =
-        update_to_json(update, debug)
-        |> spkt.send_update()
-
-      Ok(Nil)
+      update_to_json(update, debug)
+      |> json.to_string()
+      |> spkt.ws_send()
     })
 
   let dispatcher =
     Dispatcher(dispatch: fn(id, event, payload) {
       let _ =
         hook_event_to_json(id, event, payload)
-        |> spkt.send_update()
+        |> spkt.ws_send()
 
       Ok(Nil)
     })
 
-  case runtime.start(spkt.view, Some(updater), Some(dispatcher)) {
-    Ok(runtime) -> {
+  case runtime.start(spkt.view, updater, Some(dispatcher)) {
+    Ok(r) -> {
       logger.info("Sprocket runtime connected!")
 
-      // intitial live render
-      let rendered = runtime.render(runtime)
+      // schedule intitial live render
+      runtime.render_update(r)
 
-      let _ =
-        rendered
-        |> rendered_to_json()
-        |> json.to_string()
-        |> spkt.send_update()
-
-      Ok(runtime)
+      Ok(r)
     }
     Error(_err) -> {
       logger.error("Error starting runtime")
@@ -257,13 +249,21 @@ fn decode_empty(data: Dynamic) {
   )
 }
 
-fn update_to_json(update: Patch, debug: Bool) -> String {
-  json.preprocessed_array([
-    json.string("update"),
-    patch.patch_to_json(update, debug),
-    json.object([#("debug", json.bool(debug))]),
-  ])
-  |> json.to_string()
+fn update_to_json(update: RenderedUpdate, debug: Bool) -> Json {
+  case update {
+    PatchUpdate(p) -> {
+      json.preprocessed_array([
+        json.string("update"),
+        patch.patch_to_json(p, debug),
+        json.object([#("debug", json.bool(debug))]),
+      ])
+    }
+    FullUpdate(update) -> {
+      use render_json <- renderer(json_renderer())
+
+      json.preprocessed_array([json.string("ok"), render_json(update)])
+    }
+  }
 }
 
 fn hook_event_to_json(
@@ -285,12 +285,6 @@ fn hook_event_to_json(
     },
   ])
   |> json.to_string()
-}
-
-fn rendered_to_json(update: ReconciledElement) -> Json {
-  use render_json <- renderer(json_renderer())
-
-  json.preprocessed_array([json.string("ok"), render_json(update)])
 }
 
 type ConnectError {

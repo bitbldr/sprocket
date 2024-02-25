@@ -33,11 +33,16 @@ import sprocket/internal/utils/timer
 pub type Runtime =
   Subject(Message)
 
+pub type RenderedUpdate {
+  FullUpdate(ReconciledElement)
+  PatchUpdate(patch: Patch)
+}
+
 pub opaque type State {
   State(
     ctx: Context,
-    updater: Option(Updater(Patch)),
-    rendered: Option(ReconciledElement),
+    updater: Updater(RenderedUpdate),
+    reconciled: Option(ReconciledElement),
     cuid_channel: Subject(cuid.Message),
   )
 }
@@ -51,10 +56,11 @@ pub opaque type Message {
   GetReconciled(reply_with: Subject(Option(ReconciledElement)))
   GetContext(reply_with: Subject(Context))
   GetView(reply_with: Subject(Element))
-  GetUpdater(reply_with: Subject(Option(Updater(Patch))))
+  GetUpdater(reply_with: Subject(Updater(RenderedUpdate)))
   GetHandler(reply_with: Subject(Result(IdentifiableHandler, Nil)), String)
   GetClientHook(reply_with: Subject(Result(Hook, Nil)), String)
   UpdateHookState(Unique, fn(Hook) -> Hook)
+  Reconcile(reply_with: Subject(ReconciledElement))
   RenderUpdate
   GetCUIDChannel(reply_with: Subject(Subject(cuid.Message)))
 }
@@ -62,9 +68,9 @@ pub opaque type Message {
 fn handle_message(message: Message, state: State) -> actor.Next(Message, State) {
   case message {
     Shutdown -> {
-      case state.rendered {
-        Some(rendered) -> {
-          cleanup_hooks(rendered)
+      case state.reconciled {
+        Some(reconciled) -> {
+          cleanup_hooks(reconciled)
           Nil
         }
         _ -> Nil
@@ -84,7 +90,7 @@ fn handle_message(message: Message, state: State) -> actor.Next(Message, State) 
     }
 
     GetReconciled(reply_with) -> {
-      actor.send(reply_with, state.rendered)
+      actor.send(reply_with, state.reconciled)
 
       actor.continue(state)
     }
@@ -120,12 +126,10 @@ fn handle_message(message: Message, state: State) -> actor.Next(Message, State) 
     }
 
     GetClientHook(reply_with, id) -> {
-      let rendered = state.rendered
-
-      let result = case rendered {
-        Some(rendered) -> {
+      let result = case state.reconciled {
+        Some(reconciled) -> {
           let hook =
-            find_rendered_hook(rendered, fn(hook) {
+            find_reconciled_hook(reconciled, fn(hook) {
               case hook {
                 context.Client(i, _, _) -> unique.to_string(i) == id
                 _ -> False
@@ -145,10 +149,9 @@ fn handle_message(message: Message, state: State) -> actor.Next(Message, State) 
     }
 
     UpdateHookState(hook_id, update_fn) -> {
-      let rendered = state.rendered
-
       let updated =
-        option.map(rendered, fn(node) {
+        state.reconciled
+        |> option.map(fn(node) {
           traverse_rendered_hooks(node, fn(hook) {
             case hook {
               // this operation is only applicable to State hooks
@@ -165,42 +168,56 @@ fn handle_message(message: Message, state: State) -> actor.Next(Message, State) 
           })
         })
 
-      actor.continue(State(..state, rendered: updated))
+      actor.continue(State(..state, reconciled: updated))
+    }
+
+    Reconcile(reply_with) -> {
+      let prev_reconciled = state.reconciled
+      let view = state.ctx.view
+
+      let #(ctx, reconciled) =
+        do_reconciliation(state.ctx, view, prev_reconciled)
+
+      actor.send(reply_with, reconciled)
+
+      actor.continue(State(..state, ctx: ctx, reconciled: Some(reconciled)))
     }
 
     RenderUpdate -> {
-      let prev_rendered = state.rendered
-      let maybe_updater = state.updater
+      let prev_reconciled = state.reconciled
+      let updater = state.updater
       let view = state.ctx.view
 
-      let #(ctx, rendered) = reconcile(state.ctx, view, prev_rendered)
+      let #(ctx, reconciled) =
+        do_reconciliation(state.ctx, view, prev_reconciled)
 
-      case prev_rendered {
-        Some(prev_rendered) -> {
-          case maybe_updater {
-            Some(updater) -> {
-              let update = patch.create(prev_rendered, rendered)
+      case prev_reconciled {
+        Some(prev_reconciled) -> {
+          let update = patch.create(prev_reconciled, reconciled)
 
-              // send the rendered update using updater
-              case updater.send(update) {
-                Ok(_) -> Nil
-                Error(_) -> {
-                  logger.error("Failed to send update patch!")
-                  Nil
-                }
-              }
+          // send the rendered patch update using updater
+          case updater.send(PatchUpdate(update)) {
+            Ok(_) -> Nil
+            Error(_) -> {
+              logger.error("Failed to send update patch!")
+              Nil
             }
-
-            _ -> Nil
           }
-
-          run_cleanup_for_disposed_hooks(prev_rendered, rendered)
         }
 
-        _ -> Nil
+        None -> {
+          // this is the first render, so we send the full reconciled view instead of a patch
+          case updater.send(FullUpdate(reconciled)) {
+            Ok(_) -> Nil
+            Error(_) -> {
+              logger.error("Failed to send full reconciled view!")
+              Nil
+            }
+          }
+        }
       }
 
-      actor.continue(State(..state, ctx: ctx, rendered: Some(rendered)))
+      actor.continue(State(..state, ctx: ctx, reconciled: Some(reconciled)))
     }
 
     GetCUIDChannel(reply_with) -> {
@@ -213,12 +230,12 @@ fn handle_message(message: Message, state: State) -> actor.Next(Message, State) 
 /// Start a new runtime actor
 pub fn start(
   view: Element,
-  updater: Option(Updater(Patch)),
+  updater: Updater(RenderedUpdate),
   dispatcher: Option(Dispatcher),
 ) -> Result(Runtime, StartError) {
   let init = fn() {
     let self = process.new_subject()
-    let render_update = fn() { render_update(self) }
+    let render_update = fn() { actor.send(self, RenderUpdate) }
     let update_hook = fn(id, updater) { update_hook_state(self, id, updater) }
 
     let assert Ok(cuid_channel) =
@@ -238,7 +255,7 @@ pub fn start(
           update_hook,
         ),
         updater: updater,
-        rendered: None,
+        reconciled: None,
         cuid_channel: cuid_channel,
       )
 
@@ -309,46 +326,47 @@ fn update_hook_state(actor: Runtime, hook_id: Unique, updater: fn(Hook) -> Hook)
   actor.send(actor, UpdateHookState(hook_id, updater))
 }
 
-// TODO: remove this if possible
-fn update_state(actor, update_fn: fn(State) -> State) {
-  logger.debug("actor.send SetState")
+// // TODO: remove this if possible
+// fn update_state(actor, update_fn: fn(State) -> State) {
+//   logger.debug("actor.send SetState")
 
-  actor.send(actor, SetState(update_fn))
+//   actor.send(actor, SetState(update_fn))
+// }
+
+// fn get_state(actor) -> State {
+//   logger.debug("process.try_call GetState")
+
+//   case process.try_call(actor, GetState(_), call_timeout) {
+//     Ok(state) -> state
+//     Error(err) -> {
+//       logger.error("Error getting state from runtime actor")
+//       io.debug(err)
+//       panic
+//     }
+//   }
+// }
+
+pub fn render_update(actor) {
+  logger.debug("actor.send RenderUpdate")
+
+  actor.send(actor, RenderUpdate)
 }
 
-fn get_state(actor) -> State {
-  logger.debug("process.try_call GetState")
+/// Reconcile the view - should only be used for testing purposes
+pub fn reconcile(actor) -> ReconciledElement {
+  logger.debug("process.try_call Reconcile")
 
-  case process.try_call(actor, GetState(_), call_timeout) {
-    Ok(state) -> state
+  case process.try_call(actor, Reconcile(_), call_timeout) {
+    Ok(reconciled) -> reconciled
     Error(err) -> {
-      logger.error("Error getting state from runtime actor")
+      logger.error("Error reconciling view from runtime actor")
       io.debug(err)
       panic
     }
   }
 }
 
-fn render_update(actor) {
-  logger.debug("actor.send RenderUpdate")
-
-  actor.send(actor, RenderUpdate)
-}
-
-/// Render the view - should only be used for testing purposes
-pub fn render(actor) -> ReconciledElement {
-  let State(ctx: ctx, rendered: rendered, ..) = get_state(actor)
-
-  let #(ctx, reconciled) = reconcile(ctx, ctx.view, rendered)
-
-  update_state(actor, fn(state) {
-    State(..state, ctx: ctx, rendered: Some(reconciled))
-  })
-
-  reconciled
-}
-
-fn reconcile(
+fn do_reconciliation(
   ctx: Context,
   view: Element,
   prev: Option(ReconciledElement),
@@ -356,7 +374,7 @@ fn reconcile(
   timer.timed_operation("runtime.reconcile", fn() {
     let ReconciledResult(ctx, reconciled) =
       ctx
-      |> context.reset_for_render
+      |> context.prepare_for_reconciliation
       |> recursive.reconcile(view, None, prev)
 
     option.map(prev, fn(prev) {
@@ -562,7 +580,7 @@ fn process_state_hooks(
   traverse_rendered_hooks(rendered, process_hook)
 }
 
-fn find_rendered_hook(
+fn find_reconciled_hook(
   node: ReconciledElement,
   find_by: fn(Hook) -> Bool,
 ) -> Option(Hook) {
@@ -573,7 +591,7 @@ fn find_rendered_hook(
       {
         Ok(KeyedItem(_, hook)) -> Some(hook)
         _ -> {
-          find_rendered_hook(el, find_by)
+          find_reconciled_hook(el, find_by)
         }
       }
     }
@@ -581,7 +599,7 @@ fn find_rendered_hook(
       list.fold(children, None, fn(acc, child) {
         case acc {
           Some(_) -> acc
-          _ -> find_rendered_hook(child, find_by)
+          _ -> find_reconciled_hook(child, find_by)
         }
       })
     }
@@ -589,7 +607,7 @@ fn find_rendered_hook(
       list.fold(children, None, fn(acc, child) {
         case acc {
           Some(_) -> acc
-          _ -> find_rendered_hook(child, find_by)
+          _ -> find_reconciled_hook(child, find_by)
         }
       })
     }
