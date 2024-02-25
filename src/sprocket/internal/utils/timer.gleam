@@ -73,7 +73,7 @@ type TimedOperation {
 }
 
 fn begin_timed_operation(label: String) -> TimedOperation {
-  logger.info(string.concat(["Starting ", label, "..."]))
+  logger.debug(string.concat(["Starting ", label, "..."]))
 
   TimedOperation(label, now())
 }
