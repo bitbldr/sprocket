@@ -52,12 +52,7 @@ pub opaque type State {
 // public in order to be used in the tests and therefore this type needs to be public as well.
 pub opaque type Message {
   Shutdown
-  GetState(reply_with: Subject(State))
-  SetState(fn(State) -> State)
   GetReconciled(reply_with: Subject(Option(ReconciledElement)))
-  GetContext(reply_with: Subject(Context))
-  GetView(reply_with: Subject(Element))
-  GetUpdater(reply_with: Subject(Updater(RenderedUpdate)))
   ProcessEvent(id: String, payload: Option(String))
   ProcessClientHook(
     id: String,
@@ -68,7 +63,6 @@ pub opaque type Message {
   UpdateHookState(Unique, fn(Hook) -> Hook)
   Reconcile(reply_with: Subject(ReconciledElement))
   RenderUpdate
-  GetCUIDChannel(reply_with: Subject(Subject(cuid.Message)))
 }
 
 fn handle_message(message: Message, state: State) -> actor.Next(Message, State) {
@@ -85,36 +79,8 @@ fn handle_message(message: Message, state: State) -> actor.Next(Message, State) 
       actor.Stop(process.Normal)
     }
 
-    GetState(reply_with) -> {
-      actor.send(reply_with, state)
-
-      actor.continue(state)
-    }
-
-    SetState(update_fn) -> {
-      actor.continue(update_fn(state))
-    }
-
     GetReconciled(reply_with) -> {
       actor.send(reply_with, state.reconciled)
-
-      actor.continue(state)
-    }
-
-    GetContext(reply_with) -> {
-      actor.send(reply_with, state.ctx)
-
-      actor.continue(state)
-    }
-
-    GetView(reply_with) -> {
-      actor.send(reply_with, state.ctx.view)
-
-      actor.continue(state)
-    }
-
-    GetUpdater(reply_with) -> {
-      actor.send(reply_with, state.updater)
 
       actor.continue(state)
     }
@@ -252,11 +218,6 @@ fn handle_message(message: Message, state: State) -> actor.Next(Message, State) 
 
       actor.continue(State(..state, ctx: ctx, reconciled: Some(reconciled)))
     }
-
-    GetCUIDChannel(reply_with) -> {
-      process.send(reply_with, state.cuid_channel)
-      actor.continue(state)
-    }
   }
 }
 
@@ -315,8 +276,8 @@ pub fn stop(actor) {
   actor.send(actor, Shutdown)
 }
 
-/// Get the previously rendered view from the actor. This is useful for testing.
-pub fn get_rendered(actor) {
+/// Get the previously reconciled state from the actor. This is useful for testing.
+pub fn get_reconciled(actor) {
   logger.debug("process.try_call GetReconciled")
 
   case process.try_call(actor, GetReconciled(_), call_timeout) {

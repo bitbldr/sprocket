@@ -32,10 +32,10 @@ pub type Event {
 }
 
 pub fn render_event(spkt: Runtime, event: Event, html_id: String) {
-  case runtime.get_rendered(spkt) {
-    Some(rendered) -> {
+  case runtime.get_reconciled(spkt) {
+    Some(reconciled) -> {
       let found =
-        recursive.find(rendered, fn(el: ReconciledElement) {
+        recursive.find(reconciled, fn(el: ReconciledElement) {
           case el {
             ReconciledElement(_tag, _key, attrs, _children) -> {
               // try and find id attr that matches the given id
@@ -90,7 +90,7 @@ pub fn render_event(spkt: Runtime, event: Event, html_id: String) {
       }
     }
     None -> {
-      io.debug("no rendered")
+      io.debug("no reconciled")
       panic
     }
   }
