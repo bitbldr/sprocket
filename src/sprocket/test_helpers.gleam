@@ -21,7 +21,7 @@ pub fn render_html(spkt) {
   use render_html <- renderer(html_renderer())
 
   let html =
-    runtime.reconcile(spkt)
+    runtime.reconcile_immediate(spkt)
     |> render_html()
 
   #(spkt, html)
@@ -75,7 +75,10 @@ pub fn render_event(spkt: Runtime, event: Event, html_id: String) {
 
           case rendered_event_handler {
             Ok(ReconciledEventHandler(_kind, event_id)) -> {
-              runtime.process_event(spkt, event_id, None)
+              case runtime.process_event_immediate(spkt, event_id, None) {
+                Ok(_) -> spkt
+                _ -> panic
+              }
             }
             _ -> {
               io.debug("no event handler")

@@ -54,6 +54,11 @@ pub opaque type Message {
   Shutdown
   GetReconciled(reply_with: Subject(Option(ReconciledElement)))
   ProcessEvent(id: String, payload: Option(String))
+  ProcessEventImmediate(
+    reply_with: Subject(Result(Nil, Nil)),
+    id: String,
+    payload: Option(String),
+  )
   ProcessClientHook(
     id: String,
     event: String,
@@ -61,7 +66,7 @@ pub opaque type Message {
     reply_dispatcher: fn(String, Option(String)) -> Result(Nil, Nil),
   )
   UpdateHookState(Unique, fn(Hook) -> Hook)
-  Reconcile(reply_with: Subject(ReconciledElement))
+  ReconcileImmediate(reply_with: Subject(ReconciledElement))
   RenderUpdate
 }
 
@@ -103,6 +108,34 @@ fn handle_message(message: Message, state: State) -> actor.Next(Message, State) 
         }
         _ -> {
           logger.error("No handler found with id: " <> id)
+
+          actor.continue(state)
+        }
+      }
+    }
+
+    ProcessEventImmediate(reply_with, id, payload) -> {
+      let handler =
+        list.find(state.ctx.handlers, fn(h) {
+          let IdentifiableHandler(i, _) = h
+          unique.to_string(i) == id
+        })
+
+      case handler {
+        Ok(context.IdentifiableHandler(_, handler_fn)) -> {
+          // call the event handler function
+          payload
+          |> option.map(callback_param_from_string)
+          |> handler_fn()
+
+          actor.send(reply_with, Ok(Nil))
+
+          actor.continue(state)
+        }
+        _ -> {
+          logger.error("No handler found with id: " <> id)
+
+          actor.send(reply_with, Error(Nil))
 
           actor.continue(state)
         }
@@ -170,7 +203,7 @@ fn handle_message(message: Message, state: State) -> actor.Next(Message, State) 
       actor.continue(State(..state, reconciled: updated))
     }
 
-    Reconcile(reply_with) -> {
+    ReconcileImmediate(reply_with) -> {
       let prev_reconciled = state.reconciled
       let view = state.ctx.view
 
@@ -292,9 +325,28 @@ pub fn get_reconciled(actor) {
 
 /// Get the event handler for a given id
 pub fn process_event(actor, id: String, payload: Option(String)) {
-  logger.debug("process.try_call HandleEvent")
+  logger.debug("process.try_call ProcessEvent")
 
   actor.send(actor, ProcessEvent(id, payload))
+}
+
+pub fn process_event_immediate(
+  actor,
+  id: String,
+  payload: Option(String),
+) -> Result(Nil, Nil) {
+  logger.debug("process.try_call ProcessEventImmediate")
+
+  case
+    process.try_call(actor, ProcessEventImmediate(_, id, payload), call_timeout)
+  {
+    Ok(result) -> result
+    Error(err) -> {
+      logger.error("Error processing event from runtime actor")
+      io.debug(err)
+      Error(Nil)
+    }
+  }
 }
 
 /// Get the client hook for a given id
@@ -317,10 +369,10 @@ pub fn render_update(actor) {
 }
 
 /// Reconcile the view - should only be used for testing purposes
-pub fn reconcile(actor) -> ReconciledElement {
+pub fn reconcile_immediate(actor) -> ReconciledElement {
   logger.debug("process.try_call Reconcile")
 
-  case process.try_call(actor, Reconcile(_), call_timeout) {
+  case process.try_call(actor, ReconcileImmediate(_), call_timeout) {
     Ok(reconciled) -> reconciled
     Error(err) -> {
       logger.error("Error reconciling view from runtime actor")
