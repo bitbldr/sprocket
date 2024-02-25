@@ -165,8 +165,6 @@ fn connect(spkt: Sprocket) -> Result(Runtime, Nil) {
 
   case runtime.start(spkt.view, updater, Some(dispatcher)) {
     Ok(r) -> {
-      logger.info("Sprocket runtime connected!")
-
       // schedule intitial live render
       runtime.render_update(r)
 
