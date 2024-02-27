@@ -1,48 +1,20 @@
-import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/dynamic.{type Dynamic}
-import gleam/string
-import gleam/string_builder
 import sprocket/context.{
-  type Attribute, type Element, Debug, Element, IgnoreUpdate, Keyed, Raw,
-  SafeHtml,
+  type Attribute, type Element, Debug, Element, Fragment, IgnoreUpdate, Keyed,
+  Text,
 }
 
 pub fn el(tag: String, attrs: List(Attribute), children: List(Element)) {
   Element(tag, attrs, children)
 }
 
-pub fn dangerous_raw_html(html: String) {
-  Raw(html)
-}
-
-fn safe_replace_char(key: String) -> String {
-  case key {
-    "&" -> "&amp;"
-    "<" -> "&lt;"
-    ">" -> "&gt;"
-    "\"" -> "&quot;"
-    "'" -> "&#39;"
-    "/" -> "&#x2F;"
-    "`" -> "&#x60;"
-    "=" -> "&#x3D;"
-    _ -> key
-  }
-}
-
-fn escape_html(unsafe: String) {
-  string.to_graphemes(unsafe)
-  |> list.fold(
-    string_builder.new(),
-    fn(sb, grapheme) { string_builder.append(sb, safe_replace_char(grapheme)) },
-  )
-  |> string_builder.to_string
-  |> SafeHtml
+pub fn fragment(children: List(Element)) {
+  Fragment(children)
 }
 
 pub fn text(text: String) -> Element {
-  // safely escape any html text
-  escape_html(text)
+  Text(text)
 }
 
 pub fn keyed(key: String, element: Element) {

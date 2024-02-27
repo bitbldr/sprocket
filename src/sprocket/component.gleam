@@ -6,7 +6,7 @@ import sprocket/context.{
 pub fn component(c: FunctionalComponent(p), props: p) -> Element {
   // // This function wrapper will not work since we need to compare the original function
   // // when computing the diff and this will create a different function on every render
-  // let component = fn(ctx: Context, props: Dynamic) -> #(Context, List(Element)) {
+  // let component = fn(ctx: Context, props: Dynamic) -> #(Context, Element) {
   //   let props = dynamic.unsafe_coerce(props)
   //   fc.component(ctx, props)
   // }
@@ -24,6 +24,6 @@ pub fn component(c: FunctionalComponent(p), props: p) -> Element {
   Component(component, props)
 }
 
-pub fn render(ctx, elements) -> #(Context, List(Element)) {
+pub fn render(ctx, elements) -> #(Context, Element) {
   #(ctx, elements)
 }

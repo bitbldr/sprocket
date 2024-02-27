@@ -1,6 +1,6 @@
 import gleam/int
 import gleam/list
-import gleam/map.{Map}
+import gleam/dict.{type Dict}
 import gleam/option.{type Option, None, Some}
 import gleam/erlang/process.{type Subject}
 import gleam/dynamic.{type Dynamic}
@@ -17,6 +17,10 @@ pub type CallbackParam {
   CallbackString(value: String)
 }
 
+pub fn callback_param_from_string(value: String) -> CallbackParam {
+  CallbackString(value)
+}
+
 pub type IdentifiableHandler {
   IdentifiableHandler(id: Unique, handler_fn: HandlerFn)
 }
@@ -28,20 +32,20 @@ pub type Attribute {
 }
 
 pub type AbstractFunctionalComponent =
-  fn(Context, Dynamic) -> #(Context, List(Element))
+  fn(Context, Dynamic) -> #(Context, Element)
 
 pub type FunctionalComponent(p) =
-  fn(Context, p) -> #(Context, List(Element))
+  fn(Context, p) -> #(Context, Element)
 
 pub type Element {
   Element(tag: String, attrs: List(Attribute), children: List(Element))
   Component(component: FunctionalComponent(Dynamic), props: Dynamic)
+  Fragment(children: List(Element))
   Debug(id: String, meta: Option(Dynamic), element: Element)
   Keyed(key: String, element: Element)
   IgnoreUpdate(element: Element)
   Provider(key: String, value: Dynamic, element: Element)
-  SafeHtml(html: String)
-  Raw(text: String)
+  Text(text: String)
 }
 
 pub type Updater(r) {
@@ -123,13 +127,10 @@ pub fn compare_deps(
 
     Ok(zipped_deps) -> {
       case
-        list.all(
-          zipped_deps,
-          fn(z) {
-            let #(a, b) = z
-            a == b
-          },
-        )
+        list.all(zipped_deps, fn(z) {
+          let #(a, b) = z
+          a == b
+        })
       {
         True -> Unchanged
         _ -> Changed(deps)
@@ -151,7 +152,7 @@ pub type Context {
     update_hook: fn(Unique, fn(Hook) -> Hook) -> Nil,
     dispatch_event: fn(Unique, String, Option(String)) -> Result(Nil, Nil),
     cuid_channel: Subject(cuid.Message),
-    providers: Map(String, Dynamic),
+    providers: Dict(String, Dynamic),
   )
 }
 
@@ -163,13 +164,15 @@ pub fn new(
   view: Element,
   cuid_channel: Subject(cuid.Message),
   dispatcher: Option(Dispatcher),
+  render_update: fn() -> Nil,
+  update_hook: fn(Unique, fn(Hook) -> Hook) -> Nil,
 ) -> Context {
   Context(
     view: view,
     wip: ComponentWip(hooks: ordered_map.new(), index: 0, is_first_render: True),
     handlers: [],
-    render_update: fn() { Nil },
-    update_hook: fn(_index, _updater) { Nil },
+    render_update: render_update,
+    update_hook: update_hook,
     dispatch_event: fn(id, name, payload) {
       case dispatcher {
         Some(Dispatcher(dispatch: dispatch)) ->
@@ -178,11 +181,11 @@ pub fn new(
       }
     },
     cuid_channel: cuid_channel,
-    providers: map.new(),
+    providers: dict.new(),
   )
 }
 
-pub fn reset_for_render(ctx: Context) {
+pub fn prepare_for_reconciliation(ctx: Context) {
   Context(..ctx, handlers: [])
 }
 
@@ -207,12 +210,10 @@ pub fn fetch_or_init_hook(
       case ctx.wip.is_first_render {
         True -> Nil
         False -> {
-          logger.error(
-            "
+          logger.error("
             Hook not found for index: " <> int.to_string(index) <> ". This indicates a hook was dynamically
             created since first render which is not allowed.
-          ",
-          )
+          ")
 
           // TODO: handle this error more gracefully in production environments
           panic
@@ -262,13 +263,10 @@ pub fn get_event_handler(
   id: Unique,
 ) -> #(Context, Result(IdentifiableHandler, Nil)) {
   let handler =
-    list.find(
-      ctx.handlers,
-      fn(h) {
-        let IdentifiableHandler(i, _) = h
-        i == id
-      },
-    )
+    list.find(ctx.handlers, fn(h) {
+      let IdentifiableHandler(i, _) = h
+      i == id
+    })
 
   #(ctx, handler)
 }

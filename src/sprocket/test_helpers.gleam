@@ -1,26 +1,28 @@
 import gleam/io
 import gleam/list
 import gleam/option.{None, Some}
-import ids/cuid
-import sprocket/sprocket.{type Sprocket}
-import sprocket/context
-import sprocket/render.{
-  type RenderedElement, RenderedAttribute, RenderedElement, RenderedEventHandler,
+import sprocket/runtime.{type Runtime}
+import sprocket/context.{Updater}
+import sprocket/internal/reconcile.{
+  type ReconciledElement, ReconciledAttribute, ReconciledElement,
+  ReconciledEventHandler,
 }
-import sprocket/html/render as html_render
-import sprocket/internal/utils/unique
+import sprocket/internal/reconcilers/recursive
+import sprocket/internal/render.{renderer}
+import sprocket/internal/renderers/html.{html_renderer}
 
 pub fn live(view) {
-  let assert Ok(cuid_channel) = cuid.start()
-  sprocket.start(unique.uuid(), view, cuid_channel, None, None)
+  let assert Ok(spkt) = runtime.start(view, Updater(fn(_) { Ok(Nil) }), None)
+
+  spkt
 }
 
 pub fn render_html(spkt) {
-  let renderer = html_render.renderer()
+  use render_html <- renderer(html_renderer())
 
   let html =
-    sprocket.render(spkt)
-    |> renderer.render()
+    runtime.reconcile_immediate(spkt)
+    |> render_html()
 
   #(spkt, html)
 }
@@ -29,37 +31,34 @@ pub type Event {
   ClickEvent
 }
 
-pub fn render_event(spkt: Sprocket, event: Event, html_id: String) {
-  case sprocket.get_rendered(spkt) {
-    Some(rendered) -> {
+pub fn render_event(spkt: Runtime, event: Event, html_id: String) {
+  case runtime.get_reconciled(spkt) {
+    Some(reconciled) -> {
       let found =
-        render.find(
-          rendered,
-          fn(el: RenderedElement) {
-            case el {
-              RenderedElement(_tag, _key, attrs, _children) -> {
-                // try and find id attr that matches the given id
-                let matching_id_attr =
-                  attrs
-                  |> list.find(fn(attr) {
-                    case attr {
-                      RenderedAttribute("id", id) if id == html_id -> True
-                      _ -> False
-                    }
-                  })
+        recursive.find(reconciled, fn(el: ReconciledElement) {
+          case el {
+            ReconciledElement(_tag, _key, attrs, _children) -> {
+              // try and find id attr that matches the given id
+              let matching_id_attr =
+                attrs
+                |> list.find(fn(attr) {
+                  case attr {
+                    ReconciledAttribute("id", id) if id == html_id -> True
+                    _ -> False
+                  }
+                })
 
-                case matching_id_attr {
-                  Ok(_) -> True
-                  _ -> False
-                }
+              case matching_id_attr {
+                Ok(_) -> True
+                _ -> False
               }
-              _ -> False
             }
-          },
-        )
+            _ -> False
+          }
+        })
 
       case found {
-        Ok(RenderedElement(_tag, _key, attrs, _children)) -> {
+        Ok(ReconciledElement(_tag, _key, attrs, _children)) -> {
           let event_kind = case event {
             ClickEvent -> "click"
           }
@@ -69,19 +68,16 @@ pub fn render_event(spkt: Sprocket, event: Event, html_id: String) {
             attrs
             |> list.find(fn(attr) {
               case attr {
-                RenderedEventHandler(kind, _id) if kind == event_kind -> True
+                ReconciledEventHandler(kind, _id) if kind == event_kind -> True
                 _ -> False
               }
             })
 
           case rendered_event_handler {
-            Ok(RenderedEventHandler(_kind, event_id)) -> {
-              case sprocket.get_handler(spkt, event_id) {
-                Ok(context.IdentifiableHandler(_, handler)) -> {
-                  // call the event handler
-                  handler(None)
-                }
-                _ -> Nil
+            Ok(ReconciledEventHandler(_kind, event_id)) -> {
+              case runtime.process_event_immediate(spkt, event_id, None) {
+                Ok(_) -> spkt
+                _ -> panic
               }
             }
             _ -> {
@@ -90,14 +86,14 @@ pub fn render_event(spkt: Sprocket, event: Event, html_id: String) {
             }
           }
         }
-        Error(_) -> {
+        _ -> {
           io.debug("no match")
           panic
         }
       }
     }
     None -> {
-      io.debug("no rendered")
+      io.debug("no reconciled")
       panic
     }
   }

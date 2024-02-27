@@ -2,12 +2,14 @@ import gleam/int
 import gleam/string
 import gleam/option.{None}
 import gleeunit/should
+import gleam/erlang/process.{type Subject}
 import sprocket/context.{type Context, OnMount, OnUpdate, WithDeps}
 import sprocket/component.{component}
-import sprocket/html/elements.{button, text}
+import sprocket/html/elements.{button, fragment, text}
 import sprocket/html/attributes.{id, on_click}
 import sprocket/hooks.{effect, handler, reducer}
 import sprocket/test_helpers.{ClickEvent, live, render_event, render_html}
+import utils/tally_counter
 
 type Model {
   Model(count: Int)
@@ -53,7 +55,10 @@ fn inc_initial_render_counter(ctx: Context, _props) {
 
   let current_count = int.to_string(count)
 
-  component.render(ctx, [text("current count is: "), text(current_count)])
+  component.render(
+    ctx,
+    fragment([text("current count is: "), text(current_count)]),
+  )
 }
 
 pub fn effect_should_only_run_on_initial_render_test() {
@@ -76,49 +81,51 @@ pub fn effect_should_only_run_on_initial_render_test() {
   |> should.equal("current count is: 1")
 }
 
-fn inc_on_every_update_counter(ctx: Context, _props) {
-  // Define a reducer to handle events and update the state
-  use ctx, Model(count: count), dispatch <- reducer(ctx, initial(), update)
+type IncEveryUpdateCounterProps {
+  IncEveryUpdateCounterProps(tally: Subject(tally_counter.Message))
+}
 
-  // Example effect with an empty list of dependencies, runs once on mount
+fn inc_on_every_update_counter(ctx: Context, props: IncEveryUpdateCounterProps) {
+  // Example effect that runs on every update
   use ctx <- effect(
     ctx,
     fn() {
-      dispatch(UpdateCount(count + 1))
+      tally_counter.increment(props.tally)
       None
     },
     OnUpdate,
   )
 
-  let current_count = int.to_string(count)
-
-  component.render(ctx, [text("current count is: "), text(current_count)])
+  component.render(ctx, text(""))
 }
 
 pub fn effect_should_run_on_every_update_test() {
-  let view = component(inc_on_every_update_counter, TestCounterProps)
+  let assert Ok(tally) = tally_counter.start()
+
+  let view =
+    component(inc_on_every_update_counter, IncEveryUpdateCounterProps(tally))
 
   let spkt = live(view)
 
-  let #(spkt, rendered) = render_html(spkt)
+  let #(spkt, _rendered) = render_html(spkt)
 
-  rendered
-  |> should.equal("current count is: 0")
+  tally_counter.get_count(tally)
+  |> should.equal(1)
 
-  let #(spkt, rendered) = render_html(spkt)
+  let #(spkt, _rendered) = render_html(spkt)
 
-  rendered
-  |> should.equal("current count is: 1")
+  tally_counter.get_count(tally)
+  |> should.equal(2)
 
-  let #(_spkt, rendered) = render_html(spkt)
+  let #(spkt, _rendered) = render_html(spkt)
 
-  rendered
-  |> should.equal("current count is: 2")
+  tally_counter.get_count(tally)
+  |> should.equal(3)
 
-  let #(_spkt, rendered) = render_html(spkt)
+  let #(_spkt, _rendered) = render_html(spkt)
 
-  rendered
-  |> should.equal("current count is: 3")
+  tally_counter.get_count(tally)
+  |> should.equal(4)
 }
 
 fn inc_reset_on_button_click_counter(ctx: Context, _props) {
@@ -146,12 +153,12 @@ fn inc_reset_on_button_click_counter(ctx: Context, _props) {
 
   component.render(
     ctx,
-    [
+    fragment([
       text("current count is: "),
       text(current_count),
       button([id("increment"), on_click(on_increment)], [text("increment")]),
       button([id("reset"), on_click(on_reset)], [text("reset")]),
-    ],
+    ]),
   )
 }
 

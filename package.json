@@ -1,6 +1,6 @@
 {
   "name": "sprocket-js",
-  "version": "0.1.6",
+  "version": "0.1.9",
   "license": "MIT",
   "source": "client/src/sprocket.ts",
   "main": "client/dist/sprocket.js",
@@ -27,8 +27,7 @@
     "build": "gleam build && yarn run client:build"
   },
   "dependencies": {
-    "morphdom": "^2.7.0",
-    "reconnecting-websocket": "^4.4.0",
+    "snabbdom": "^3.5.1",
     "topbar": "^2.0.1"
   }
 }

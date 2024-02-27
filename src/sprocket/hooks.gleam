@@ -1,6 +1,7 @@
 import gleam/option.{type Option, None, Some}
 import gleam/dynamic
-import gleam/map
+import gleam/result
+import gleam/dict
 import gleam/otp/actor
 import gleam/erlang/process.{type Subject}
 import sprocket/internal/constants.{call_timeout}
@@ -23,8 +24,8 @@ import sprocket/internal/logger
 pub fn state(
   ctx: Context,
   initial: a,
-  cb: fn(Context, a, fn(a) -> Nil) -> #(Context, List(Element)),
-) -> #(Context, List(Element)) {
+  cb: fn(Context, a, fn(a) -> Nil) -> #(Context, Element),
+) -> #(Context, Element) {
   let Context(render_update: render_update, update_hook: update_hook, ..) = ctx
 
   let init_state = fn() {
@@ -36,20 +37,17 @@ pub fn state(
 
   // create a dispatch function for updating the reducer's state and triggering a render update
   let setter = fn(value) -> Nil {
-    update_hook(
-      hook_id,
-      fn(hook) {
-        case hook {
-          context.State(id, _) if id == hook_id ->
-            context.State(id, dynamic.from(value))
-          _ -> {
-            // this should never happen and could be an indication that a hook is being
-            // used incorrectly
-            throw_on_unexpected_hook_result(hook)
-          }
+    update_hook(hook_id, fn(hook) {
+      case hook {
+        context.State(id, _) if id == hook_id ->
+          context.State(id, dynamic.from(value))
+        _ -> {
+          // this should never happen and could be an indication that a hook is being
+          // used incorrectly
+          throw_on_unexpected_hook_result(hook)
         }
-      },
-    )
+      }
+    })
 
     render_update()
   }
@@ -76,8 +74,8 @@ pub fn reducer(
   ctx: Context,
   initial: model,
   reducer: Reducer(model, msg),
-  cb: fn(Context, model, fn(msg) -> Nil) -> #(Context, List(Element)),
-) -> #(Context, List(Element)) {
+  cb: fn(Context, model, fn(msg) -> Nil) -> #(Context, Element),
+) -> #(Context, Element) {
   let Context(render_update: render_update, ..) = ctx
 
   let reducer_init = fn() {
@@ -85,27 +83,28 @@ pub fn reducer(
     //  1. StateReducer msg, which simply returns the state of the reducer
     //  2. DispatchReducer msg, which will update the reducer state when a dispatch is triggered
     let assert Ok(reducer_actor) =
-      actor.start(
-        initial,
-        fn(message: StateOrDispatchReducer(model, msg), state: model) -> actor.Next(
-          StateOrDispatchReducer(model, msg),
-          model,
-        ) {
-          case message {
-            Shutdown -> actor.Stop(process.Normal)
+      actor.start(initial, fn(
+        message: StateOrDispatchReducer(model, msg),
+        state: model,
+      ) -> actor.Next(StateOrDispatchReducer(model, msg), model) {
+        case message {
+          Shutdown -> actor.Stop(process.Normal)
 
-            StateReducer(reply_with) -> {
-              process.send(reply_with, state)
-              actor.continue(state)
-            }
-
-            DispatchReducer(r, m) -> {
-              r(state, m)
-              |> actor.continue()
-            }
+          StateReducer(reply_with) -> {
+            process.send(reply_with, state)
+            actor.continue(state)
           }
-        },
-      )
+
+          DispatchReducer(r, m) -> {
+            r(state, m)
+            |> actor.continue()
+          }
+        }
+      })
+      |> result.map_error(fn(error) {
+        logger.error("hooks.reducer: failed to start reducer actor")
+        error
+      })
 
     context.Reducer(
       unique.cuid(ctx.cuid_channel),
@@ -137,20 +136,18 @@ pub fn reducer(
 pub fn consumer(
   ctx: Context,
   key: String,
-  cb: fn(Context, a) -> #(Context, List(Element)),
-) -> #(Context, List(Element)) {
-  let value = case map.get(ctx.providers, key) {
+  cb: fn(Context, a) -> #(Context, Element),
+) -> #(Context, Element) {
+  let value = case dict.get(ctx.providers, key) {
     Ok(v) -> {
       dynamic.unsafe_coerce(v)
     }
     _ -> {
-      logger.error(
-        "
+      logger.error("
         No provider found with key: " <> key <> "
 
         When using a consumer hook, you must include a parent provider with the same key.
-        ",
-      )
+        ")
 
       panic
     }
@@ -167,15 +164,15 @@ pub fn effect(
   ctx: Context,
   effect_fn: fn() -> EffectCleanup,
   trigger: HookTrigger,
-  cb: fn(Context) -> #(Context, List(Element)),
-) -> #(Context, List(Element)) {
+  cb: fn(Context) -> #(Context, Element),
+) -> #(Context, Element) {
   // define the initial effect function that will only run when the hook is first created
   let init = fn() {
     Effect(unique.cuid(ctx.cuid_channel), effect_fn, trigger, None)
   }
 
   // get the previous effect result, if one exists
-  let #(ctx, Effect(id, _effect_fn, _trigger, prev), index) =
+  let assert #(ctx, Effect(id, _effect_fn, _trigger, prev), index) =
     context.fetch_or_init_hook(ctx, init)
 
   // update the effect hook, combining with the previous result
@@ -194,19 +191,12 @@ pub fn memo(
   ctx: Context,
   memo_fn: fn() -> a,
   trigger: HookTrigger,
-  cb: fn(Context, a) -> #(Context, List(Element)),
-) -> #(Context, List(Element)) {
-  let #(ctx, context.Memo(id, current_memoized, prev), index) =
-    context.fetch_or_init_hook(
-      ctx,
-      fn() {
-        context.Memo(
-          unique.cuid(ctx.cuid_channel),
-          dynamic.from(memo_fn()),
-          None,
-        )
-      },
-    )
+  cb: fn(Context, a) -> #(Context, Element),
+) -> #(Context, Element) {
+  let assert #(ctx, context.Memo(id, current_memoized, prev), index) =
+    context.fetch_or_init_hook(ctx, fn() {
+      context.Memo(unique.cuid(ctx.cuid_channel), dynamic.from(memo_fn()), None)
+    })
 
   let #(memoized, deps) =
     maybe_trigger_update(
@@ -237,13 +227,12 @@ pub fn callback(
   ctx: Context,
   callback_fn: fn() -> Nil,
   trigger: HookTrigger,
-  cb: fn(Context, fn() -> Nil) -> #(ctx, List(Element)),
-) -> #(ctx, List(Element)) {
-  let #(ctx, Callback(id, current_callback_fn, prev), index) =
-    context.fetch_or_init_hook(
-      ctx,
-      fn() { Callback(unique.cuid(ctx.cuid_channel), callback_fn, None) },
-    )
+  cb: fn(Context, fn() -> Nil) -> #(ctx, Element),
+) -> #(ctx, Element) {
+  let assert #(ctx, Callback(id, current_callback_fn, prev), index) =
+    context.fetch_or_init_hook(ctx, fn() {
+      Callback(unique.cuid(ctx.cuid_channel), callback_fn, None)
+    })
 
   let #(callback_fn, deps) =
     maybe_trigger_update(
@@ -306,13 +295,12 @@ fn maybe_trigger_update(
 pub fn handler(
   ctx: Context,
   handler_fn: HandlerFn,
-  cb: fn(Context, IdentifiableHandler) -> #(ctx, List(Element)),
-) -> #(ctx, List(Element)) {
-  let #(ctx, Handler(id, _handler_fn), index) =
-    context.fetch_or_init_hook(
-      ctx,
-      fn() { Handler(unique.cuid(ctx.cuid_channel), handler_fn) },
-    )
+  cb: fn(Context, IdentifiableHandler) -> #(ctx, Element),
+) -> #(ctx, Element) {
+  let assert #(ctx, Handler(id, _handler_fn), index) =
+    context.fetch_or_init_hook(ctx, fn() {
+      Handler(unique.cuid(ctx.cuid_channel), handler_fn)
+    })
 
   let ctx = context.update_hook(ctx, Handler(id, handler_fn), index)
 
@@ -328,14 +316,13 @@ pub fn client(
   ctx: Context,
   name: String,
   handle_event: Option(ClientEventHandler),
-  cb: fn(Context, fn() -> Attribute, ClientDispatcher) ->
-    #(Context, List(Element)),
-) -> #(Context, List(Element)) {
+  cb: fn(Context, fn() -> Attribute, ClientDispatcher) -> #(Context, Element),
+) -> #(Context, Element) {
   // define the client hook initializer
   let init = fn() { Client(unique.cuid(ctx.cuid_channel), name, handle_event) }
 
   // get the existing client hook or initialize it
-  let #(ctx, Client(id, _name, _handle_event), index) =
+  let assert #(ctx, Client(id, _name, _handle_event), index) =
     context.fetch_or_init_hook(ctx, init)
 
   // update the effect hook, combining with the previous result

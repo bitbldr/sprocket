@@ -1,40 +1,104 @@
-import { isInteger } from "./utils";
+import { h, VNode, VNodeData, fragment } from "snabbdom";
+import { constant } from "./constants";
+import { isInteger, htmlDecode } from "./utils";
+import { ClientHookProvider } from "./hooks";
+import { EventHandlerProvider } from "./events";
 
-// very naive and basic rendering algorithm
-// TODO: rewrite to a more readable approach
-export function renderDom(dom): string {
-  if (typeof dom === "string") {
-    return dom;
+export type Providers = {
+  clientHookProvider: ClientHookProvider;
+  eventHandlerProvider: EventHandlerProvider;
+};
+
+export function render(
+  node: string | Record<string, any>,
+  providers: Providers
+): string | VNode {
+  if (typeof node === "string") {
+    return node;
   }
 
-  switch (dom.type) {
+  switch (node.type) {
+    case "element":
+      return renderElement(node, providers);
     case "component":
-      return renderComponent(dom);
+      return renderComponent(node, providers);
+    case "fragment":
+      return renderFragment(node, providers);
     default:
-      return renderElement(dom);
+      throw new Error(`Unknown node type: ${node.type}`);
   }
 }
 
-function renderComponent(component): string {
-  let result = "";
-  for (let i = 0; i < Object.keys(component).length - 1; i++) {
-    result += renderDom(component[i]);
+function renderElement(element, providers: Providers): VNode {
+  let { clientHookProvider, eventHandlerProvider } = providers;
+  let data: VNodeData = { attrs: element.attrs };
+
+  if (element.key) {
+    data.key = element.key;
   }
 
-  return result;
+  // TODO: figure out how to actually ignore updates with snabbdom
+  if (element.ignore) {
+    data.ignore = true;
+  }
+
+  if (hasClientHook(element.attrs)) {
+    data.hook = {
+      ...clientHookProvider(),
+    };
+  }
+
+  // wire up event handlers
+  const eventHandlers = wireEventHandlers(element.attrs, eventHandlerProvider);
+
+  if (Object.keys(eventHandlers).length > 0) {
+    data.on = eventHandlers;
+  }
+
+  return h(
+    element.tag,
+    data,
+    Object.keys(element)
+      .filter((key) => isInteger(key))
+      .reduce((acc, key) => [...acc, render(element[key], providers)], [])
+  );
 }
 
-function renderElement(element): string {
-  const openingTag =
-    Object.keys(element.attrs).reduce((result, key) => {
-      return result + ` ${key}="${element.attrs[key]}"`;
-    }, `<${element.type}`) + ">";
+function renderComponent(component, providers: Providers): string | VNode {
+  return render(component["0"], providers);
+}
 
-  const children = Object.keys(element)
-    .filter((key) => isInteger(key))
-    .reduce((rendered, key) => rendered + renderDom(element[key]), "");
+function renderFragment(f, providers: Providers): VNode {
+  return fragment(
+    Object.keys(f)
+      .filter((key) => isInteger(key))
+      .reduce((acc, key) => [...acc, render(f[key], providers)], [])
+  );
+}
 
-  const closingTag = "</" + element.type + ">";
+function wireEventHandlers(
+  attrs: Record<string, any>,
+  eventHandlerProvider: EventHandlerProvider
+) {
+  return Object.keys(attrs)
+    .filter((key) => key.startsWith(constant.EventAttrPrefix))
+    .reduce((acc, key) => {
+      const kind = key.replace(`${constant.EventAttrPrefix}-`, "");
 
-  return openingTag + children + closingTag;
+      return {
+        ...acc,
+        [kind]: eventHandlerProvider({ kind, id: attrs[key] }),
+      };
+    }, {});
+}
+
+function hasClientHook(attrs: Record<string, any>) {
+  const name = attrs && (attrs[`${constant.HookAttrPrefix}`] as string);
+  const id = attrs && (attrs[`${constant.HookAttrPrefix}-id`] as string);
+
+  if (id && name) {
+    return true;
+  }
+
+  return false;
 }

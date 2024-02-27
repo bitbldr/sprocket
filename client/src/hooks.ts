@@ -1,35 +1,27 @@
-import ReconnectingWebSocket from "reconnecting-websocket";
+import { Module, VNode } from "snabbdom";
 import { constant } from "./constants";
 
-export type PushEvent = (event: string, payload: any) => void;
+type PushEvent = (event: string, payload: any) => void;
 
-export type ClientHook = {
+export type Hook = {
   el: Element;
-  name: string;
   pushEvent: PushEvent;
   handleEvent: (event: string, handler: (payload: any) => any) => void;
 };
 
-export type ClientHookSpec = {
-  mounted?: (hook: ClientHook) => void;
-  beforeUpdate?: (hook: ClientHook) => void;
-  updated?: (hook: ClientHook) => void;
-  destroyed?: (hook: ClientHook) => void;
-  disconnected?: (hook: ClientHook) => void;
-  reconnected?: (hook: ClientHook) => void;
-};
+export type ClientHookProvider = () => Module;
 
-export function processClientHookMount(
-  socket: ReconnectingWebSocket,
-  hooks: Record<string, ClientHookSpec>
-): Record<string, ClientHook> {
-  // handle hook lifecycle mounted events, return a clientHookMap
-  return Object.keys(hooks).reduce((clientHookMap, name) => {
-    if (hooks[name].mounted) {
-      return Array.from(
-        document.querySelectorAll(`[${constant.HookAttrPrefix}=${name}]`)
-      ).reduce((clientHookMap, el) => {
-        const hookId = el.getAttribute(`${constant.HookAttrPrefix}-id`);
+export const initClientHookProvider = (
+  socket: WebSocket,
+  hooks: Record<string, any>,
+  clientHookMap: Record<string, any>
+): ClientHookProvider => {
+  return () => ({
+    create: (emptyVNode, vnode) => {
+      const h = maybeGetHook(vnode);
+
+      if (h) {
+        const { id: hookId, name: hookName } = h;
 
         const pushEvent = (name: string, payload: any) => {
           socket.send(
@@ -53,53 +45,70 @@ export function processClientHookMount(
           });
         };
 
-        clientHookMap[hookId] = { el, name, pushEvent, handleEvent };
+        clientHookMap[hookId] = {
+          el: vnode.elm,
+          name: hookName,
+          pushEvent,
+          handleEvent,
+        };
 
-        hooks[name].mounted(clientHookMap[hookId]);
+        execClientHook(hooks, clientHookMap, hookName, hookId, "create");
+      }
+    },
+    insert: (vnode) => {
+      const h = maybeGetHook(vnode);
 
-        return clientHookMap;
-      }, {});
-    }
+      if (h) {
+        const { id: hookId, name: hookName } = h;
+        execClientHook(hooks, clientHookMap, hookName, hookId, "insert");
+      }
+    },
+    update: (oldVNode, vnode) => {
+      const h = maybeGetHook(vnode);
 
-    return clientHookMap;
-  }, {});
+      if (h) {
+        const { id: hookId, name: hookName } = h;
+        execClientHook(hooks, clientHookMap, hookName, hookId, "update");
+      }
+    },
+    destroy: (vnode) => {
+      const h = maybeGetHook(vnode);
+
+      if (h) {
+        const { id: hookId, name: hookName } = h;
+        execClientHook(hooks, clientHookMap, hookName, hookId, "destroy");
+
+        delete clientHookMap[hookId];
+      }
+    },
+  });
+};
+
+function maybeGetHook(vnode: VNode) {
+  const attrs = vnode?.data?.attrs;
+
+  const name = attrs && (attrs[`${constant.HookAttrPrefix}`] as string);
+  const id = attrs && (attrs[`${constant.HookAttrPrefix}-id`] as string);
+
+  if (id && name) {
+    return { id, name };
+  }
+
+  return null;
 }
 
-export function processClientHookLifecycle(
-  lifecycle: keyof ClientHookSpec,
-  hooks: Record<string, ClientHookSpec>,
-  clientHookMap: Record<string, ClientHook>,
-  el: Element
+function execClientHook(
+  hooks: Record<string, any>,
+  clientHookMap: Record<string, any>,
+  hookName: string,
+  hookId: string,
+  method: string
 ) {
-  const hookId = el.getAttribute(`${constant.HookAttrPrefix}-id`);
+  const hook = hooks[hookName];
 
-  if (hookId && clientHookMap[hookId]) {
-    const hook = clientHookMap[hookId];
-
-    if (hooks[hook.name][lifecycle]) {
-      hooks[hook.name][lifecycle](hook);
-    }
+  if (hook) {
+    hook[method] && hook[method](clientHookMap[hookId]);
+  } else {
+    throw new Error(`Client hook ${hookName} not found`);
   }
-}
-
-export function processClientHookDestroyed(
-  hooks: Record<string, ClientHookSpec>,
-  clientHookMap: Record<string, ClientHook>,
-  el: Element
-): Record<string, ClientHook> {
-  const hookId = el.getAttribute(`${constant.HookAttrPrefix}-id`);
-
-  if (hookId && clientHookMap[hookId]) {
-    const hook = clientHookMap[hookId];
-
-    if (hooks[hook.name].destroyed) {
-      hooks[hook.name].destroyed(hook);
-
-      delete clientHookMap[hookId];
-
-      return clientHookMap;
-    }
-  }
-
-  return clientHookMap;
 }

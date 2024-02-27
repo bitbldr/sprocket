@@ -1,4 +1,4 @@
-import { isInteger } from "./utils";
+import { isInteger, htmlDecode } from "./utils";
 
 enum OpCode {
   NoOp = 0,
