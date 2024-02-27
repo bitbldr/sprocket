@@ -45,8 +45,7 @@ pub type Element {
   Keyed(key: String, element: Element)
   IgnoreUpdate(element: Element)
   Provider(key: String, value: Dynamic, element: Element)
-  SafeHtml(html: String)
-  Raw(text: String)
+  Text(text: String)
 }
 
 pub type Updater(r) {

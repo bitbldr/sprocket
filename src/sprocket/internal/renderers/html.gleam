@@ -1,4 +1,5 @@
 import gleam/list
+import gleam/string
 import gleam/option.{type Option, None, Some}
 import gleam/string_builder.{type StringBuilder}
 import sprocket/internal/reconcile.{
@@ -116,8 +117,31 @@ fn fragment(children: List(ReconciledElement)) {
   })
 }
 
+fn safe_replace_char(key: String) -> String {
+  case key {
+    "&" -> "&amp;"
+    "<" -> "&lt;"
+    ">" -> "&gt;"
+    "\"" -> "&quot;"
+    "'" -> "&#39;"
+    "/" -> "&#x2F;"
+    "`" -> "&#x60;"
+    "=" -> "&#x3D;"
+    _ -> key
+  }
+}
+
+fn escape_html(unsafe: String) {
+  string.to_graphemes(unsafe)
+  |> list.fold(string_builder.new(), fn(sb, grapheme) {
+    string_builder.append(sb, safe_replace_char(grapheme))
+  })
+  |> string_builder.to_string
+}
+
 fn text(t: String) -> StringBuilder {
-  string_builder.from_string(t)
+  escape_html(t)
+  |> string_builder.from_string()
 }
 
 type InjectElementOperation {

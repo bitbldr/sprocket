@@ -7,7 +7,7 @@ import gleam/dynamic.{type Dynamic}
 import sprocket/context.{
   type AbstractFunctionalComponent, type Attribute, type Context, type Element,
   Attribute, ClientHook, Component, ComponentWip, Context, Debug, Element, Event,
-  Fragment, IgnoreUpdate, Keyed, Provider, Raw, SafeHtml,
+  Fragment, IgnoreUpdate, Keyed, Provider, Text,
 }
 import sprocket/internal/reconcile.{
   type ReconciledAttribute, type ReconciledElement, type ReconciledResult,
@@ -75,8 +75,7 @@ pub fn reconcile(
 
       reconcile(ctx, el, key, prev)
     }
-    SafeHtml(html) -> safe_html(ctx, html)
-    Raw(text) -> raw(ctx, text)
+    Text(t) -> text(ctx, t)
   }
 }
 
@@ -312,12 +311,8 @@ fn maybe_matching_el(
   }
 }
 
-fn safe_html(ctx: Context, html: String) -> ReconciledResult {
-  ReconciledResult(ctx, ReconciledText(html))
-}
-
-fn raw(ctx: Context, text: String) -> ReconciledResult {
-  ReconciledResult(ctx, ReconciledText(text))
+fn text(ctx: Context, t: String) -> ReconciledResult {
+  ReconciledResult(ctx, ReconciledText(t))
 }
 
 pub fn traverse(

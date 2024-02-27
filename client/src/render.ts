@@ -14,7 +14,7 @@ export function render(
   providers: Providers
 ): string | VNode {
   if (typeof node === "string") {
-    return htmlDecode(node);
+    return node;
   }
 
   switch (node.type) {
@@ -69,10 +69,6 @@ function renderComponent(component, providers: Providers): string | VNode {
 }
 
 function renderFragment(f, providers: Providers): VNode {
-  // ideally, fragments would also allow a key to help inform the patcher about
-  // the position of the fragment in the DOM, but snabbdom doesn't support that
-  // yet, so we have to leave it up to snabbdom to figure out the position for now
-
   return fragment(
     Object.keys(f)
       .filter((key) => isInteger(key))
