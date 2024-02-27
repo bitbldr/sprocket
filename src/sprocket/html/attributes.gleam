@@ -110,20 +110,16 @@ pub fn class(value: String) -> Attribute {
 pub fn classes(value: List(Option(String))) -> Attribute {
   attribute(
     "class",
-    list.fold(
-      value,
-      string_builder.new(),
-      fn(sb, v) {
-        case v {
-          None -> sb
-          Some(v) ->
-            case string_builder.is_empty(sb) {
-              True -> string_builder.append(sb, v)
-              False -> string_builder.append(sb, " " <> v)
-            }
-        }
-      },
-    )
+    list.fold(value, string_builder.new(), fn(sb, v) {
+      case v {
+        None -> sb
+        Some(v) ->
+          case string_builder.is_empty(sb) {
+            True -> string_builder.append(sb, v)
+            False -> string_builder.append(sb, " " <> v)
+          }
+      }
+    })
     |> string_builder.to_string(),
   )
 }

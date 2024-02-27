@@ -143,10 +143,9 @@ fn inc_reset_on_button_click_counter(ctx: Context, _props) {
   )
 
   // Define event handlers
-  use ctx, on_increment <- handler(
-    ctx,
-    fn(_) { dispatch(UpdateCount(count + 1)) },
-  )
+  use ctx, on_increment <- handler(ctx, fn(_) {
+    dispatch(UpdateCount(count + 1))
+  })
   use ctx, on_reset <- handler(ctx, fn(_) { dispatch(ResetCount) })
 
   let current_count = int.to_string(count)
