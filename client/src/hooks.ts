@@ -1,5 +1,4 @@
 import { Module, VNode } from "snabbdom";
-import ReconnectingWebSocket from "reconnecting-websocket";
 import { constant } from "./constants";
 
 type PushEvent = (event: string, payload: any) => void;
@@ -13,7 +12,7 @@ export type Hook = {
 export type ClientHookProvider = () => Module;
 
 export const initClientHookProvider = (
-  socket: ReconnectingWebSocket,
+  socket: WebSocket,
   hooks: Record<string, any>,
   clientHookMap: Record<string, any>
 ): ClientHookProvider => {

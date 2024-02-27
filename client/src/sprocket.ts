@@ -1,5 +1,4 @@
 import topbar from "topbar";
-import ReconnectingWebSocket from "reconnecting-websocket";
 import {
   init,
   attributesModule,
@@ -36,9 +35,7 @@ export function connect(path: String, opts: Opts) {
   const hooks = opts.hooks || {};
 
   let ws_protocol = location.protocol === "https:" ? "wss:" : "ws:";
-  const socket = new ReconnectingWebSocket(
-    ws_protocol + "//" + location.host + path
-  );
+  const socket = new WebSocket(ws_protocol + "//" + location.host + path);
 
   let dom: Record<string, any>;
   let oldVNode: VNode;
