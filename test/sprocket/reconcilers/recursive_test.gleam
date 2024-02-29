@@ -6,7 +6,7 @@ import sprocket/context.{type Context, type Element}
 import sprocket/component.{component, render}
 import sprocket/html/elements.{a, div, fragment, text}
 import sprocket/html/attributes.{class, classes}
-import sprocket/hooks.{handler}
+import sprocket/hooks.{handler, provider}
 import sprocket/internal/reconcilers/recursive.{reconcile}
 import sprocket/internal/reconcile.{
   type ReconciledElement, ReconciledAttribute, ReconciledComponent,
@@ -177,7 +177,12 @@ type TitleContext {
 fn test_component_with_context_title(ctx: Context, props: TestProps) {
   let TestProps(href: _href, is_active: is_active, ..) = props
 
-  use ctx, TitleContext(context_title) <- hooks.consumer(ctx, "title")
+  use ctx, title <- provider(ctx, "title")
+
+  let title = case title {
+    Some(TitleContext(title: title)) -> title
+    None -> "No title"
+  }
 
   use ctx, handle_click <- handler(ctx, fn(_) { Nil })
 
@@ -195,7 +200,7 @@ fn test_component_with_context_title(ctx: Context, props: TestProps) {
         attributes.href("#"),
         attributes.on_click(handle_click),
       ],
-      [text(context_title)],
+      [text(title)],
     ),
   )
 }

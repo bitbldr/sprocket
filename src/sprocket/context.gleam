@@ -62,11 +62,6 @@ pub type ComponentHooks =
 pub type HookDependencies =
   List(Dynamic)
 
-// helper function to create a dependency from a value
-pub fn dep(dependency: a) -> Dynamic {
-  dynamic.from(dependency)
-}
-
 pub type HookTrigger {
   OnMount
   OnUpdate
@@ -114,6 +109,11 @@ pub type Compared(a) {
   Unchanged
 }
 
+// helper function to create a dependency from a value
+pub fn dep(dependency: a) -> Dynamic {
+  dynamic.from(dependency)
+}
+
 pub fn compare_deps(
   prev_deps: HookDependencies,
   deps: HookDependencies,
@@ -154,10 +154,6 @@ pub type Context {
     cuid_channel: Subject(cuid.Message),
     providers: Dict(String, Dynamic),
   )
-}
-
-pub fn provider(key: String, value: v, element: Element) -> Element {
-  Provider(key, dynamic.from(value), element)
 }
 
 pub fn new(
@@ -278,4 +274,8 @@ pub fn dispatch_event(
   payload: Option(String),
 ) {
   ctx.dispatch_event(id, name, payload)
+}
+
+pub fn provider(key: String, value: v, element: Element) -> Element {
+  Provider(key, dynamic.from(value), element)
 }

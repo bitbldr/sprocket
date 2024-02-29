@@ -133,25 +133,23 @@ pub fn reducer(
   cb(ctx, state, dispatch)
 }
 
-pub fn consumer(
+/// Provider Hook
+/// ------------
+/// Creates a provider hook that allows a component to access data from a parent or ancestor component.
+/// The provider hook will return the current value provided from an ancestor with the given key. The
+/// ancestor provides the value by using the `provider` element from the `sprocket/context` module.
+/// 
+/// This hook is conceptually the same as the `useContext` hook in React.
+pub fn provider(
   ctx: Context,
   key: String,
-  cb: fn(Context, a) -> #(Context, Element),
+  cb: fn(Context, Option(a)) -> #(Context, Element),
 ) -> #(Context, Element) {
-  let value = case dict.get(ctx.providers, key) {
-    Ok(v) -> {
-      dynamic.unsafe_coerce(v)
-    }
-    _ -> {
-      logger.error("
-        No provider found with key: " <> key <> "
-
-        When using a consumer hook, you must include a parent provider with the same key.
-        ")
-
-      panic
-    }
-  }
+  let value =
+    ctx.providers
+    |> dict.get(key)
+    |> option.from_result()
+    |> option.map(fn(v) { dynamic.unsafe_coerce(v) })
 
   cb(ctx, value)
 }
