@@ -8,7 +8,7 @@ import {
 } from "snabbdom";
 import { render, Providers } from "./render";
 import { applyPatch } from "./patch";
-import { EventIdentifier } from "./events";
+import { initEventHandlerProvider } from "./events";
 import { initClientHookProvider, Hook } from "./hooks";
 
 export type ClientHook = {
@@ -53,13 +53,7 @@ export function connect(path: String, opts: Opts) {
     clientHookMap
   );
 
-  const eventHandlerProvider =
-    ({ id, kind }: EventIdentifier) =>
-    (e) => {
-      socket.send(
-        JSON.stringify(["event", { id, kind, value: e.target.value }])
-      );
-    };
+  const eventHandlerProvider = initEventHandlerProvider(socket);
 
   const providers: Providers = {
     clientHookProvider,

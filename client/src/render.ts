@@ -1,7 +1,7 @@
 import { h, VNode, VNodeData, fragment } from "snabbdom";
 import { isInteger } from "./utils";
-import { ClientHookProvider, ElementHook } from "./hooks";
-import { EventHandlerProvider } from "./events";
+import { ClientHookProvider, HookIdentifier } from "./hooks";
+import { EventHandlerProvider, EventIdentifier } from "./events";
 
 export type Providers = {
   clientHookProvider: ClientHookProvider;
@@ -28,17 +28,12 @@ export function render(
   }
 }
 
-type ElementEvent = {
-  kind: string;
-  id: string;
-};
-
 interface Element {
   type: "element";
   tag: string;
   attrs: Record<string, any>;
-  events: ElementEvent[];
-  hooks: ElementHook[];
+  events: EventIdentifier[];
+  hooks: HookIdentifier[];
   key?: string;
   ignore?: boolean;
 }
@@ -57,14 +52,12 @@ function renderElement(element: Element, providers: Providers): VNode {
   }
 
   if (element.hooks.length > 0) {
-    data.hook = {
-      ...clientHookProvider(element.hooks),
-    };
+    data.hook = clientHookProvider(element.hooks);
   }
 
   // wire up event handlers
   if (element.events.length > 0) {
-    data.on = wireEventHandlers(element.events, eventHandlerProvider);
+    data.on = eventHandlerProvider(element.events);
   }
 
   return h(
@@ -86,16 +79,4 @@ function renderFragment(f, providers: Providers): VNode {
       .filter((key) => isInteger(key))
       .reduce((acc, key) => [...acc, render(f[key], providers)], [])
   );
-}
-
-function wireEventHandlers(
-  events: ElementEvent[],
-  eventHandlerProvider: EventHandlerProvider
-) {
-  return events.reduce((acc, { kind, id }) => {
-    return {
-      ...acc,
-      [kind]: eventHandlerProvider({ kind, id }),
-    };
-  }, {});
 }

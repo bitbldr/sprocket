@@ -8,19 +8,19 @@ export type Hook = {
   handleEvent: (event: string, handler: (payload: any) => any) => void;
 };
 
-export type ElementHook = {
+export interface HookIdentifier {
   name: string;
   id: string;
-};
+}
 
-export type ClientHookProvider = (elementHooks: ElementHook[]) => Module;
+export type ClientHookProvider = (elementHooks: HookIdentifier[]) => Module;
 
 export const initClientHookProvider = (
   socket: WebSocket,
   hooks: Record<string, any>,
   clientHookMap: Record<string, any>
 ): ClientHookProvider => {
-  return (elementHooks: ElementHook[]) => ({
+  return (elementHooks: HookIdentifier[]) => ({
     create: (emptyVNode, vnode) => {
       elementHooks.forEach((h) => {
         const { id: hookId, name: hookName } = h;
