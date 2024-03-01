@@ -1,7 +1,6 @@
 import { h, VNode, VNodeData, fragment } from "snabbdom";
-import { constant } from "./constants";
-import { isInteger, htmlDecode } from "./utils";
-import { ClientHookProvider } from "./hooks";
+import { isInteger } from "./utils";
+import { ClientHookProvider, ElementHook } from "./hooks";
 import { EventHandlerProvider } from "./events";
 
 export type Providers = {
@@ -19,7 +18,7 @@ export function render(
 
   switch (node.type) {
     case "element":
-      return renderElement(node, providers);
+      return renderElement(node as Element, providers);
     case "component":
       return renderComponent(node, providers);
     case "fragment":
@@ -29,7 +28,22 @@ export function render(
   }
 }
 
-function renderElement(element, providers: Providers): VNode {
+type ElementEvent = {
+  kind: string;
+  id: string;
+};
+
+interface Element {
+  type: "element";
+  tag: string;
+  attrs: Record<string, any>;
+  events: ElementEvent[];
+  hooks: ElementHook[];
+  key?: string;
+  ignore?: boolean;
+}
+
+function renderElement(element: Element, providers: Providers): VNode {
   let { clientHookProvider, eventHandlerProvider } = providers;
   let data: VNodeData = { attrs: element.attrs };
 
@@ -42,17 +56,15 @@ function renderElement(element, providers: Providers): VNode {
     data.ignore = true;
   }
 
-  if (hasClientHook(element.attrs)) {
+  if (element.hooks.length > 0) {
     data.hook = {
-      ...clientHookProvider(),
+      ...clientHookProvider(element.hooks),
     };
   }
 
   // wire up event handlers
-  const eventHandlers = wireEventHandlers(element.attrs, eventHandlerProvider);
-
-  if (Object.keys(eventHandlers).length > 0) {
-    data.on = eventHandlers;
+  if (element.events.length > 0) {
+    data.on = wireEventHandlers(element.events, eventHandlerProvider);
   }
 
   return h(
@@ -77,28 +89,13 @@ function renderFragment(f, providers: Providers): VNode {
 }
 
 function wireEventHandlers(
-  attrs: Record<string, any>,
+  events: ElementEvent[],
   eventHandlerProvider: EventHandlerProvider
 ) {
-  return Object.keys(attrs)
-    .filter((key) => key.startsWith(constant.EventAttrPrefix))
-    .reduce((acc, key) => {
-      const kind = key.replace(`${constant.EventAttrPrefix}-`, "");
-
-      return {
-        ...acc,
-        [kind]: eventHandlerProvider({ kind, id: attrs[key] }),
-      };
-    }, {});
-}
-
-function hasClientHook(attrs: Record<string, any>) {
-  const name = attrs && (attrs[`${constant.HookAttrPrefix}`] as string);
-  const id = attrs && (attrs[`${constant.HookAttrPrefix}-id`] as string);
-
-  if (id && name) {
-    return true;
-  }
-
-  return false;
+  return events.reduce((acc, { kind, id }) => {
+    return {
+      ...acc,
+      [kind]: eventHandlerProvider({ kind, id }),
+    };
+  }, {});
 }

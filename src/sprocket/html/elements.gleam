@@ -52,6 +52,14 @@ pub fn script(attrs: List(Attribute), body: Option(String)) {
   }
 }
 
+/// The [HTML `<style>` element](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/style)
+pub fn style(attrs: List(Attribute), body: Option(String)) {
+  case body {
+    Some(body) -> el("style", attrs, [text(body)])
+    None -> el("style", attrs, [])
+  }
+}
+
 // Functions below are based on Nakai https://github.com/nakaixo/nakai
 // If we could use Nakai directly that would be ideal, but it's not generic or compatible with the
 // Sprocket Element type and wrapping in a hiher-level type would be too cumbersome to use.

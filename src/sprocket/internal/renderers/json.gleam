@@ -35,32 +35,32 @@ fn element(
   attrs: List(ReconciledAttribute),
   children: List(ReconciledElement),
 ) -> Json {
-  let attrs =
+  let #(attrs, events, hooks) =
     attrs
-    |> list.flat_map(fn(attr) {
+    |> list.fold(#([], [], []), fn(acc, attr) {
+      let #(attrs, events, hooks) = acc
+
       case attr {
         ReconciledAttribute(name, value) -> {
-          [#(name, json.string(value))]
+          #([#(name, json.string(value)), ..attrs], events, hooks)
         }
         ReconciledEventHandler(kind, id) -> {
-          [
-            #(
-              string.concat([constants.event_attr_prefix, "-", kind]),
-              json.string(id),
-            ),
-          ]
+          #(
+            attrs,
+            [
+              [#("kind", json.string(kind)), #("id", json.string(id))]
+              |> json.object(),
+              ..events
+            ],
+            hooks,
+          )
         }
         ReconciledClientHook(name, id) -> {
-          [
-            #(
-              string.concat([constants.client_hook_attr_prefix]),
-              json.string(name),
-            ),
-            #(
-              string.concat([constants.client_hook_attr_prefix, "-id"]),
-              json.string(id),
-            ),
-          ]
+          #(attrs, events, [
+            [#("name", json.string(name)), #("id", json.string(id))]
+            |> json.object(),
+            ..hooks
+          ])
         }
       }
     })
@@ -73,6 +73,8 @@ fn element(
     #("type", json.string("element")),
     #("tag", json.string(tag)),
     #("attrs", json.object(attrs)),
+    #("events", json.preprocessed_array(events)),
+    #("hooks", json.preprocessed_array(hooks)),
   ]
   |> maybe_append_string("key", key)
   |> maybe_append_string(

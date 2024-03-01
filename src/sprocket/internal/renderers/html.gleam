@@ -46,36 +46,7 @@ fn element(
             string_builder.from_strings([" ", name, "=\"", value, "\""]),
           )
         }
-        ReconciledEventHandler(kind, id) -> {
-          string_builder.append_builder(
-            acc,
-            string_builder.from_strings([
-              " ",
-              constants.event_attr_prefix,
-              "-",
-              kind,
-              "=\"",
-              id,
-              "\"",
-            ]),
-          )
-        }
-        ReconciledClientHook(name, id) -> {
-          string_builder.append_builder(
-            acc,
-            string_builder.from_strings([
-              " ",
-              constants.client_hook_attr_prefix,
-              "=\"",
-              name,
-              "\" ",
-              constants.client_hook_attr_prefix,
-              "-id=\"",
-              id,
-              "\"",
-            ]),
-          )
-        }
+        _ -> acc
       }
     })
 

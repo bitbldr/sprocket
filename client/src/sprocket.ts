@@ -35,7 +35,7 @@ export function connect(path: String, opts: Opts) {
   const hooks = opts.hooks || {};
 
   let ws_protocol = location.protocol === "https:" ? "wss:" : "ws:";
-  const socket = new WebSocket(ws_protocol + "//" + location.host + path);
+  let socket = new WebSocket(ws_protocol + "//" + location.host + path);
 
   let dom: Record<string, any>;
   let oldVNode: VNode;
@@ -105,6 +105,14 @@ export function connect(path: String, opts: Opts) {
 
   socket.addEventListener("close", function (_event) {
     topbar.show();
+
+    // Attempt to reconnect after a delay (e.g., 5 seconds)
+    setTimeout(() => {
+      console.log("Attempting to reconnect...");
+
+      // Reinitialize the socket connection
+      connect(path, opts);
+    }, 5000);
   });
 }
 

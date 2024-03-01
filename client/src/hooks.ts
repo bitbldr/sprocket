@@ -1,5 +1,4 @@
-import { Module, VNode } from "snabbdom";
-import { constant } from "./constants";
+import { Module } from "snabbdom";
 
 type PushEvent = (event: string, payload: any) => void;
 
@@ -9,18 +8,21 @@ export type Hook = {
   handleEvent: (event: string, handler: (payload: any) => any) => void;
 };
 
-export type ClientHookProvider = () => Module;
+export type ElementHook = {
+  name: string;
+  id: string;
+};
+
+export type ClientHookProvider = (elementHooks: ElementHook[]) => Module;
 
 export const initClientHookProvider = (
   socket: WebSocket,
   hooks: Record<string, any>,
   clientHookMap: Record<string, any>
 ): ClientHookProvider => {
-  return () => ({
+  return (elementHooks: ElementHook[]) => ({
     create: (emptyVNode, vnode) => {
-      const h = maybeGetHook(vnode);
-
-      if (h) {
+      elementHooks.forEach((h) => {
         const { id: hookId, name: hookName } = h;
 
         const pushEvent = (name: string, payload: any) => {
@@ -53,49 +55,30 @@ export const initClientHookProvider = (
         };
 
         execClientHook(hooks, clientHookMap, hookName, hookId, "create");
-      }
+      });
     },
     insert: (vnode) => {
-      const h = maybeGetHook(vnode);
-
-      if (h) {
+      elementHooks.forEach((h) => {
         const { id: hookId, name: hookName } = h;
         execClientHook(hooks, clientHookMap, hookName, hookId, "insert");
-      }
+      });
     },
     update: (oldVNode, vnode) => {
-      const h = maybeGetHook(vnode);
-
-      if (h) {
+      elementHooks.forEach((h) => {
         const { id: hookId, name: hookName } = h;
         execClientHook(hooks, clientHookMap, hookName, hookId, "update");
-      }
+      });
     },
     destroy: (vnode) => {
-      const h = maybeGetHook(vnode);
-
-      if (h) {
+      elementHooks.forEach((h) => {
         const { id: hookId, name: hookName } = h;
         execClientHook(hooks, clientHookMap, hookName, hookId, "destroy");
 
         delete clientHookMap[hookId];
-      }
+      });
     },
   });
 };
-
-function maybeGetHook(vnode: VNode) {
-  const attrs = vnode?.data?.attrs;
-
-  const name = attrs && (attrs[`${constant.HookAttrPrefix}`] as string);
-  const id = attrs && (attrs[`${constant.HookAttrPrefix}-id`] as string);
-
-  if (id && name) {
-    return { id, name };
-  }
-
-  return null;
-}
 
 function execClientHook(
   hooks: Record<string, any>,
