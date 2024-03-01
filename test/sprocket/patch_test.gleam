@@ -1162,6 +1162,8 @@ pub fn patch_to_json_test() {
                       \"type\": \"element\",
                       \"tag\": \"p\",
                       \"attrs\": {},
+                      \"events\": [],
+                      \"hooks\": [],
                       \"key\": \"great\",
                       \"0\": \"Great\"
                   }
@@ -1172,6 +1174,8 @@ pub fn patch_to_json_test() {
                       \"type\": \"element\",
                       \"tag\": \"p\",
                       \"attrs\": {},
+                      \"events\": [],
+                      \"hooks\": [],
                       \"key\": \"big\",
                       \"0\": \"Big\"
                   }
@@ -1259,7 +1263,9 @@ pub fn patch_to_json_replace_list_with_component_test() {
                       \"0\": {
                           \"type\": \"element\",
                           \"tag\": \"div\",
-                          \"attrs\": {}
+                          \"attrs\": {},
+                          \"events\": [],
+                          \"hooks\": []
                       }
                   }
               ],
