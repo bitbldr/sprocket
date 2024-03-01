@@ -9,7 +9,7 @@ import sprocket/internal/reconcile.{
   ReconciledClientHook, ReconciledComponent, ReconciledElement,
   ReconciledEventHandler, ReconciledFragment, ReconciledText,
 }
-import sprocket/internal/render.{Renderer, renderer} as _
+import sprocket/internal/render.{renderer} as _
 import sprocket/internal/renderers/json.{json_renderer} as _
 import sprocket/internal/constants
 

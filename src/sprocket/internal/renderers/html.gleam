@@ -4,11 +4,9 @@ import gleam/option.{type Option, None, Some}
 import gleam/string_builder.{type StringBuilder}
 import sprocket/internal/reconcile.{
   type ReconciledAttribute, type ReconciledElement, ReconciledAttribute,
-  ReconciledClientHook, ReconciledComponent, ReconciledElement,
-  ReconciledEventHandler, ReconciledFragment, ReconciledIgnoreUpdate,
-  ReconciledText,
+  ReconciledComponent, ReconciledElement, ReconciledFragment,
+  ReconciledIgnoreUpdate, ReconciledText,
 }
-import sprocket/internal/reconcilers/recursive.{traverse}
 import sprocket/internal/render.{type Renderer, Renderer}
 import sprocket/internal/constants
 
@@ -113,63 +111,4 @@ fn escape_html(unsafe: String) {
 fn text(t: String) -> StringBuilder {
   escape_html(t)
   |> string_builder.from_string()
-}
-
-type InjectElementOperation {
-  Append
-  Prepend
-}
-
-fn inject_element(
-  root: ReconciledElement,
-  target_tag: String,
-  inject_element: ReconciledElement,
-  insert_op: InjectElementOperation,
-) -> ReconciledElement {
-  // TODO: implement and use a more efficient traverse_until that can stop
-  // traversing once it finds the element it's looking for.
-  traverse(root, fn(el) {
-    case el {
-      ReconciledElement(tag: tag, key: key, attrs: attrs, children: children) if tag == target_tag -> {
-        ReconciledElement(tag: target_tag, key: key, attrs: attrs, children: case
-          insert_op
-        {
-          Append -> list.append(children, [inject_element])
-          Prepend -> [inject_element, ..children]
-        })
-      }
-      _ -> el
-    }
-  })
-}
-
-fn inject_attribute(
-  root: ReconciledElement,
-  target_tag: String,
-  inject_attr: ReconciledAttribute,
-) -> ReconciledElement {
-  traverse(root, fn(el) {
-    case el {
-      ReconciledElement(tag: _tag, key: key, attrs: attrs, children: children) -> {
-        ReconciledElement(
-          tag: target_tag,
-          key: key,
-          attrs: attrs
-          |> list.fold([], fn(acc, attr) {
-            case attr, inject_attr {
-              ReconciledAttribute(name, ..), ReconciledAttribute(
-                inject_attr_name,
-                ..,
-              ) if name == inject_attr_name -> {
-                list.append(acc, [inject_attr, attr])
-              }
-              _, _ -> list.append(acc, [attr])
-            }
-          }),
-          children: children,
-        )
-      }
-      _ -> el
-    }
-  })
 }

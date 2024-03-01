@@ -1,6 +1,5 @@
 import gleam/int
 import gleam/list
-import gleam/string
 import gleam/option.{type Option, None, Some}
 import gleam/json.{type Json}
 import sprocket/internal/reconcile.{
@@ -10,7 +9,6 @@ import sprocket/internal/reconcile.{
   ReconciledIgnoreUpdate, ReconciledText,
 }
 import sprocket/internal/render.{type Renderer, Renderer}
-import sprocket/internal/constants
 
 pub fn json_renderer() -> Renderer(Json) {
   Renderer(render: fn(el: ReconciledElement) { render(el, None) })
