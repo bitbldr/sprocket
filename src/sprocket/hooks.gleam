@@ -125,6 +125,10 @@ pub fn reducer(
 
   // create a dispatch function for updating the reducer's state and triggering a render update
   let dispatch = fn(msg) -> Nil {
+    // this will update the reducer's state and trigger a re-render. To ensure we re-render
+    // with the latest state, this message must be processed before the next render cycle. However,
+    // because we also use a process.call to the same reducer actor to get the current state, we should
+    // be guaranteed to have this message processed before that call during the next render cycle.
     actor.send(reducer_actor, DispatchReducer(r: reducer, m: msg))
 
     render_update()
