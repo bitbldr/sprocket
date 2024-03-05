@@ -8,8 +8,8 @@ import sprocket/component.{component}
 import sprocket/html/elements.{button, fragment, text}
 import sprocket/html/attributes.{id, on_click}
 import sprocket/hooks.{effect, handler, reducer}
-import sprocket/test_helpers.{ClickEvent, live, render_event, render_html}
-import utils/tally_counter
+import sprocket/test_helpers.{ClickEvent, connect, render_event, render_html}
+import sprocket/test_helpers/tally_counter
 
 type Model {
   Model(count: Int)
@@ -63,7 +63,7 @@ fn inc_initial_render_counter(ctx: Context, _props) {
 
 pub fn effect_should_only_run_on_initial_render_test() {
   let view = component(inc_initial_render_counter, TestCounterProps)
-  let spkt = live(view)
+  let spkt = connect(view)
 
   let #(spkt, rendered) = render_html(spkt)
 
@@ -105,7 +105,7 @@ pub fn effect_should_run_on_every_update_test() {
   let view =
     component(inc_on_every_update_counter, IncEveryUpdateCounterProps(tally))
 
-  let spkt = live(view)
+  let spkt = connect(view)
 
   let #(spkt, _rendered) = render_html(spkt)
 
@@ -164,7 +164,7 @@ fn inc_reset_on_button_click_counter(ctx: Context, _props) {
 pub fn effect_should_run_with_empty_deps_and_handle_events_test() {
   let view = component(inc_reset_on_button_click_counter, TestCounterProps)
 
-  let spkt = live(view)
+  let spkt = connect(view)
 
   let #(spkt, rendered) = render_html(spkt)
 

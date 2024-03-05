@@ -11,7 +11,7 @@ import sprocket/internal/reconcilers/recursive
 import sprocket/render.{renderer}
 import sprocket/renderers/html.{html_renderer}
 
-pub fn live(view) {
+pub fn connect(view) {
   let assert Ok(spkt) = runtime.start(view, Updater(fn(_) { Ok(Nil) }), None)
 
   spkt

@@ -11,7 +11,6 @@ import sprocket/internal/reconcile.{type ReconciledResult, ReconciledResult}
 import sprocket/internal/reconcilers/recursive.{reconcile}
 import sprocket/render.{type Renderer, renderer} as _
 import sprocket/renderers/json.{json_renderer} as _
-import sprocket/renderers/html.{html_renderer}
 import sprocket/internal/patch
 import sprocket/internal/logger
 

@@ -5,7 +5,7 @@ import sprocket/component.{component}
 import sprocket/html/elements.{button, fragment, text}
 import sprocket/html/attributes.{id, on_click}
 import sprocket/hooks.{handler, state}
-import sprocket/test_helpers.{ClickEvent, live, render_event, render_html}
+import sprocket/test_helpers.{ClickEvent, connect, render_event, render_html}
 
 type TestCounterProps {
   TestCounterProps
@@ -35,7 +35,7 @@ fn inc_reset_on_button_click_using_state(ctx: Context, _props) {
 pub fn counter_should_increment_and_reset_using_state_test() {
   let view = component(inc_reset_on_button_click_using_state, TestCounterProps)
 
-  let spkt = live(view)
+  let spkt = connect(view)
 
   let #(spkt, rendered) = render_html(spkt)
 

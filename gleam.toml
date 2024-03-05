@@ -17,8 +17,9 @@ links = [{ title = "Website", href = "https://sprocket.live" }]
 # https://docs.rs/glob/latest/glob/struct.Pattern.html
 internal_modules = [
   "sprocket/internal/*",
-  "sprocket/sprocket",
-  "tools/*",
+  "sprocket/test_helpers/*",
+  "sprocket/render",
+  "sprocket/runtime",
 ]
 gleam = ">= 0.34.0"
 
