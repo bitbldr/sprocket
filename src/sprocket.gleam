@@ -9,9 +9,9 @@ import sprocket/runtime.{
 import sprocket/context.{type Dispatcher, type Element, Dispatcher, Updater}
 import sprocket/internal/reconcile.{type ReconciledResult, ReconciledResult}
 import sprocket/internal/reconcilers/recursive.{reconcile}
-import sprocket/internal/render.{renderer} as _
-import sprocket/internal/renderers/json.{json_renderer} as _
-import sprocket/internal/renderers/html.{html_renderer}
+import sprocket/render.{type Renderer, renderer} as _
+import sprocket/renderers/json.{json_renderer} as _
+import sprocket/renderers/html.{html_renderer}
 import sprocket/internal/patch
 import sprocket/internal/logger
 
@@ -297,9 +297,9 @@ pub fn cleanup(spkt: Sprocket) {
   |> option.map(fn(r) { runtime.stop(r) })
 }
 
-// Renders the given element as a stateless element to html.
-pub fn render_html(el: Element) -> String {
-  use render_html <- renderer(html_renderer())
+// Renders the given element as a stateless element using a given renderer.
+pub fn render(el: Element, r: Renderer(a)) -> a {
+  use render <- renderer(r)
 
   // Internally this function uses the reconciler with an empty previous element
   // and a placeholder ctx but then discards the ctx and returns the result.
@@ -318,5 +318,5 @@ pub fn render_html(el: Element) -> String {
   let ReconciledResult(reconciled: reconciled, ..) =
     reconcile(ctx, el, None, None)
 
-  render_html(reconciled)
+  render(reconciled)
 }

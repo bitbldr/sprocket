@@ -8,7 +8,7 @@ import sprocket/internal/reconcile.{
   ReconciledEventHandler, ReconciledFragment, ReconciledIgnoreUpdate,
   ReconciledText,
 }
-import sprocket/internal/render.{type Renderer, Renderer}
+import sprocket/render.{type Renderer, Renderer}
 
 pub fn json_renderer() -> Renderer(Json) {
   Renderer(render: fn(el: ReconciledElement) { render(el) })

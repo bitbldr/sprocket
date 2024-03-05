@@ -8,8 +8,8 @@ import sprocket/internal/reconcile.{
   ReconciledEventHandler,
 }
 import sprocket/internal/reconcilers/recursive
-import sprocket/internal/render.{renderer}
-import sprocket/internal/renderers/html.{html_renderer}
+import sprocket/render.{renderer}
+import sprocket/renderers/html.{html_renderer}
 
 pub fn live(view) {
   let assert Ok(spkt) = runtime.start(view, Updater(fn(_) { Ok(Nil) }), None)

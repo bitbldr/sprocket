@@ -7,7 +7,7 @@ import sprocket/internal/reconcile.{
   ReconciledComponent, ReconciledElement, ReconciledFragment,
   ReconciledIgnoreUpdate, ReconciledText,
 }
-import sprocket/internal/render.{type Renderer, Renderer}
+import sprocket/render.{type Renderer, Renderer}
 import sprocket/internal/constants
 
 pub fn html_renderer() -> Renderer(String) {

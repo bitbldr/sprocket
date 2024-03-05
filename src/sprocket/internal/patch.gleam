@@ -10,8 +10,8 @@ import sprocket/internal/reconcile.{
   ReconciledEventHandler, ReconciledFragment, ReconciledIgnoreUpdate,
   ReconciledText,
 }
-import sprocket/internal/render.{renderer} as _
-import sprocket/internal/renderers/json.{json_renderer} as _
+import sprocket/render.{renderer} as _
+import sprocket/renderers/json.{json_renderer} as _
 import sprocket/internal/constants
 
 pub type Patch {
