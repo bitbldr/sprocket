@@ -7,11 +7,11 @@ import gleam/dynamic.{type Dynamic}
 import sprocket/context.{
   type AbstractFunctionalComponent, type Attribute, type Context, type Element,
   Attribute, ClientHook, Component, ComponentWip, Context, Debug, Element, Event,
-  Fragment, IgnoreUpdate, Keyed, Provider, Text,
+  Fragment, IgnoreAll, IgnoreUpdate, Keyed, Provider, Text,
 }
 import sprocket/internal/reconcile.{
   type ReconciledAttribute, type ReconciledElement, type ReconciledResult,
-  type Reconciler, IgnoreAll, ReconciledAttribute, ReconciledClientHook,
+  type Reconciler, ReconciledAttribute, ReconciledClientHook,
   ReconciledComponent, ReconciledElement, ReconciledEventHandler,
   ReconciledFragment, ReconciledIgnoreUpdate, ReconciledResult, ReconciledText,
   Reconciler,
@@ -51,18 +51,19 @@ pub fn reconcile(
       io.debug(reconcile(ctx, el, key, prev))
     }
     Keyed(key, el) -> reconcile(ctx, el, Some(key), prev)
-    IgnoreUpdate(el) -> {
-      case prev {
-        Some(prev) -> {
-          // since we're ignoring updates, no need to rerender children
+    IgnoreUpdate(scope, el) -> {
+      case prev, scope {
+        Some(prev), IgnoreAll -> {
+          // since we're ignoring all updates, no need to rerender children
           // just return the previous rendered element as ignored
-          ReconciledResult(ctx, ReconciledIgnoreUpdate(IgnoreAll, prev))
+          ReconciledResult(ctx, ReconciledIgnoreUpdate(scope, prev))
         }
-        None -> {
-          // render the element on first render, ignore on subsequent renders
+        _, _ -> {
+          // always render the element on first render, ignore on subsequent renders.
+          // if the scope is IgnoreSingle, then also render on subsequent renders.
           let ReconciledResult(ctx, rendered) = reconcile(ctx, el, key, prev)
 
-          ReconciledResult(ctx, ReconciledIgnoreUpdate(IgnoreAll, rendered))
+          ReconciledResult(ctx, ReconciledIgnoreUpdate(scope, rendered))
         }
       }
     }
@@ -208,7 +209,7 @@ fn get_key(el: Element) -> Option(String) {
   case el {
     Keyed(key, _) -> Some(key)
     Debug(_, _, el) -> get_key(el)
-    IgnoreUpdate(el) -> get_key(el)
+    IgnoreUpdate(_, el) -> get_key(el)
     Provider(_, _, el) -> get_key(el)
     _ -> None
   }
@@ -305,7 +306,7 @@ fn maybe_matching_el(
     }
     _, Debug(_, _, el) -> maybe_matching_el(prev_child, el)
     _, Keyed(_, el) -> maybe_matching_el(prev_child, el)
-    _, IgnoreUpdate(el) -> maybe_matching_el(prev_child, el)
+    _, IgnoreUpdate(_, el) -> maybe_matching_el(prev_child, el)
     _, Provider(_, _, el) -> maybe_matching_el(prev_child, el)
     _, _ -> None
   }

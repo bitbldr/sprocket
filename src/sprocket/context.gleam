@@ -37,13 +37,18 @@ pub type AbstractFunctionalComponent =
 pub type FunctionalComponent(p) =
   fn(Context, p) -> #(Context, Element)
 
+pub type IgnoreScope {
+  IgnoreAll
+  IgnoreSingle
+}
+
 pub type Element {
   Element(tag: String, attrs: List(Attribute), children: List(Element))
   Component(component: FunctionalComponent(Dynamic), props: Dynamic)
   Fragment(children: List(Element))
   Debug(id: String, meta: Option(Dynamic), element: Element)
   Keyed(key: String, element: Element)
-  IgnoreUpdate(element: Element)
+  IgnoreUpdate(scope: IgnoreScope, element: Element)
   Provider(key: String, value: Dynamic, element: Element)
   Text(text: String)
 }

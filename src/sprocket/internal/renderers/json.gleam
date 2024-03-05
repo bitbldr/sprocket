@@ -3,25 +3,24 @@ import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/json.{type Json}
 import sprocket/internal/reconcile.{
-  type IgnoreRule, type ReconciledAttribute, type ReconciledElement, IgnoreAll,
-  ReconciledAttribute, ReconciledClientHook, ReconciledComponent,
-  ReconciledElement, ReconciledEventHandler, ReconciledFragment,
-  ReconciledIgnoreUpdate, ReconciledText,
+  type ReconciledAttribute, type ReconciledElement, ReconciledAttribute,
+  ReconciledClientHook, ReconciledComponent, ReconciledElement,
+  ReconciledEventHandler, ReconciledFragment, ReconciledIgnoreUpdate,
+  ReconciledText,
 }
 import sprocket/internal/render.{type Renderer, Renderer}
 
 pub fn json_renderer() -> Renderer(Json) {
-  Renderer(render: fn(el: ReconciledElement) { render(el, None) })
+  Renderer(render: fn(el: ReconciledElement) { render(el) })
 }
 
-fn render(el: ReconciledElement, ignore: Option(IgnoreRule)) -> Json {
+fn render(el: ReconciledElement) -> Json {
   case el {
     ReconciledElement(tag: tag, key: key, attrs: attrs, children: children) ->
-      element(tag, key, ignore, attrs, children)
-    ReconciledComponent(key: key, el: el, ..) -> component(key, ignore, el)
-    ReconciledFragment(key, children: children) ->
-      fragment(key, ignore, children)
-    ReconciledIgnoreUpdate(rule, el) -> render(el, Some(rule))
+      element(tag, key, attrs, children)
+    ReconciledComponent(key: key, el: el, ..) -> component(key, el)
+    ReconciledFragment(key, children: children) -> fragment(key, children)
+    ReconciledIgnoreUpdate(_scope, el) -> render(el)
     ReconciledText(text: t) -> text(t)
   }
 }
@@ -29,7 +28,6 @@ fn render(el: ReconciledElement, ignore: Option(IgnoreRule)) -> Json {
 fn element(
   tag: String,
   key: Option(String),
-  ignore: Option(IgnoreRule),
   attrs: List(ReconciledAttribute),
   children: List(ReconciledElement),
 ) -> Json {
@@ -65,7 +63,7 @@ fn element(
 
   let children =
     children
-    |> list.index_map(fn(child, i) { #(int.to_string(i), render(child, None)) })
+    |> list.index_map(fn(child, i) { #(int.to_string(i), render(child)) })
 
   [
     #("type", json.string("element")),
@@ -75,39 +73,21 @@ fn element(
     #("hooks", json.preprocessed_array(hooks)),
   ]
   |> maybe_append_string("key", key)
-  |> maybe_append_string(
-    "ignore",
-    option.map(ignore, fn(rule) {
-      case rule {
-        IgnoreAll -> "all"
-      }
-    }),
-  )
   |> list.append(children)
   |> json.object()
 }
 
-fn component(
-  key: Option(String),
-  ignore: Option(IgnoreRule),
-  el: ReconciledElement,
-) -> Json {
+fn component(key: Option(String), el: ReconciledElement) -> Json {
   [#("type", json.string("component"))]
   |> maybe_append_string("key", key)
-  |> list.append([#("0", render(el, ignore))])
+  |> list.append([#("0", render(el))])
   |> json.object()
 }
 
-fn fragment(
-  key: Option(String),
-  ignore: Option(IgnoreRule),
-  children: List(ReconciledElement),
-) -> Json {
+fn fragment(key: Option(String), children: List(ReconciledElement)) -> Json {
   let children =
     children
-    |> list.index_map(fn(child, i) {
-      #(int.to_string(i), render(child, ignore))
-    })
+    |> list.index_map(fn(child, i) { #(int.to_string(i), render(child)) })
 
   [#("type", json.string("fragment"))]
   |> maybe_append_string("key", key)
