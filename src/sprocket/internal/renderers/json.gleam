@@ -20,7 +20,7 @@ fn render(el: ReconciledElement) -> Json {
       element(tag, key, attrs, children)
     ReconciledComponent(key: key, el: el, ..) -> component(key, el)
     ReconciledFragment(key, children: children) -> fragment(key, children)
-    ReconciledIgnoreUpdate(_scope, el) -> render(el)
+    ReconciledIgnoreUpdate(el) -> render(el)
     ReconciledText(text: t) -> text(t)
   }
 }

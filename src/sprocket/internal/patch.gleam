@@ -79,6 +79,7 @@ pub fn create(old: ReconciledElement, new: ReconciledElement) -> Patch {
         }
       }
     }
+
     // old and new components and props are the same
     ReconciledComponent(
       fc: old_fc,
@@ -107,6 +108,7 @@ pub fn create(old: ReconciledElement, new: ReconciledElement) -> Patch {
         }
       }
     }
+
     ReconciledFragment(key: _old_key, children: old_children), ReconciledFragment(
       key: _key,
       children: new_children,
@@ -120,6 +122,7 @@ pub fn create(old: ReconciledElement, new: ReconciledElement) -> Patch {
         }
       }
     }
+
     // text nodes
     ReconciledText(text: old_text), ReconciledText(text: new_text) -> {
       case old_text == new_text {
@@ -132,8 +135,10 @@ pub fn create(old: ReconciledElement, new: ReconciledElement) -> Patch {
         }
       }
     }
+
     // ignore updates
-    _, ReconciledIgnoreUpdate(_rule, _el) -> NoOp
+    _, ReconciledIgnoreUpdate(_el) -> NoOp
+
     // everything is different
     _, _ -> {
       Replace(el: new)

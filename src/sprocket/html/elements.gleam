@@ -1,8 +1,8 @@
 import gleam/option.{type Option, None, Some}
 import gleam/dynamic.{type Dynamic}
 import sprocket/context.{
-  type Attribute, type Element, type IgnoreScope, Debug, Element, Fragment,
-  IgnoreAll, IgnoreUpdate, Keyed, Text,
+  type Attribute, type Element, Debug, Element, Fragment, IgnoreUpdate, Keyed,
+  Text,
 }
 
 pub fn el(tag: String, attrs: List(Attribute), children: List(Element)) {
@@ -22,18 +22,14 @@ pub fn keyed(key: String, element: Element) {
 }
 
 pub fn ignore(element: Element) {
-  IgnoreUpdate(IgnoreAll, element)
+  IgnoreUpdate(element)
 }
 
 pub fn ignore_while(expr: Bool, element: Element) {
   case expr {
-    True -> IgnoreUpdate(IgnoreAll, element)
+    True -> IgnoreUpdate(element)
     False -> element
   }
-}
-
-pub fn ignore_scope(scope: IgnoreScope, element: Element) {
-  IgnoreUpdate(scope, element)
 }
 
 pub fn debug(id: String, meta: Option(Dynamic), element: Element) {

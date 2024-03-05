@@ -2,7 +2,7 @@ import gleam/option.{type Option}
 import gleam/dynamic.{type Dynamic}
 import sprocket/context.{
   type AbstractFunctionalComponent, type ComponentHooks, type Context,
-  type Element, type IgnoreScope, Context,
+  type Element, Context,
 }
 
 pub type ReconciledAttribute {
@@ -26,7 +26,7 @@ pub type ReconciledElement {
     el: ReconciledElement,
   )
   ReconciledFragment(key: Option(String), children: List(ReconciledElement))
-  ReconciledIgnoreUpdate(scope: IgnoreScope, el: ReconciledElement)
+  ReconciledIgnoreUpdate(el: ReconciledElement)
   ReconciledText(text: String)
 }
 

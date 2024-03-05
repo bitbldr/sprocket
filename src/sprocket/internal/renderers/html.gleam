@@ -23,7 +23,7 @@ fn render(el: ReconciledElement) -> StringBuilder {
       element(tag, key, attrs, children)
     ReconciledComponent(el: el, ..) -> component(el)
     ReconciledFragment(children: children, ..) -> fragment(children)
-    ReconciledIgnoreUpdate(_, el) -> render(el)
+    ReconciledIgnoreUpdate(el) -> render(el)
     ReconciledText(text: t) -> text(t)
   }
 }

@@ -813,7 +813,6 @@ pub fn ignored_test() {
       hooks: ordered_map.new(),
       el: ReconciledElement(tag: "ul", key: None, attrs: [], children: [
         reconcile.ReconciledIgnoreUpdate(
-          context.IgnoreAll,
           ReconciledElement(tag: "li", key: Some("one"), attrs: [], children: [
             ReconciledText("One"),
           ]),
@@ -838,7 +837,6 @@ pub fn ignored_test() {
       hooks: ordered_map.new(),
       el: ReconciledElement(tag: "ul", key: None, attrs: [], children: [
         reconcile.ReconciledIgnoreUpdate(
-          context.IgnoreAll,
           ReconciledElement(tag: "li", key: Some("one"), attrs: [], children: [
             ReconciledText("Changed"),
           ]),
