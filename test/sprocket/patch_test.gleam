@@ -801,6 +801,64 @@ pub fn noop_test() {
   |> should.equal(NoOp)
 }
 
+pub fn ignored_test() {
+  let fc = fn(ctx, _) { #(ctx, empty_element) }
+  let props = dynamic.from([])
+
+  let first =
+    ReconciledComponent(
+      fc: fc,
+      key: None,
+      props: props,
+      hooks: ordered_map.new(),
+      el: ReconciledElement(tag: "ul", key: None, attrs: [], children: [
+        reconcile.ReconciledIgnoreUpdate(
+          reconcile.IgnoreAll,
+          ReconciledElement(tag: "li", key: Some("one"), attrs: [], children: [
+            ReconciledText("One"),
+          ]),
+        ),
+        ReconciledElement(tag: "li", key: Some("two"), attrs: [], children: [
+          ReconciledText("Two"),
+        ]),
+        ReconciledElement(tag: "li", key: Some("four"), attrs: [], children: [
+          ReconciledText("Four"),
+        ]),
+        ReconciledElement(tag: "li", key: Some("five"), attrs: [], children: [
+          ReconciledText("Five"),
+        ]),
+      ]),
+    )
+
+  let second =
+    ReconciledComponent(
+      fc: fc,
+      key: None,
+      props: props,
+      hooks: ordered_map.new(),
+      el: ReconciledElement(tag: "ul", key: None, attrs: [], children: [
+        reconcile.ReconciledIgnoreUpdate(
+          reconcile.IgnoreAll,
+          ReconciledElement(tag: "li", key: Some("one"), attrs: [], children: [
+            ReconciledText("Changed"),
+          ]),
+        ),
+        ReconciledElement(tag: "li", key: Some("two"), attrs: [], children: [
+          ReconciledText("Two"),
+        ]),
+        ReconciledElement(tag: "li", key: Some("four"), attrs: [], children: [
+          ReconciledText("Four"),
+        ]),
+        ReconciledElement(tag: "li", key: Some("five"), attrs: [], children: [
+          ReconciledText("Five"),
+        ]),
+      ]),
+    )
+
+  patch.create(first, second)
+  |> should.equal(NoOp)
+}
+
 pub fn shift_list_with_keys_test() {
   let fc = fn(ctx, _) { #(ctx, empty_element) }
   let props = dynamic.from([])

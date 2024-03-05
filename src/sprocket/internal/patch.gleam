@@ -7,7 +7,8 @@ import gleam/json.{type Json}
 import sprocket/internal/reconcile.{
   type ReconciledAttribute, type ReconciledElement, ReconciledAttribute,
   ReconciledClientHook, ReconciledComponent, ReconciledElement,
-  ReconciledEventHandler, ReconciledFragment, ReconciledText,
+  ReconciledEventHandler, ReconciledFragment, ReconciledIgnoreUpdate,
+  ReconciledText,
 }
 import sprocket/internal/render.{renderer} as _
 import sprocket/internal/renderers/json.{json_renderer} as _
@@ -131,6 +132,8 @@ pub fn create(old: ReconciledElement, new: ReconciledElement) -> Patch {
         }
       }
     }
+    // ignore updates
+    _, ReconciledIgnoreUpdate(_rule, _el) -> NoOp
     // everything is different
     _, _ -> {
       Replace(el: new)
