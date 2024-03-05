@@ -6,40 +6,29 @@ A library for building real-time server UI components and live views in [Gleam â
 
 [Demo Documentation](https://sprocket.live)
 
-Heavily inspired by [Phoenix LiveView](https://github.com/phoenixframework/phoenix_live_view),
-[React](https://github.com/facebook/react) and [Elm](https://github.com/elm). The name "sprocket"
-is loosely derived from the metaphor of a bicycle's sprocket, cassette and chain.
-
-Sprocket combines the best of LiveView server-side productivity and scalability, React components
-and Elm functional state management patterns implemented in Gleam, a type-safe
-language built on the venerable BEAM (Erlang Virtual Machine).
+Heavily inspired by [Phoenix LiveView](https://github.com/phoenixframework/phoenix_live_view) and
+[React](https://github.com/facebook/react). The name "sprocket" is loosely derived from the metaphor
+of a bicycle's sprocket, cassette and chain.
 
 An initial static view is rendered as HTML on the "first paint" which then establishes a connection to the server over a
 WebSocket to facilitate sending browser events and receiving view update diffs. These updates are
 patched into a client-side in-memory representation of the DOM and efficiently rendered to the
 browser DOM. Declarative views are built using functional components that accept props and re-render
-each time those props change. Contextual hooks are used for state management, e.g. `state` and `reducer`.
-
-Under the hood, a reducer hook is a lightweight [Gleam
-Actor](https://hexdocs.pm/gleam_otp/0.1.3/gleam/otp/actor/) OTP process (i.e. gen_server) and
-changes to the state (via dispatch) result in a re-render of the view.
+each time those props change. Contextual hooks are used to manage state and effects, e.g.
+`state`, `reducer` and `effect`.
 
 Typed component interfaces snap together and are used to create higher-level views. Data flow is
 "uni-directional" in that **State** always flows down into components as props and **Events**
 bubble up through event handler functions (which are also passed in as props, e.g.
 `on_some_event("Something happened")`). 
 
-This library is currently in a **proof of concept** state and should be considered highly unstable.
-There is still a lot of work to be done, including adding support for more event types, introducing additional hooks, improving unit test
-coverage, providing extensive documentation of modules and API, and optimizing performance. 
-
 ## Key Features
 
-- Real-time, scalable server-side component library
+- Real-time server-side UI component library
 - Renders initial HTML and efficiently patches update diffs using a persistent WebSocket connection
-- Declarative and composable functional components that re-render when props change
-- Strongly-typed language means less runtime bugs and better peace of mind
-- Lightweight OTP processes used for composable & scalable state management
+- Declarative and composable functional components that re-render when props or state change
+- Strongly-typed language means minimal runtime bugs and better peace of mind
+- Lightweight OTP processes are used for efficient and scalable runtimes
 
 ## Example
 
