@@ -179,6 +179,7 @@ Sprocket is still in its early stages and has a roadmap for future development. 
 - [ ] Improve unit test coverage to ensure code quality and reliability
 - [x] Provide extensive documentation of modules and simplify API
 - [ ] Optimize performance to enhance responsiveness and scalability
+- [ ] Add support for web-based client components
 - [ ] Investigate extending to support more than just web views, such as native desktop, iOS, and Android applications.
 
 ## Contributing
