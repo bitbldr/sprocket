@@ -1,4 +1,0 @@
-[submodule "local/mist"]
-	path = local/mist
-	url = git@github.com:bitbldr/mist.git
-  branch = fix-warning
