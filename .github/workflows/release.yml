@@ -24,4 +24,7 @@ jobs:
         run: |
           gleam deps download
           gleam build
-          gleam publish
+          gleam publish -y
+        env:
+          HEXPM_PASS: ${{ secrets.HEXPM_PASS }}
+          HEXPM_USER: ${{ secrets.HEXPM_USER }}
