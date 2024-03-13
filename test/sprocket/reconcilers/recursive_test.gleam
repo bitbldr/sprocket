@@ -4,14 +4,14 @@ import gleeunit/should
 import ids/cuid
 import sprocket/context.{type Context, type Element}
 import sprocket/component.{component, render}
-import sprocket/html/elements.{a, div, fragment, text}
+import sprocket/html/elements.{a, div, fragment, raw, text}
 import sprocket/html/attributes.{class, classes}
 import sprocket/hooks.{handler, provider}
 import sprocket/internal/reconcilers/recursive.{reconcile}
 import sprocket/internal/reconcile.{
   type ReconciledElement, ReconciledAttribute, ReconciledComponent,
-  ReconciledElement, ReconciledEventHandler, ReconciledFragment,
-  ReconciledResult, ReconciledText,
+  ReconciledCustom, ReconciledElement, ReconciledEventHandler,
+  ReconciledFragment, ReconciledResult, ReconciledText,
 }
 
 // Renders the given element as a stateless element to html.
@@ -254,5 +254,35 @@ pub fn renders_component_with_context_provider_test() {
         ],
       ),
     ],
+  ) = rendered
+}
+
+type EmptyProps {
+  EmptyProps
+}
+
+fn test_component_with_custom_element(ctx: Context, _props) {
+  render(
+    ctx,
+    raw(
+      "div",
+      "An unescaped <b>raw <em>html</em></b> <span style=\"color: blue\">string</span></b>",
+    ),
+  )
+}
+
+pub fn renders_test_component_with_custom_element_test() {
+  let rendered =
+    render_el(component(test_component_with_custom_element, EmptyProps))
+
+  let assert ReconciledComponent(
+    _fc,
+    _key,
+    _props,
+    _hooks,
+    ReconciledCustom(
+      kind: "raw",
+      data: "{\"tag\":\"div\",\"innerHtml\":\"An unescaped <b>raw <em>html</em></b> <span style=\\\"color: blue\\\">string</span></b>\"}",
+    ),
   ) = rendered
 }
