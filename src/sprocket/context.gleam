@@ -46,6 +46,7 @@ pub type Element {
   IgnoreUpdate(element: Element)
   Provider(key: String, value: Dynamic, element: Element)
   Text(text: String)
+  Custom(kind: String, data: String)
 }
 
 pub type Updater(r) {

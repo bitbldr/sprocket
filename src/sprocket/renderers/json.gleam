@@ -4,7 +4,7 @@ import gleam/option.{type Option, None, Some}
 import gleam/json.{type Json}
 import sprocket/internal/reconcile.{
   type ReconciledAttribute, type ReconciledElement, ReconciledAttribute,
-  ReconciledClientHook, ReconciledComponent, ReconciledElement,
+  ReconciledClientHook, ReconciledComponent, ReconciledCustom, ReconciledElement,
   ReconciledEventHandler, ReconciledFragment, ReconciledIgnoreUpdate,
   ReconciledText,
 }
@@ -22,6 +22,7 @@ fn render(el: ReconciledElement) -> Json {
     ReconciledFragment(key, children: children) -> fragment(key, children)
     ReconciledIgnoreUpdate(el) -> render(el)
     ReconciledText(text: t) -> text(t)
+    ReconciledCustom(kind: kind, data: data) -> custom(kind, data)
   }
 }
 
@@ -97,6 +98,15 @@ fn fragment(key: Option(String), children: List(ReconciledElement)) -> Json {
 
 fn text(t: String) -> Json {
   json.string(t)
+}
+
+fn custom(kind: String, data: String) -> Json {
+  [
+    #("type", json.string("custom")),
+    #("kind", json.string(kind)),
+    #("data", json.string(data)),
+  ]
+  |> json.object()
 }
 
 // appends a string property to a json object if the value is present

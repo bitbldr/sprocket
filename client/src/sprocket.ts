@@ -10,6 +10,7 @@ import { render, Providers } from "./render";
 import { applyPatch } from "./patch";
 import { initEventHandlerProvider } from "./events";
 import { initClientHookProvider, Hook } from "./hooks";
+import { rawHtmlModule } from "./modules/rawHtml";
 
 export type ClientHook = {
   create?: (hook: Hook) => void;
@@ -40,7 +41,7 @@ export function connect(path: String, opts: Opts) {
   let dom: Record<string, any>;
   let oldVNode: VNode;
 
-  const patcher = init([attributesModule, eventListenersModule], undefined, {
+  const patcher = init([attributesModule, eventListenersModule, rawHtmlModule], undefined, {
     experimental: {
       fragments: true,
     },

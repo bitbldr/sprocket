@@ -23,6 +23,8 @@ export function render(
       return renderComponent(node, providers);
     case "fragment":
       return renderFragment(node, providers);
+    case "custom":
+      return renderCustom(node, providers);
     default:
       throw new Error(`Unknown node type: ${node.type}`);
   }
@@ -79,4 +81,16 @@ function renderFragment(f, providers: Providers): VNode {
       .filter((key) => isInteger(key))
       .reduce((acc, key) => [...acc, render(f[key], providers)], [])
   );
+}
+
+function renderCustom(custom, providers: Providers): VNode {
+  switch(custom.kind) {
+    case "raw":
+      const { tag, innerHtml } = JSON.parse(custom.data);
+
+      return h(tag, { innerHtml });
+
+    default:
+      throw new Error(`Unknown custom kind: ${custom.kind}`);
+  }
 }

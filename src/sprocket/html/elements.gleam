@@ -1,12 +1,22 @@
+import gleam/json
 import gleam/option.{type Option, None, Some}
 import gleam/dynamic.{type Dynamic}
 import sprocket/context.{
-  type Attribute, type Element, Debug, Element, Fragment, IgnoreUpdate, Keyed,
-  Text,
+  type Attribute, type Element, Custom, Debug, Element, Fragment, IgnoreUpdate,
+  Keyed, Text,
 }
 
 pub fn el(tag: String, attrs: List(Attribute), children: List(Element)) {
   Element(tag, attrs, children)
+}
+
+pub fn raw(tag: String, html: String) {
+  let data =
+    [#("tag", json.string(tag)), #("innerHtml", json.string(html))]
+    |> json.object()
+    |> json.to_string()
+
+  Custom("raw", data)
 }
 
 pub fn fragment(children: List(Element)) {

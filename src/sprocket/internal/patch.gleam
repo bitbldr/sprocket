@@ -6,7 +6,7 @@ import gleam/option.{type Option, None, Some}
 import gleam/json.{type Json}
 import sprocket/internal/reconcile.{
   type ReconciledAttribute, type ReconciledElement, ReconciledAttribute,
-  ReconciledClientHook, ReconciledComponent, ReconciledElement,
+  ReconciledClientHook, ReconciledComponent, ReconciledCustom, ReconciledElement,
   ReconciledEventHandler, ReconciledFragment, ReconciledIgnoreUpdate,
   ReconciledText,
 }
@@ -132,6 +132,17 @@ pub fn create(old: ReconciledElement, new: ReconciledElement) -> Patch {
         }
         False -> {
           Change(text: new_text)
+        }
+      }
+    }
+
+    ReconciledCustom(old_kind, old_data), ReconciledCustom(new_kind, new_data) -> {
+      case old_kind == new_kind, old_data == new_data {
+        True, True -> {
+          NoOp
+        }
+        _, _ -> {
+          Replace(el: new)
         }
       }
     }

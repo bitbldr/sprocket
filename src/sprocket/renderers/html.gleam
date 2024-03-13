@@ -1,10 +1,12 @@
 import gleam/list
 import gleam/string
+import gleam/dynamic.{type Dynamic, field}
 import gleam/option.{type Option, None, Some}
 import gleam/string_builder.{type StringBuilder}
+import gleam/json
 import sprocket/internal/reconcile.{
   type ReconciledAttribute, type ReconciledElement, ReconciledAttribute,
-  ReconciledComponent, ReconciledElement, ReconciledFragment,
+  ReconciledComponent, ReconciledCustom, ReconciledElement, ReconciledFragment,
   ReconciledIgnoreUpdate, ReconciledText,
 }
 import sprocket/render.{type Renderer, Renderer}
@@ -25,7 +27,25 @@ fn render(el: ReconciledElement) -> StringBuilder {
     ReconciledFragment(children: children, ..) -> fragment(children)
     ReconciledIgnoreUpdate(el) -> render(el)
     ReconciledText(text: t) -> text(t)
+    ReconciledCustom(kind: kind, data: data) -> custom(kind, data)
   }
+}
+
+fn el(
+  tag: String,
+  attrs: StringBuilder,
+  inner_html: StringBuilder,
+) -> StringBuilder {
+  string_builder.concat([
+    string_builder.from_string("<"),
+    string_builder.from_string(tag),
+    attrs,
+    string_builder.from_string(">"),
+    inner_html,
+    string_builder.from_string("</"),
+    string_builder.from_string(tag),
+    string_builder.from_string(">"),
+  ])
 }
 
 fn element(
@@ -63,16 +83,7 @@ fn element(
       string_builder.append_builder(acc, render(child))
     })
 
-  string_builder.concat([
-    string_builder.from_string("<"),
-    string_builder.from_string(tag),
-    rendered_attrs,
-    string_builder.from_string(">"),
-    inner_html,
-    string_builder.from_string("</"),
-    string_builder.from_string(tag),
-    string_builder.from_string(">"),
-  ])
+  el(tag, rendered_attrs, inner_html)
 }
 
 fn component(el: ReconciledElement) {
@@ -111,4 +122,34 @@ fn escape_html(unsafe: String) {
 fn text(t: String) -> StringBuilder {
   escape_html(t)
   |> string_builder.from_string()
+}
+
+fn custom(kind: String, data: String) -> StringBuilder {
+  case kind {
+    "raw" -> {
+      case json.decode(data, decode_raw) {
+        Ok(RawHtml(tag, raw_html)) ->
+          el(
+            tag,
+            string_builder.from_string(""),
+            string_builder.from_string(raw_html),
+          )
+        Error(_) -> string_builder.from_string("")
+      }
+    }
+    _ -> string_builder.from_string("")
+  }
+}
+
+type RawHtml {
+  RawHtml(tag: String, raw_html: String)
+}
+
+fn decode_raw(data: Dynamic) {
+  data
+  |> dynamic.decode2(
+    RawHtml,
+    field("tag", dynamic.string),
+    field("innerHtml", dynamic.string),
+  )
 }

@@ -6,15 +6,15 @@ import gleam/option.{type Option, None, Some}
 import gleam/dynamic.{type Dynamic}
 import sprocket/context.{
   type AbstractFunctionalComponent, type Attribute, type Context, type Element,
-  Attribute, ClientHook, Component, ComponentWip, Context, Debug, Element, Event,
-  Fragment, IgnoreUpdate, Keyed, Provider, Text,
+  Attribute, ClientHook, Component, ComponentWip, Context, Custom, Debug,
+  Element, Event, Fragment, IgnoreUpdate, Keyed, Provider, Text,
 }
 import sprocket/internal/reconcile.{
   type ReconciledAttribute, type ReconciledElement, type ReconciledResult,
   type Reconciler, ReconciledAttribute, ReconciledClientHook,
-  ReconciledComponent, ReconciledElement, ReconciledEventHandler,
-  ReconciledFragment, ReconciledIgnoreUpdate, ReconciledResult, ReconciledText,
-  Reconciler,
+  ReconciledComponent, ReconciledCustom, ReconciledElement,
+  ReconciledEventHandler, ReconciledFragment, ReconciledIgnoreUpdate,
+  ReconciledResult, ReconciledText, Reconciler,
 }
 import sprocket/internal/utils/unique
 import sprocket/internal/utils/ordered_map
@@ -76,6 +76,7 @@ pub fn reconcile(
       reconcile(ctx, el, key, prev)
     }
     Text(t) -> text(ctx, t)
+    Custom(kind, data) -> custom(ctx, kind, data)
   }
 }
 
@@ -313,6 +314,10 @@ fn maybe_matching_el(
 
 fn text(ctx: Context, t: String) -> ReconciledResult {
   ReconciledResult(ctx, ReconciledText(t))
+}
+
+fn custom(ctx: Context, kind: String, data: String) -> ReconciledResult {
+  ReconciledResult(ctx, ReconciledCustom(kind, data))
 }
 
 pub fn traverse(

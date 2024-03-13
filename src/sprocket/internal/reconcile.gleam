@@ -28,6 +28,7 @@ pub type ReconciledElement {
   ReconciledFragment(key: Option(String), children: List(ReconciledElement))
   ReconciledIgnoreUpdate(el: ReconciledElement)
   ReconciledText(text: String)
+  ReconciledCustom(kind: String, data: String)
 }
 
 pub type ReconciledResult {
