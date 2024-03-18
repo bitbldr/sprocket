@@ -1,5 +1,5 @@
 # Sprocket
-A library for building real-time server UI components and live views in [Gleam ✨](https://gleam.run/)
+A framework for building real-time server UI components and live views in [Gleam ✨](https://gleam.run/)
 
 [![Package Version](https://img.shields.io/hexpm/v/sprocket)](https://hex.pm/packages/sprocket)
 [![Hex Docs](https://img.shields.io/badge/hex-docs-ffaff3)](https://hexdocs.pm/sprocket/)
@@ -14,7 +14,7 @@ An initial static view is rendered as HTML on the "first paint" which then estab
 WebSocket to facilitate sending browser events and receiving view update diffs. These updates are
 patched into a client-side in-memory representation of the DOM and efficiently rendered to the
 browser DOM. Declarative views are built using functional components that accept props and re-render
-each time those props change. Contextual hooks are used to manage state and effects, e.g.
+when state changes. Contextual hooks are used to manage state and effects, e.g.
 `state`, `reducer` and `effect`.
 
 Typed component interfaces snap together and are used to create higher-level views. Data flow is
@@ -24,11 +24,12 @@ bubble up through event handler functions (which are also passed in as props, e.
 
 ## Key Features
 
-- Real-time server-side UI component library
-- Renders initial HTML and efficiently patches update diffs using a persistent WebSocket connection
-- Declarative and composable functional components that re-render when props or state change
-- Strongly-typed language means minimal runtime bugs and better peace of mind
-- Lightweight OTP processes are used for efficient and scalable runtimes
+- Real-time server-side UI component framework
+- Renders initial HTML and efficiently patches updates to the DOM using diffs sent over a persistent WebSocket connection
+- Declarative and composable functional components that re-render when state changes
+- Strong, static type system means fewer runtime crashes and easier maintenance
+- Lightweight OTP processes make for a more efficient and scalable application
+- Built on top of the venerable Erlang BEAM VM, which is renowned for high-concurrency and fault-tolerance
 
 ## Example
 
