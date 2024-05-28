@@ -63,12 +63,6 @@ pub type ComponentHooks =
 pub type HookDependencies =
   List(Dynamic)
 
-pub type HookTrigger {
-  OnMount
-  OnUpdate
-  WithDeps(deps: HookDependencies)
-}
-
 pub type EffectCleanup =
   Option(fn() -> Nil)
 
@@ -96,7 +90,7 @@ pub type Hook {
   Effect(
     id: Unique,
     effect: fn() -> EffectCleanup,
-    trigger: HookTrigger,
+    deps: HookDependencies,
     prev: Option(EffectResult),
   )
   Handler(id: Unique, handler_fn: HandlerFn)

@@ -8,9 +8,9 @@ import sprocket/internal/constants.{call_timeout}
 import sprocket/context.{
   type Attribute, type ClientDispatcher, type ClientEventHandler, type Context,
   type EffectCleanup, type Element, type HandlerFn, type HookDependencies,
-  type HookTrigger, type IdentifiableHandler, Callback, CallbackResult, Changed,
-  Client, ClientHook, Context, Effect, Handler, IdentifiableHandler, OnMount,
-  OnUpdate, Unchanged, WithDeps, compare_deps,
+  type IdentifiableHandler, Callback, CallbackResult, Changed, Client,
+  ClientHook, Context, Effect, Handler, IdentifiableHandler, Unchanged,
+  compare_deps,
 }
 import sprocket/internal/exceptions.{throw_on_unexpected_hook_result}
 import sprocket/internal/utils/unique
@@ -19,14 +19,14 @@ import sprocket/internal/logger
 /// Callback Hook
 /// -------------
 /// Creates a callback hook that will return a cached version of a given callback
-/// function and only recompute the callback as specified by the trigger.
+/// function and only recompute the callback when specified dependencies change.
 /// 
 /// This hook is useful for when a component needs to use a callback function that
 /// is referenced as a dependency by another hook, such as an effect hook.
 pub fn callback(
   ctx: Context,
   callback_fn: fn() -> Nil,
-  trigger: HookTrigger,
+  deps: HookDependencies,
   cb: fn(Context, fn() -> Nil) -> #(ctx, Element),
 ) -> #(ctx, Element) {
   let assert #(ctx, Callback(id, current_callback_fn, prev), index) =
@@ -36,7 +36,7 @@ pub fn callback(
 
   let #(callback_fn, deps) =
     maybe_trigger_update(
-      trigger,
+      deps,
       prev
       |> option.then(fn(prev) { prev.deps }),
       current_callback_fn,
@@ -54,36 +54,21 @@ pub fn callback(
 }
 
 fn maybe_trigger_update(
-  trigger: HookTrigger,
+  deps: HookDependencies,
   prev: Option(HookDependencies),
   value: a,
   updater: fn() -> a,
 ) -> #(a, Option(HookDependencies)) {
-  case trigger {
-    // Only compute callback on the initial render. This is a convience for WithDeps([]).
-    OnMount -> {
-      #(updater(), Some([]))
-    }
-
-    // Recompute callback on every update
-    OnUpdate -> {
-      #(updater(), None)
-    }
-
-    // Only compute callback on the initial render and when the dependencies change
-    WithDeps(deps) -> {
-      case prev {
-        Some(prev_deps) -> {
-          case compare_deps(prev_deps, deps) {
-            Changed(new_deps) -> #(updater(), Some(new_deps))
-            Unchanged -> #(value, prev)
-          }
-        }
-
-        // initial render
-        None -> #(updater(), Some(deps))
+  case prev {
+    Some(prev_deps) -> {
+      case compare_deps(prev_deps, deps) {
+        Changed(new_deps) -> #(updater(), Some(new_deps))
+        Unchanged -> #(value, prev)
       }
     }
+
+    // initial render
+    None -> #(updater(), Some(deps))
   }
 }
 
@@ -120,26 +105,26 @@ pub fn client(
 
 /// Effect Hook
 /// -----------
-/// Creates an effect hook that will run the given effect function when the hook is
-/// triggered. The effect function is memoized and recomputed based on the trigger type.
+/// Creates an effect hook that will run the given effect function when the deps change. The effect
+/// function is memoized and recomputed when the deps change. The effect function can return a cleanup
+/// function that will be called when the effect is removed.
 pub fn effect(
   ctx: Context,
   effect_fn: fn() -> EffectCleanup,
-  trigger: HookTrigger,
+  deps: HookDependencies,
   cb: fn(Context) -> #(Context, Element),
 ) -> #(Context, Element) {
   // define the initial effect function that will only run when the hook is first created
   let init = fn() {
-    Effect(unique.cuid(ctx.cuid_channel), effect_fn, trigger, None)
+    Effect(unique.cuid(ctx.cuid_channel), effect_fn, deps, None)
   }
 
   // get the previous effect result, if one exists
-  let assert #(ctx, Effect(id, _effect_fn, _trigger, prev), index) =
+  let assert #(ctx, Effect(id, _effect_fn, _deps, prev), index) =
     context.fetch_or_init_hook(ctx, init)
 
   // update the effect hook, combining with the previous result
-  let ctx =
-    context.update_hook(ctx, Effect(id, effect_fn, trigger, prev), index)
+  let ctx = context.update_hook(ctx, Effect(id, effect_fn, deps, prev), index)
 
   cb(ctx)
 }
@@ -167,15 +152,15 @@ pub fn handler(
 /// Memo Hook
 /// ---------
 /// Creates a memo hook that can be used to memoize the result of a function. The memo
-/// hook will return the result of the function and will only recompute the result as
-/// specified by the trigger.
+/// hook will return the result of the function and will only recompute the result when
+/// the dependencies change.
 /// 
 /// This hook is useful for optimizing performance by memoizing the result of an
 /// expensive function between renders.
 pub fn memo(
   ctx: Context,
   memo_fn: fn() -> a,
-  trigger: HookTrigger,
+  deps: HookDependencies,
   cb: fn(Context, a) -> #(Context, Element),
 ) -> #(Context, Element) {
   let assert #(ctx, context.Memo(id, current_memoized, prev), index) =
@@ -185,7 +170,7 @@ pub fn memo(
 
   let #(memoized, deps) =
     maybe_trigger_update(
-      trigger,
+      deps,
       prev
       |> option.then(fn(prev) { prev.deps }),
       current_memoized,

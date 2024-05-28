@@ -13,10 +13,9 @@ import sprocket/internal/constants.{call_timeout}
 import sprocket/context.{
   type ComponentHooks, type Context, type Dispatcher, type EffectCleanup,
   type EffectResult, type Element, type Hook, type HookDependencies,
-  type HookTrigger, type IdentifiableHandler, type Updater, Callback, Changed,
-  Client, Context, Dispatcher, Effect, EffectResult, Handler,
-  IdentifiableHandler, Memo, OnMount, OnUpdate, Reducer, Unchanged, Updater,
-  WithDeps, callback_param_from_string, compare_deps,
+  type IdentifiableHandler, type Updater, Callback, Changed, Client, Context,
+  Dispatcher, Effect, EffectResult, Handler, IdentifiableHandler, Memo, Reducer,
+  Unchanged, Updater, callback_param_from_string, compare_deps,
 }
 import sprocket/internal/reconcile.{
   type ReconciledElement, ReconciledComponent, ReconciledElement,
@@ -513,10 +512,10 @@ fn build_hooks_map(
 fn run_effects(rendered: ReconciledElement) -> ReconciledElement {
   process_state_hooks(rendered, fn(hook) {
     case hook {
-      Effect(id, effect_fn, trigger, prev) -> {
-        let result = run_effect(effect_fn, trigger, prev)
+      Effect(id, effect_fn, deps, prev) -> {
+        let result = run_effect(effect_fn, deps, prev)
 
-        Effect(id, effect_fn, trigger, Some(result))
+        Effect(id, effect_fn, deps, Some(result))
       }
       other -> other
     }
@@ -525,48 +524,24 @@ fn run_effects(rendered: ReconciledElement) -> ReconciledElement {
 
 fn run_effect(
   effect_fn: fn() -> EffectCleanup,
-  trigger: HookTrigger,
+  deps: HookDependencies,
   prev: Option(EffectResult),
 ) -> EffectResult {
-  case trigger {
-    // Only compute callback on the first render. This is a convience that is equivalent to WithDeps([]).
-    OnMount -> {
-      case prev {
-        Some(prev_effect_result) -> {
-          prev_effect_result
-        }
-
-        None -> EffectResult(effect_fn(), Some([]))
+  // only trigger the update on the first render and when the dependencies change
+  case prev {
+    Some(EffectResult(cleanup, Some(prev_deps))) -> {
+      case compare_deps(prev_deps, deps) {
+        Changed(_) ->
+          maybe_cleanup_and_rerun_effect(cleanup, effect_fn, Some(deps))
+        Unchanged -> EffectResult(cleanup, Some(deps))
       }
     }
 
-    // trigger effect on every update
-    OnUpdate -> {
-      case prev {
-        Some(EffectResult(cleanup: cleanup, ..)) ->
-          maybe_cleanup_and_rerun_effect(cleanup, effect_fn, None)
-        _ -> EffectResult(effect_fn(), None)
-      }
-    }
+    None -> maybe_cleanup_and_rerun_effect(None, effect_fn, Some(deps))
 
-    // only trigger the update on the first render and when the dependencies change
-    WithDeps(deps) -> {
-      case prev {
-        Some(EffectResult(cleanup, Some(prev_deps))) -> {
-          case compare_deps(prev_deps, deps) {
-            Changed(_) ->
-              maybe_cleanup_and_rerun_effect(cleanup, effect_fn, Some(deps))
-            Unchanged -> EffectResult(cleanup, Some(deps))
-          }
-        }
-
-        None -> maybe_cleanup_and_rerun_effect(None, effect_fn, Some(deps))
-
-        _ -> {
-          // this should never occur and means that a hook was dynamically added
-          throw_on_unexpected_hook_result(#("handle_effect", prev))
-        }
-      }
+    _ -> {
+      // this should never occur and means that a hook was dynamically added
+      throw_on_unexpected_hook_result(#("handle_effect", prev))
     }
   }
 }

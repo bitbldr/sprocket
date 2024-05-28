@@ -3,7 +3,7 @@ import gleam/string
 import gleam/option.{None}
 import gleeunit/should
 import gleam/erlang/process.{type Subject}
-import sprocket/context.{type Context, OnMount, OnUpdate, WithDeps}
+import sprocket/context.{type Context, dep}
 import sprocket/component.{component}
 import sprocket/html/elements.{button, fragment, text}
 import sprocket/html/attributes.{id, on_click}
@@ -50,7 +50,7 @@ fn inc_initial_render_counter(ctx: Context, _props) {
       dispatch(UpdateCount(count + 1))
       None
     },
-    OnMount,
+    [],
   )
 
   let current_count = int.to_string(count)
@@ -93,7 +93,7 @@ fn inc_on_every_update_counter(ctx: Context, props: IncEveryUpdateCounterProps) 
       tally_counter.increment(props.tally)
       None
     },
-    OnUpdate,
+    [dep(ctx)],
   )
 
   component.render(ctx, text(""))
@@ -139,7 +139,7 @@ fn inc_reset_on_button_click_counter(ctx: Context, _props) {
       dispatch(UpdateCount(count + 1))
       None
     },
-    WithDeps([]),
+    [],
   )
 
   // Define event handlers
