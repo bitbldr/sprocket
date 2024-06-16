@@ -28,6 +28,7 @@ type Opts = {
   csrfToken: string;
   targetEl?: Element;
   hooks?: Record<string, any>;
+  initialProps?: Record<string, string>;
 };
 
 export function connect(path: String, opts: Opts) {
@@ -41,11 +42,15 @@ export function connect(path: String, opts: Opts) {
   let dom: Record<string, any>;
   let oldVNode: VNode;
 
-  const patcher = init([attributesModule, eventListenersModule, rawHtmlModule], undefined, {
-    experimental: {
-      fragments: true,
-    },
-  });
+  const patcher = init(
+    [attributesModule, eventListenersModule, rawHtmlModule],
+    undefined,
+    {
+      experimental: {
+        fragments: true,
+      },
+    }
+  );
 
   let clientHookMap: Record<string, any> = {};
   const clientHookProvider = initClientHookProvider(
@@ -65,7 +70,12 @@ export function connect(path: String, opts: Opts) {
   topbar.show(500);
 
   socket.addEventListener("open", function (event) {
-    socket.send(JSON.stringify(["join", { csrf: csrfToken }]));
+    socket.send(
+      JSON.stringify([
+        "join",
+        { csrf: csrfToken, initialProps: opts.initialProps },
+      ])
+    );
   });
 
   socket.addEventListener("message", function (event) {
