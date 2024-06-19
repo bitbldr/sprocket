@@ -1,15 +1,13 @@
+import gleam/dict.{type Dict}
+import gleam/dynamic.{type Dynamic}
+import gleam/erlang/process.{type Subject}
+import gleam/function.{identity}
 import gleam/io
 import gleam/list
-import gleam/result
-import gleam/dynamic.{type Dynamic}
-import gleam/dict.{type Dict}
-import gleam/function.{identity}
-import gleam/otp/actor.{type StartError, Spec}
-import gleam/erlang/process.{type Subject}
 import gleam/option.{type Option, None, Some}
+import gleam/otp/actor.{type StartError, Spec}
+import gleam/result
 import ids/cuid
-import sprocket/internal/logger
-import sprocket/internal/constants.{call_timeout}
 import sprocket/context.{
   type ComponentHooks, type Context, type Dispatcher, type EffectCleanup,
   type EffectResult, type Element, type Hook, type HookDependencies,
@@ -17,18 +15,20 @@ import sprocket/context.{
   Dispatcher, Effect, EffectResult, Handler, IdentifiableHandler, Memo, Reducer,
   Unchanged, Updater, callback_param_from_string, compare_deps,
 }
+import sprocket/internal/constants.{call_timeout}
+import sprocket/internal/exceptions.{throw_on_unexpected_hook_result}
+import sprocket/internal/logger
+import sprocket/internal/patch.{type Patch}
 import sprocket/internal/reconcile.{
   type ReconciledElement, ReconciledComponent, ReconciledElement,
   ReconciledFragment, ReconciledResult,
 }
 import sprocket/internal/reconcilers/recursive
-import sprocket/internal/patch.{type Patch}
 import sprocket/internal/utils/ordered_map.{
   type KeyedItem, type OrderedMapIter, KeyedItem,
 }
-import sprocket/internal/utils/unique.{type Unique}
-import sprocket/internal/exceptions.{throw_on_unexpected_hook_result}
 import sprocket/internal/utils/timer
+import sprocket/internal/utils/unique.{type Unique}
 
 pub type Runtime =
   Subject(Message)
@@ -668,8 +668,7 @@ fn process_next_hook(
         #(
           [KeyedItem(index, updated), ..ordered],
           dict.insert(by_index, index, updated),
-          size
-          + 1,
+          size + 1,
         ),
         process_hook,
       )

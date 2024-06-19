@@ -1,22 +1,22 @@
-import gleam/result
 import gleam/dict.{type Dict}
-import gleam/option.{type Option, None, Some}
 import gleam/dynamic.{type Dynamic, field, optional_field}
 import gleam/json.{type Json}
+import gleam/option.{type Option, None, Some}
+import gleam/result
 import ids/cuid
-import sprocket/runtime.{
-  type RenderedUpdate, type Runtime, FullUpdate, PatchUpdate,
-}
+import sprocket/component.{component}
 import sprocket/context.{
   type Dispatcher, type Element, type FunctionalComponent, Dispatcher, Updater,
 }
-import sprocket/component.{component}
+import sprocket/internal/logger
+import sprocket/internal/patch
 import sprocket/internal/reconcile.{type ReconciledResult, ReconciledResult}
 import sprocket/internal/reconcilers/recursive.{reconcile}
 import sprocket/render.{type Renderer, renderer} as _
 import sprocket/renderers/json.{json_renderer} as _
-import sprocket/internal/patch
-import sprocket/internal/logger
+import sprocket/runtime.{
+  type RenderedUpdate, type Runtime, FullUpdate, PatchUpdate,
+}
 
 pub type WSSend =
   fn(String) -> Result(Nil, Nil)

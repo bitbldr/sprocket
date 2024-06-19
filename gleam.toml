@@ -21,10 +21,10 @@ internal_modules = [
   "sprocket/render",
   "sprocket/runtime",
 ]
-gleam = ">= 0.34.0"
+gleam = ">= 1.0.0"
 
 [dependencies]
-gleam_stdlib = "~> 0.35"
+gleam_stdlib = "~> 0.38"
 gleam_erlang = "~> 0.22"
 gleam_json = "~> 0.6"
 gleam_otp = "~> 0.7"

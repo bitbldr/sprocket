@@ -1,14 +1,15 @@
+import gleam/dict
+import gleam/dynamic.{type Dynamic}
 import gleam/io
 import gleam/list
-import gleam/dict
-import gleam/result
 import gleam/option.{type Option, None, Some}
-import gleam/dynamic.{type Dynamic}
+import gleam/result
 import sprocket/context.{
   type AbstractFunctionalComponent, type Attribute, type Context, type Element,
   Attribute, ClientHook, Component, ComponentWip, Context, Custom, Debug,
   Element, Event, Fragment, IgnoreUpdate, Keyed, Provider, Text,
 }
+import sprocket/internal/logger
 import sprocket/internal/reconcile.{
   type ReconciledAttribute, type ReconciledElement, type ReconciledResult,
   type Reconciler, ReconciledAttribute, ReconciledClientHook,
@@ -16,18 +17,16 @@ import sprocket/internal/reconcile.{
   ReconciledEventHandler, ReconciledFragment, ReconciledIgnoreUpdate,
   ReconciledResult, ReconciledText, Reconciler,
 }
-import sprocket/internal/utils/unique
+import sprocket/internal/utils/list.{element_at} as _list_utils
 import sprocket/internal/utils/ordered_map
-import sprocket/internal/logger
+import sprocket/internal/utils/unique
 
 pub fn recursive_reconciler() -> Reconciler {
-  Reconciler(reconcile: fn(
-    ctx: Context,
-    el: Element,
-    prev: Option(ReconciledElement),
-  ) {
-    reconcile(ctx, el, None, prev)
-  })
+  Reconciler(
+    reconcile: fn(ctx: Context, el: Element, prev: Option(ReconciledElement)) {
+      reconcile(ctx, el, None, prev)
+    },
+  )
 }
 
 // Reconciles the given element into a ReconciledElement tree against the previous rendered element.
@@ -260,7 +259,7 @@ fn get_prev_matching_child_by_index(
 ) -> Option(ReconciledElement) {
   case prev {
     Some(ReconciledElement(_, _, _, children)) -> {
-      case list.at(children, index) {
+      case element_at(children, index, 0) {
         Ok(prev_child) -> {
           maybe_matching_el(prev_child, child)
         }
@@ -268,7 +267,7 @@ fn get_prev_matching_child_by_index(
       }
     }
     Some(ReconciledFragment(_, children)) -> {
-      case list.at(children, index) {
+      case element_at(children, index, 0) {
         Ok(prev_child) -> {
           maybe_matching_el(prev_child, child)
         }
