@@ -1,5 +1,5 @@
-import gleam/otp/actor
 import gleam/erlang/process.{type Subject}
+import gleam/otp/actor
 
 pub opaque type State {
   State(count: Int)

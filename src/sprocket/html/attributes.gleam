@@ -1,7 +1,7 @@
-import gleam/list
-import gleam/string_builder
-import gleam/option.{type Option, None, Some}
 import gleam/dynamic
+import gleam/list
+import gleam/option.{type Option, None, Some}
+import gleam/string_builder
 import sprocket/context.{
   type Attribute, type IdentifiableHandler, Attribute, ClientHook, Event,
 }
@@ -120,7 +120,7 @@ pub fn classes(value: List(Option(String))) -> Attribute {
           }
       }
     })
-    |> string_builder.to_string(),
+      |> string_builder.to_string(),
   )
 }
 

@@ -1,16 +1,16 @@
-import gleam/list
-import gleam/string
 import gleam/dynamic.{type Dynamic, field}
-import gleam/option.{type Option, None, Some}
-import gleam/string_builder.{type StringBuilder}
 import gleam/json
+import gleam/list
+import gleam/option.{type Option, None, Some}
+import gleam/string
+import gleam/string_builder.{type StringBuilder}
+import sprocket/internal/constants
 import sprocket/internal/reconcile.{
   type ReconciledAttribute, type ReconciledElement, ReconciledAttribute,
   ReconciledComponent, ReconciledCustom, ReconciledElement, ReconciledFragment,
   ReconciledIgnoreUpdate, ReconciledText,
 }
 import sprocket/render.{type Renderer, Renderer}
-import sprocket/internal/constants
 
 pub fn html_renderer() -> Renderer(String) {
   Renderer(render: fn(el: ReconciledElement) {

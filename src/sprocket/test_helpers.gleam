@@ -1,7 +1,6 @@
 import gleam/io
 import gleam/list
 import gleam/option.{None, Some}
-import sprocket/runtime.{type Runtime}
 import sprocket/context.{Updater}
 import sprocket/internal/reconcile.{
   type ReconciledElement, ReconciledAttribute, ReconciledElement,
@@ -10,6 +9,7 @@ import sprocket/internal/reconcile.{
 import sprocket/internal/reconcilers/recursive
 import sprocket/render.{renderer}
 import sprocket/renderers/html.{html_renderer}
+import sprocket/runtime.{type Runtime}
 
 pub fn connect(view) {
   let assert Ok(spkt) = runtime.start(view, Updater(fn(_) { Ok(Nil) }), None)

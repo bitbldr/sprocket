@@ -1,6 +1,6 @@
+import gleam/dynamic.{type Dynamic}
 import gleam/json
 import gleam/option.{type Option, None, Some}
-import gleam/dynamic.{type Dynamic}
 import sprocket/context.{
   type Attribute, type Element, Custom, Debug, Element, Fragment, IgnoreUpdate,
   Keyed, Text,

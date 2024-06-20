@@ -1,5 +1,5 @@
-import gleam/result
 import gleam/erlang/process.{type Subject}
+import gleam/result
 import ids/cuid
 import ids/uuid
 import sprocket/internal/logger
