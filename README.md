@@ -83,7 +83,7 @@ pub fn clock(ctx: Context, props) {
 
       Some(fn() { cancel() })
     },
-    WithDeps([dep(time)]),
+    [dep(time)],
   )
 
   let current_time = int.to_string(time)
@@ -173,13 +173,10 @@ API documentation can be found at <https://hexdocs.pm/sprocket>.
 Sprocket is still in its early stages and has a roadmap for future development. Here are some of the planned improvements:
 
 - [x] Build out full set of base HTML functions for components
-- [x] ~~Explore other http and websocket server options~~ Core library is now web server agnostic
-- [ ] Add support for additional event types to handle various user interactions
 - [x] Expand the available hooks to enable more flexible component behavior
-- [ ] Convert client TypeScript to gleam
+- [x] Add documentation to modules and simplify API
+- [ ] Add support for additional event types to handle various user interactions
 - [ ] Improve unit test coverage to ensure code quality and reliability
-- [x] Provide extensive documentation of modules and simplify API
-- [ ] Optimize performance to enhance responsiveness and scalability
 - [ ] Add support for web-based client components
 - [ ] Investigate extending to support more than just web views, such as native desktop, iOS, and Android applications.
 

@@ -1,10 +1,10 @@
 import gleam/int
 import gleam/string
-import sprocket/context.{type Context}
 import sprocket/component.{component}
-import sprocket/html/elements.{button, fragment, text}
-import sprocket/html/attributes.{id, on_click}
+import sprocket/context.{type Context}
 import sprocket/hooks.{handler, state}
+import sprocket/html/attributes.{id, on_click}
+import sprocket/html/elements.{button, fragment, text}
 import sprocket/test_helpers.{ClickEvent, connect, render_event, render_html}
 
 type TestCounterProps {

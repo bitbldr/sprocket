@@ -1,14 +1,14 @@
+import gleam/dynamic
 import gleam/json
+import gleam/option.{None, Some}
 import gleam/string
 import gleeunit/should
-import gleam/dynamic
-import gleam/option.{None, Some}
 import sprocket/context.{Element}
-import sprocket/internal/reconcile.{
-  ReconciledAttribute, ReconciledComponent, ReconciledElement, ReconciledText,
-}
 import sprocket/internal/patch.{
   Change, Insert, Move, NoOp, Remove, Replace, Update, op_code,
+}
+import sprocket/internal/reconcile.{
+  ReconciledAttribute, ReconciledComponent, ReconciledElement, ReconciledText,
 }
 import sprocket/internal/utils/ordered_map
 

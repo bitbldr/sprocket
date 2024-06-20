@@ -1,13 +1,13 @@
-import gleam/int
-import gleam/string
-import gleam/option.{None}
-import gleeunit/should
 import gleam/erlang/process.{type Subject}
-import sprocket/context.{type Context, dep}
+import gleam/int
+import gleam/option.{None}
+import gleam/string
+import gleeunit/should
 import sprocket/component.{component}
-import sprocket/html/elements.{button, fragment, text}
-import sprocket/html/attributes.{id, on_click}
+import sprocket/context.{type Context, dep}
 import sprocket/hooks.{effect, handler, reducer}
+import sprocket/html/attributes.{id, on_click}
+import sprocket/html/elements.{button, fragment, text}
 import sprocket/test_helpers.{ClickEvent, connect, render_event, render_html}
 import sprocket/test_helpers/tally_counter
 

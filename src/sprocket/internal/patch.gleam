@@ -1,18 +1,19 @@
-import gleam/list
-import gleam/string
-import gleam/int
 import gleam/dict.{type Dict}
-import gleam/option.{type Option, None, Some}
+import gleam/int
 import gleam/json.{type Json}
+import gleam/list
+import gleam/option.{type Option, None, Some}
+import gleam/string
+import sprocket/internal/constants
 import sprocket/internal/reconcile.{
   type ReconciledAttribute, type ReconciledElement, ReconciledAttribute,
   ReconciledClientHook, ReconciledComponent, ReconciledCustom, ReconciledElement,
   ReconciledEventHandler, ReconciledFragment, ReconciledIgnoreUpdate,
   ReconciledText,
 }
+import sprocket/internal/utils/list.{element_at} as _list_utils
 import sprocket/render.{renderer} as _
 import sprocket/renderers/json.{json_renderer} as _
-import sprocket/internal/constants
 
 pub type Patch {
   NoOp
@@ -46,12 +47,15 @@ pub fn create(old: ReconciledElement, new: ReconciledElement) -> Patch {
       key: old_key,
       attrs: old_attrs,
       children: old_children,
-    ), ReconciledElement(
-      tag: new_tag,
-      key: new_key,
-      attrs: new_attrs,
-      children: new_children,
-    ) if old_tag == new_tag -> {
+    ),
+      ReconciledElement(
+        tag: new_tag,
+        key: new_key,
+        attrs: new_attrs,
+        children: new_children,
+      )
+      if old_tag == new_tag
+    -> {
       // check if element has same key
       case old_key == new_key {
         True -> {
@@ -87,13 +91,16 @@ pub fn create(old: ReconciledElement, new: ReconciledElement) -> Patch {
       props: old_props,
       hooks: _old_hooks,
       el: old_el,
-    ), ReconciledComponent(
-      fc: new_fc,
-      key: _key,
-      props: new_props,
-      hooks: _hooks,
-      el: new_el,
-    ) if old_fc == new_fc && old_props == new_props -> {
+    ),
+      ReconciledComponent(
+        fc: new_fc,
+        key: _key,
+        props: new_props,
+        hooks: _hooks,
+        el: new_el,
+      )
+      if old_fc == new_fc && old_props == new_props
+    -> {
       // functional components and props are the same, so check the child element
 
       // In the future, we will want to introduce a ReconciledMemo variant where we can
@@ -109,10 +116,9 @@ pub fn create(old: ReconciledElement, new: ReconciledElement) -> Patch {
       }
     }
 
-    ReconciledFragment(key: _old_key, children: old_children), ReconciledFragment(
-      key: _key,
-      children: new_children,
-    ) -> {
+    ReconciledFragment(key: _old_key, children: old_children),
+      ReconciledFragment(key: _key, children: new_children)
+    -> {
       case compare_children(old_children, new_children) {
         Some(children) -> {
           Update(attrs: None, children: Some(children))
@@ -270,7 +276,7 @@ fn compare_child_at_index(
   new_child,
   index,
 ) -> Dict(Int, Patch) {
-  case list.at(old_children, index) {
+  case element_at(old_children, index, 0) {
     Ok(old_child) -> {
       case create(old_child, new_child) {
         NoOp -> {

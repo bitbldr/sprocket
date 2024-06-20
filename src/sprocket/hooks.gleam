@@ -1,10 +1,9 @@
-import gleam/option.{type Option, None, Some}
-import gleam/dynamic
-import gleam/result
 import gleam/dict
-import gleam/otp/actor
+import gleam/dynamic
 import gleam/erlang/process.{type Subject}
-import sprocket/internal/constants.{call_timeout}
+import gleam/option.{type Option, None, Some}
+import gleam/otp/actor
+import gleam/result
 import sprocket/context.{
   type Attribute, type ClientDispatcher, type ClientEventHandler, type Context,
   type EffectCleanup, type Element, type HandlerFn, type HookDependencies,
@@ -12,9 +11,10 @@ import sprocket/context.{
   ClientHook, Context, Effect, Handler, IdentifiableHandler, Unchanged,
   compare_deps,
 }
+import sprocket/internal/constants.{call_timeout}
 import sprocket/internal/exceptions.{throw_on_unexpected_hook_result}
-import sprocket/internal/utils/unique
 import sprocket/internal/logger
+import sprocket/internal/utils/unique
 
 /// Callback Hook
 /// -------------
@@ -38,7 +38,7 @@ pub fn callback(
     maybe_trigger_update(
       deps,
       prev
-      |> option.then(fn(prev) { prev.deps }),
+        |> option.then(fn(prev) { prev.deps }),
       current_callback_fn,
       fn() { callback_fn },
     )
@@ -172,7 +172,7 @@ pub fn memo(
     maybe_trigger_update(
       deps,
       prev
-      |> option.then(fn(prev) { prev.deps }),
+        |> option.then(fn(prev) { prev.deps }),
       current_memoized,
       fn() { dynamic.from(memo_fn()) },
     )
@@ -236,24 +236,27 @@ pub fn reducer(
     //  1. StateReducer msg, which simply returns the state of the reducer
     //  2. DispatchReducer msg, which will update the reducer state when a dispatch is triggered
     let assert Ok(reducer_actor) =
-      actor.start(initial, fn(
-        message: StateOrDispatchReducer(model, msg),
-        state: model,
-      ) -> actor.Next(StateOrDispatchReducer(model, msg), model) {
-        case message {
-          Shutdown -> actor.Stop(process.Normal)
+      actor.start(
+        initial,
+        fn(message: StateOrDispatchReducer(model, msg), state: model) -> actor.Next(
+          StateOrDispatchReducer(model, msg),
+          model,
+        ) {
+          case message {
+            Shutdown -> actor.Stop(process.Normal)
 
-          StateReducer(reply_with) -> {
-            process.send(reply_with, state)
-            actor.continue(state)
-          }
+            StateReducer(reply_with) -> {
+              process.send(reply_with, state)
+              actor.continue(state)
+            }
 
-          DispatchReducer(r, m) -> {
-            r(state, m)
-            |> actor.continue()
+            DispatchReducer(r, m) -> {
+              r(state, m)
+              |> actor.continue()
+            }
           }
-        }
-      })
+        },
+      )
       |> result.map_error(fn(error) {
         logger.error("hooks.reducer: failed to start reducer actor")
         error

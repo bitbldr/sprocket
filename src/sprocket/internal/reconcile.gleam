@@ -1,5 +1,5 @@
-import gleam/option.{type Option}
 import gleam/dynamic.{type Dynamic}
+import gleam/option.{type Option}
 import sprocket/context.{
   type AbstractFunctionalComponent, type ComponentHooks, type Context,
   type Element, Context,

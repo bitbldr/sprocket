@@ -1,18 +1,22 @@
-import gleam/result
-import gleam/option.{type Option, None, Some}
+import gleam/dict.{type Dict}
 import gleam/dynamic.{type Dynamic, field, optional_field}
 import gleam/json.{type Json}
+import gleam/option.{type Option, None, Some}
+import gleam/result
 import ids/cuid
-import sprocket/runtime.{
-  type RenderedUpdate, type Runtime, FullUpdate, PatchUpdate,
+import sprocket/component.{component}
+import sprocket/context.{
+  type Dispatcher, type Element, type FunctionalComponent, Dispatcher, Updater,
 }
-import sprocket/context.{type Dispatcher, type Element, Dispatcher, Updater}
+import sprocket/internal/logger
+import sprocket/internal/patch
 import sprocket/internal/reconcile.{type ReconciledResult, ReconciledResult}
 import sprocket/internal/reconcilers/recursive.{reconcile}
 import sprocket/render.{type Renderer, renderer} as _
 import sprocket/renderers/json.{json_renderer} as _
-import sprocket/internal/patch
-import sprocket/internal/logger
+import sprocket/runtime.{
+  type RenderedUpdate, type Runtime, FullUpdate, PatchUpdate,
+}
 
 pub type WSSend =
   fn(String) -> Result(Nil, Nil)
@@ -24,10 +28,11 @@ pub type SprocketOpts {
   SprocketOpts(debug: Bool)
 }
 
-pub type Sprocket {
+pub type Sprocket(p) {
   Sprocket(
+    component: FunctionalComponent(p),
+    initialize_props: fn(Option(PropList)) -> p,
     runtime: Option(Runtime),
-    view: Element,
     ws_send: WSSend,
     csrf_validator: CSRFValidator,
     opts: Option(SprocketOpts),
@@ -35,14 +40,16 @@ pub type Sprocket {
 }
 
 pub fn new(
-  view: Element,
+  component: FunctionalComponent(p),
+  initialize_props: fn(Option(PropList)) -> p,
   ws_send: WSSend,
   csrf_validator: CSRFValidator,
   opts: Option(SprocketOpts),
-) -> Sprocket {
+) -> Sprocket(p) {
   Sprocket(
+    component: component,
+    initialize_props: initialize_props,
     runtime: None,
-    view: view,
     ws_send: ws_send,
     csrf_validator: csrf_validator,
     opts: opts,
@@ -50,32 +57,35 @@ pub fn new(
 }
 
 type Payload {
-  JoinPayload(csrf_token: String)
+  JoinPayload(csrf_token: String, initial_props: Option(Dict(String, String)))
   EventPayload(kind: String, id: String, value: Option(String))
   HookEventPayload(id: String, event: String, payload: Option(Dynamic))
   EmptyPayload(nothing: Option(String))
 }
 
-pub type Response {
-  Joined(spkt: Sprocket)
+pub type Response(p) {
+  Joined(spkt: Sprocket(p))
   Empty
 }
+
+pub type PropList =
+  List(#(String, String))
 
 /// Handle a message from the websocket. This function is called when a message is received
 /// from the websocket. It will find the sprocket that is associated with the websocket and
 /// pass the message to the sprocket. The sprocket will then handle the message and send
 /// a response back to the websocket.
-pub fn handle_ws(spkt: Sprocket, msg: String) -> Result(Response, String) {
+pub fn handle_ws(spkt: Sprocket(p), msg: String) -> Result(Response(p), String) {
   case
     json.decode(
       msg,
       dynamic.any([decode_join, decode_event, decode_hook_event, decode_empty]),
     )
   {
-    Ok(#("join", JoinPayload(csrf))) -> {
+    Ok(#("join", JoinPayload(csrf, initial_props))) -> {
       case spkt.csrf_validator(csrf) {
         Ok(_) ->
-          case connect(spkt) {
+          case connect(spkt, option.map(initial_props, dict.to_list)) {
             Ok(runtime) -> Ok(Joined(Sprocket(..spkt, runtime: Some(runtime))))
             Error(_) -> Error("Error connecting to runtime")
           }
@@ -128,7 +138,7 @@ pub fn handle_ws(spkt: Sprocket, msg: String) -> Result(Response, String) {
 }
 
 fn require_runtime(
-  spkt: Sprocket,
+  spkt: Sprocket(p),
   cb: fn(Runtime) -> Result(a, String),
 ) -> Result(a, String) {
   case spkt {
@@ -141,7 +151,10 @@ fn require_runtime(
 }
 
 /// Handles client websocket connection initialization.
-fn connect(spkt: Sprocket) -> Result(Runtime, Nil) {
+fn connect(
+  spkt: Sprocket(p),
+  initial_props: Option(List(#(String, String))),
+) -> Result(Runtime, Nil) {
   let debug =
     option.map(spkt.opts, fn(opts) { opts.debug })
     |> option.unwrap(False)
@@ -162,7 +175,9 @@ fn connect(spkt: Sprocket) -> Result(Runtime, Nil) {
       Ok(Nil)
     })
 
-  case runtime.start(spkt.view, updater, Some(dispatcher)) {
+  let view = component(spkt.component, spkt.initialize_props(initial_props))
+
+  case runtime.start(view, updater, Some(dispatcher)) {
     Ok(r) -> {
       // schedule intitial render
       runtime.render_update(r)
@@ -181,7 +196,14 @@ fn decode_join(data: Dynamic) {
   data
   |> dynamic.tuple2(
     dynamic.string,
-    dynamic.decode1(JoinPayload, field("csrf", dynamic.string)),
+    dynamic.decode2(
+      JoinPayload,
+      field("csrf", dynamic.string),
+      optional_field(
+        "initialProps",
+        dynamic.dict(dynamic.string, dynamic.string),
+      ),
+    ),
   )
 }
 
@@ -291,7 +313,7 @@ fn error_to_json(error: ConnectError) {
 /// the sprocket that is associated with the websocket and stop it.
 ///
 /// Its important to call this function when the websocket connection is terminated.
-pub fn cleanup(spkt: Sprocket) {
+pub fn cleanup(spkt: Sprocket(p)) {
   spkt.runtime
   |> option.map(fn(r) { runtime.stop(r) })
 }

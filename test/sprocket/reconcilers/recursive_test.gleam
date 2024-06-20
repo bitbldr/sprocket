@@ -2,17 +2,17 @@ import gleam/dynamic
 import gleam/option.{None, Some}
 import gleeunit/should
 import ids/cuid
-import sprocket/context.{type Context, type Element}
 import sprocket/component.{component, render}
-import sprocket/html/elements.{a, div, fragment, raw, text}
-import sprocket/html/attributes.{class, classes}
+import sprocket/context.{type Context, type Element}
 import sprocket/hooks.{handler, provider}
-import sprocket/internal/reconcilers/recursive.{reconcile}
+import sprocket/html/attributes.{class, classes}
+import sprocket/html/elements.{a, div, fragment, raw, text}
 import sprocket/internal/reconcile.{
   type ReconciledElement, ReconciledAttribute, ReconciledComponent,
   ReconciledCustom, ReconciledElement, ReconciledEventHandler,
   ReconciledFragment, ReconciledResult, ReconciledText,
 }
+import sprocket/internal/reconcilers/recursive.{reconcile}
 
 // Renders the given element as a stateless element to html.
 pub fn render_el(el: Element) -> ReconciledElement {

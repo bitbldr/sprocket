@@ -1,5 +1,5 @@
-import gleam/list
 import gleam/dict.{type Dict}
+import gleam/list
 
 pub type KeyedItem(k, a) {
   KeyedItem(key: k, value: a)
@@ -38,8 +38,7 @@ pub fn from_list(ordered: List(KeyedItem(k, a))) -> OrderedMap(k, a) {
         False -> #(
           [keyed_item, ..ordered],
           dict.insert(map, key, value),
-          size
-          + 1,
+          size + 1,
         )
       }
     })

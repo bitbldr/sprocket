@@ -1,14 +1,14 @@
+import gleam/dict.{type Dict}
+import gleam/dynamic.{type Dynamic}
+import gleam/erlang/process.{type Subject}
 import gleam/int
 import gleam/list
-import gleam/dict.{type Dict}
 import gleam/option.{type Option, None, Some}
-import gleam/erlang/process.{type Subject}
-import gleam/dynamic.{type Dynamic}
 import ids/cuid
+import sprocket/internal/exceptions.{throw_on_unexpected_deps_mismatch}
+import sprocket/internal/logger
 import sprocket/internal/utils/ordered_map.{type OrderedMap}
 import sprocket/internal/utils/unique.{type Unique}
-import sprocket/internal/logger
-import sprocket/internal/exceptions.{throw_on_unexpected_deps_mismatch}
 
 pub type HandlerFn =
   fn(Option(CallbackParam)) -> Nil
@@ -115,7 +115,7 @@ pub fn compare_deps(
 ) -> Compared(HookDependencies) {
   // zip deps together and compare each one with the previous to see if they are equal
   case list.strict_zip(prev_deps, deps) {
-    Error(list.LengthMismatch) ->
+    Error(_) ->
       // Dependency lists are different sizes, so they must have changed
       // this should never occur and means that a hook's deps list was dynamically changed
       throw_on_unexpected_deps_mismatch(#("compare_deps", prev_deps, deps))

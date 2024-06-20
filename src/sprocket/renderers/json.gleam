@@ -1,7 +1,7 @@
 import gleam/int
+import gleam/json.{type Json}
 import gleam/list
 import gleam/option.{type Option, None, Some}
-import gleam/json.{type Json}
 import sprocket/internal/reconcile.{
   type ReconciledAttribute, type ReconciledElement, ReconciledAttribute,
   ReconciledClientHook, ReconciledComponent, ReconciledCustom, ReconciledElement,
@@ -46,7 +46,7 @@ fn element(
             attrs,
             [
               [#("kind", json.string(kind)), #("id", json.string(id))]
-              |> json.object(),
+                |> json.object(),
               ..events
             ],
             hooks,
@@ -55,7 +55,7 @@ fn element(
         ReconciledClientHook(name, id) -> {
           #(attrs, events, [
             [#("name", json.string(name)), #("id", json.string(id))]
-            |> json.object(),
+              |> json.object(),
             ..hooks
           ])
         }
