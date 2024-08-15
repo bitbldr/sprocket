@@ -3,7 +3,7 @@ import gleam/option.{None, Some}
 import gleeunit/should
 import ids/cuid
 import sprocket/component.{component, render}
-import sprocket/context.{type Context, type Element}
+import sprocket/context.{type Context, type Element, Attribute}
 import sprocket/hooks.{handler, provider}
 import sprocket/html/attributes.{class, classes}
 import sprocket/html/elements.{a, div, fragment, raw, text}
@@ -266,7 +266,7 @@ fn test_component_with_custom_element(ctx: Context, _props) {
     ctx,
     raw(
       "div",
-      [],
+      [Attribute("some", dynamic.from("attribute"))],
       "An unescaped <b>raw <em>html</em></b> <span style=\"color: blue\">string</span></b>",
     ),
   )
@@ -283,7 +283,7 @@ pub fn renders_test_component_with_custom_element_test() {
     _hooks,
     ReconciledCustom(
       kind: "raw",
-      data: "{\"tag\":\"div\",\"attrs\":{},\"innerHtml\":\"An unescaped <b>raw <em>html</em></b> <span style=\\\"color: blue\\\">string</span></b>\"}",
+      data: "{\"tag\":\"div\",\"attrs\":{\"some\":\"attribute\"},\"innerHtml\":\"An unescaped <b>raw <em>html</em></b> <span style=\\\"color: blue\\\">string</span></b>\"}",
     ),
   ) = rendered
 }
