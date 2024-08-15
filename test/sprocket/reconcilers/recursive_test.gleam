@@ -266,6 +266,7 @@ fn test_component_with_custom_element(ctx: Context, _props) {
     ctx,
     raw(
       "div",
+      [],
       "An unescaped <b>raw <em>html</em></b> <span style=\"color: blue\">string</span></b>",
     ),
   )
@@ -282,7 +283,7 @@ pub fn renders_test_component_with_custom_element_test() {
     _hooks,
     ReconciledCustom(
       kind: "raw",
-      data: "{\"tag\":\"div\",\"innerHtml\":\"An unescaped <b>raw <em>html</em></b> <span style=\\\"color: blue\\\">string</span></b>\"}",
+      data: "{\"tag\":\"div\",\"attrs\":{},\"innerHtml\":\"An unescaped <b>raw <em>html</em></b> <span style=\\\"color: blue\\\">string</span></b>\"}",
     ),
   ) = rendered
 }

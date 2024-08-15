@@ -84,11 +84,11 @@ function renderFragment(f, providers: Providers): VNode {
 }
 
 function renderCustom(custom, providers: Providers): VNode {
-  switch(custom.kind) {
+  switch (custom.kind) {
     case "raw":
-      const { tag, innerHtml } = JSON.parse(custom.data);
+      const { tag, attrs, innerHtml } = JSON.parse(custom.data);
 
-      return h(tag, { innerHtml });
+      return h(tag, { attrs, innerHtml });
 
     default:
       throw new Error(`Unknown custom kind: ${custom.kind}`);

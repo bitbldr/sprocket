@@ -1,18 +1,41 @@
 import gleam/dynamic.{type Dynamic}
 import gleam/json
+import gleam/list
 import gleam/option.{type Option, None, Some}
 import sprocket/context.{
-  type Attribute, type Element, Custom, Debug, Element, Fragment, IgnoreUpdate,
-  Keyed, Text,
+  type Attribute, type Element, Attribute, Custom, Debug, Element, Fragment,
+  IgnoreUpdate, Keyed, Text,
 }
+import sprocket/internal/logger
 
 pub fn el(tag: String, attrs: List(Attribute), children: List(Element)) {
   Element(tag, attrs, children)
 }
 
-pub fn raw(tag: String, html: String) {
+pub fn raw(tag: String, attrs: List(Attribute), html: String) {
+  let attrs =
+    attrs
+    |> list.fold([], fn(acc, attr) {
+      case attr {
+        Attribute(name, value) ->
+          case dynamic.string(value) {
+            Ok(value) -> [#(name, json.string(value)), ..acc]
+            Error(_) -> {
+              logger.warn("Attribute value is not a string: " <> name)
+              acc
+            }
+          }
+
+        _ -> acc
+      }
+    })
+
   let data =
-    [#("tag", json.string(tag)), #("innerHtml", json.string(html))]
+    [
+      #("tag", json.string(tag)),
+      #("attrs", json.object(attrs)),
+      #("innerHtml", json.string(html)),
+    ]
     |> json.object()
     |> json.to_string()
 
@@ -64,7 +87,7 @@ pub fn body(attrs: List(Attribute), children: List(Element)) {
 /// The [HTML `<script>` element](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/script)
 pub fn script(attrs: List(Attribute), body: Option(String)) {
   case body {
-    Some(body) -> el("script", attrs, [text(body)])
+    Some(body) -> raw("script", attrs, body)
     None -> el("script", attrs, [])
   }
 }
@@ -72,7 +95,7 @@ pub fn script(attrs: List(Attribute), body: Option(String)) {
 /// The [HTML `<style>` element](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/style)
 pub fn style(attrs: List(Attribute), body: Option(String)) {
   case body {
-    Some(body) -> el("style", attrs, [text(body)])
+    Some(body) -> raw("style", attrs, body)
     None -> el("style", attrs, [])
   }
 }
