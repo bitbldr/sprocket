@@ -83,7 +83,7 @@ pub fn clock(ctx: Context, props) {
 
       Some(fn() { cancel() })
     },
-    [dep(time)],
+    [],
   )
 
   let current_time = int.to_string(time)
