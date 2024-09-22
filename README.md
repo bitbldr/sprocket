@@ -71,7 +71,8 @@ pub fn clock(ctx: Context, props) {
     update,
   )
 
-  // Example effect that runs whenever the `time` variable changes and has a cleanup function
+  // Example effect that runs once when the component is mounted
+  // and has a cleanup function that runs when the component is unmounted
   use ctx <- effect(
     ctx,
     fn() {
