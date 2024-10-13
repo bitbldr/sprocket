@@ -2,6 +2,7 @@ import gleam/dynamic
 import sprocket/context.{
   type Context, type Element, type FunctionalComponent, Component,
 }
+import sprocket/internal/utils/unsafe_coerce.{unsafe_coerce}
 
 pub fn component(c: FunctionalComponent(p), props: p) -> Element {
   // // This function wrapper will not work since we need to compare the original function
@@ -11,11 +12,11 @@ pub fn component(c: FunctionalComponent(p), props: p) -> Element {
   //   fc.component(ctx, props)
   // }
 
-  // Instead, we will just use dynamic.unsafe_coerce to coerce the function to the correct type
+  // Instead, we will just use unsafe_coerce to coerce the function to the correct type
   let component =
     c
     |> dynamic.from()
-    |> dynamic.unsafe_coerce()
+    |> unsafe_coerce()
 
   let props =
     props

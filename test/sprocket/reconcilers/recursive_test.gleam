@@ -13,6 +13,7 @@ import sprocket/internal/reconcile.{
   ReconciledFragment, ReconciledResult, ReconciledText,
 }
 import sprocket/internal/reconcilers/recursive.{reconcile}
+import sprocket/internal/utils/unsafe_coerce.{unsafe_coerce}
 
 // Renders the given element as a stateless element to html.
 pub fn render_el(el: Element) -> ReconciledElement {
@@ -166,7 +167,7 @@ pub fn render_with_fragment_test() {
   ) = rendered
 
   props
-  |> dynamic.unsafe_coerce
+  |> unsafe_coerce
   |> should.equal(TestProps(title: "Home", href: "/", is_active: True))
 }
 
