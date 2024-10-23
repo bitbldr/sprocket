@@ -100,7 +100,7 @@ pub fn example_view(ctx: Context, _props: ExampleViewProps) {
           [
             component(
               clock,
-              ClockProps(label: Some("The current time is: ")),
+              ClockProps(label: Some("The current time is: "), time_unit: None),
             ),
           ],
         ),
