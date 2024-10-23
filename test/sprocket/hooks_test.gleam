@@ -59,8 +59,8 @@ fn update(model: Model, msg: Msg) -> #(Model, List(Cmd(Msg))) {
   }
 }
 
-fn initial() -> Model {
-  Model(0)
+fn initial() -> #(Model, List(Cmd(Msg))) {
+  #(Model(0), [])
 }
 
 type TestCounterProps {
@@ -309,7 +309,11 @@ pub fn reducer_should_run_cmds_test() {
 
 fn count_down(ctx: Context, _props) {
   // Define a reducer to handle events and update the state
-  use ctx, Model(count: count), dispatch <- reducer(ctx, Model(42), update)
+  use ctx, Model(count: count), dispatch <- reducer(
+    ctx,
+    #(Model(42), []),
+    update,
+  )
 
   // Define event handlers
   use ctx, start <- handler(ctx, fn(_) { dispatch(CountDown(count)) })
@@ -340,6 +344,49 @@ pub fn reducer_should_run_cmds_recursively_test() {
   let spkt = render_event(spkt, ClickEvent, "start")
 
   process.sleep(100)
+
+  let #(_spkt, rendered) = render_html(spkt)
+
+  let assert True =
+    rendered
+    |> string.starts_with("current count is: 0")
+}
+
+fn component_with_initial_cmds(ctx: Context, _props) {
+  // Define a reducer to handle events and update the state
+  use ctx, Model(count: count), dispatch <- reducer(
+    ctx,
+    #(Model(0), [generate_random()]),
+    update,
+  )
+
+  // Define event handlers
+  use ctx, reset <- handler(ctx, fn(_) { dispatch(ResetCount) })
+
+  let current_count = int.to_string(count)
+
+  component.render(
+    ctx,
+    fragment([
+      text("current count is: "),
+      text(current_count),
+      button([id("reset"), on_click(reset)], [text("reset")]),
+    ]),
+  )
+}
+
+pub fn reducer_should_initialize_with_cmds_test() {
+  let view = component(component_with_initial_cmds, TestCounterProps)
+
+  let spkt = connect(view)
+
+  let #(spkt, rendered) = render_html(spkt)
+
+  let assert True =
+    rendered
+    |> string.starts_with("current count is: 42")
+
+  let spkt = render_event(spkt, ClickEvent, "reset")
 
   let #(_spkt, rendered) = render_html(spkt)
 

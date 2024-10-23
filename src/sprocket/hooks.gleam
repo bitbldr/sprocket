@@ -234,7 +234,7 @@ type ReducerMsg(model, msg) {
 /// in a re-render of the component.
 pub fn reducer(
   ctx: Context,
-  initial: model,
+  initial: #(model, List(Cmd(msg))),
   reducer: Reducer(model, msg),
   cb: fn(Context, model, fn(msg) -> Nil) -> #(Context, Element),
 ) -> #(Context, Element) {
@@ -258,10 +258,15 @@ pub fn reducer(
     // Create the reducer actor initializer
     let reducer_actor_init = fn() {
       let self = process.new_subject()
-
       let selector = process.selecting(process.new_selector(), self, identity)
 
-      actor.Ready(#(self, initial), selector)
+      let initial_model = initial.0
+      let initial_cmds = initial.1
+
+      // Process the initial commands
+      list.each(initial_cmds, fn(cmd) { cmd(dispatch(_, self)) })
+
+      actor.Ready(#(self, initial_model), selector)
     }
 
     // Define the message handler for the reducer actor. There are two levels of state being
