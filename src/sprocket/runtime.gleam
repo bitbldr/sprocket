@@ -12,7 +12,7 @@ import sprocket/context.{
   type ComponentHooks, type Context, type Dispatcher, type EffectCleanup,
   type EffectResult, type Element, type Hook, type HookDependencies,
   type IdentifiableHandler, type Updater, Callback, Changed, Client, Context,
-  Dispatcher, Effect, EffectResult, Handler, IdentifiableHandler, Memo,
+  Dispatcher, Effect, EffectResult, Handler, IdentifiableHandler, Memo, Reducer,
   Unchanged, Updater, callback_param_from_string, compare_deps,
 }
 import sprocket/internal/constants.{call_timeout}
@@ -418,6 +418,8 @@ fn cleanup_hooks(rendered: ReconciledElement) {
         }
       }
 
+      Reducer(_, _, cleanup) -> cleanup()
+
       _ -> Nil
     }
   })
@@ -445,6 +447,8 @@ fn run_cleanup_for_disposed_hooks(
           _ -> Nil
         }
       }
+
+      Ok(Reducer(_, _, cleanup)) -> cleanup()
 
       _ -> Nil
     }
@@ -475,6 +479,9 @@ fn build_hooks_map(
               dict.insert(acc, id, hook)
             }
             context.State(id, _) -> {
+              dict.insert(acc, id, hook)
+            }
+            Reducer(id, _, _) -> {
               dict.insert(acc, id, hook)
             }
             context.Client(id, _, _) -> {

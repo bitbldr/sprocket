@@ -94,6 +94,7 @@ pub type Hook {
     prev: Option(EffectResult),
   )
   Handler(id: Unique, handler_fn: HandlerFn)
+  Reducer(id: Unique, reducer: Dynamic, cleanup: fn() -> Nil)
   State(id: Unique, value: Dynamic)
   Client(id: Unique, name: String, handle_event: Option(ClientEventHandler))
 }

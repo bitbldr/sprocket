@@ -5,7 +5,7 @@ import gleam/string
 import gleeunit/should
 import sprocket/component.{component}
 import sprocket/context.{type Context, dep}
-import sprocket/hooks.{effect, handler, reducer}
+import sprocket/hooks.{type Cmd, effect, handler, reducer}
 import sprocket/html/attributes.{id, on_click}
 import sprocket/html/elements.{button, fragment, text}
 import sprocket/test_helpers.{ClickEvent, connect, render_event, render_html}
@@ -16,17 +16,45 @@ type Model {
 }
 
 type Msg {
-  UpdateCount(Int)
+  SetCount(Int)
   ResetCount
+  GenerateRandom
+  CountDown(Int)
 }
 
-fn update(_model: Model, msg: Msg) -> Model {
+fn mock_random() -> Int {
+  42
+}
+
+fn generate_random() -> Cmd(Msg) {
+  fn(dispatch) {
+    let random_number = mock_random()
+    dispatch(SetCount(random_number))
+  }
+}
+
+fn count_down_from(value) -> Cmd(Msg) {
+  fn(dispatch) {
+    case value > 0 {
+      True -> dispatch(CountDown(value - 1))
+      False -> Nil
+    }
+  }
+}
+
+fn update(model: Model, msg: Msg) -> #(Model, List(Cmd(Msg))) {
   case msg {
-    UpdateCount(count) -> {
-      Model(count: count)
+    SetCount(count) -> {
+      #(Model(count: count), [])
     }
     ResetCount -> {
-      Model(count: 0)
+      #(Model(count: 0), [])
+    }
+    GenerateRandom -> {
+      #(model, [generate_random()])
+    }
+    CountDown(value) -> {
+      #(Model(count: value), [count_down_from(value)])
     }
   }
 }
@@ -47,7 +75,7 @@ fn inc_initial_render_counter(ctx: Context, _props) {
   use ctx <- effect(
     ctx,
     fn() {
-      dispatch(UpdateCount(count + 1))
+      dispatch(SetCount(count + 1))
       None
     },
     [],
@@ -81,11 +109,11 @@ pub fn effect_should_only_run_on_initial_render_test() {
   |> should.equal("current count is: 1")
 }
 
-type IncEveryUpdateCounterProps {
-  IncEveryUpdateCounterProps(tally: Subject(tally_counter.Message))
+type IncEverySetCounterProps {
+  IncEverySetCounterProps(tally: Subject(tally_counter.Message))
 }
 
-fn inc_on_every_update_counter(ctx: Context, props: IncEveryUpdateCounterProps) {
+fn inc_on_every_update_counter(ctx: Context, props: IncEverySetCounterProps) {
   // Example effect that runs on every update
   use ctx <- effect(
     ctx,
@@ -103,7 +131,7 @@ pub fn effect_should_run_on_every_update_test() {
   let assert Ok(tally) = tally_counter.start()
 
   let view =
-    component(inc_on_every_update_counter, IncEveryUpdateCounterProps(tally))
+    component(inc_on_every_update_counter, IncEverySetCounterProps(tally))
 
   let spkt = connect(view)
 
@@ -136,17 +164,16 @@ fn inc_reset_on_button_click_counter(ctx: Context, _props) {
   use ctx <- effect(
     ctx,
     fn() {
-      dispatch(UpdateCount(count + 1))
+      dispatch(SetCount(count + 1))
       None
     },
     [],
   )
 
   // Define event handlers
-  use ctx, on_increment <- handler(ctx, fn(_) {
-    dispatch(UpdateCount(count + 1))
-  })
-  use ctx, on_reset <- handler(ctx, fn(_) { dispatch(ResetCount) })
+  use ctx, increment <- handler(ctx, fn(_) { dispatch(SetCount(count + 1)) })
+  use ctx, generate_random <- handler(ctx, fn(_) { dispatch(GenerateRandom) })
+  use ctx, reset <- handler(ctx, fn(_) { dispatch(ResetCount) })
 
   let current_count = int.to_string(count)
 
@@ -155,8 +182,9 @@ fn inc_reset_on_button_click_counter(ctx: Context, _props) {
     fragment([
       text("current count is: "),
       text(current_count),
-      button([id("increment"), on_click(on_increment)], [text("increment")]),
-      button([id("reset"), on_click(on_reset)], [text("reset")]),
+      button([id("increment"), on_click(increment)], [text("increment")]),
+      button([id("random"), on_click(generate_random)], [text("random")]),
+      button([id("reset"), on_click(reset)], [text("reset")]),
     ]),
   )
 }
@@ -204,6 +232,114 @@ pub fn effect_should_run_with_empty_deps_and_handle_events_test() {
 
   // click reset button
   let spkt = render_event(spkt, ClickEvent, "reset")
+
+  let #(_spkt, rendered) = render_html(spkt)
+
+  let assert True =
+    rendered
+    |> string.starts_with("current count is: 0")
+}
+
+fn inc_random_reset_counter(ctx: Context, _props) {
+  // Define a reducer to handle events and update the state
+  use ctx, Model(count: count), dispatch <- reducer(ctx, initial(), update)
+
+  // Define event handlers
+  use ctx, increment <- handler(ctx, fn(_) { dispatch(SetCount(count + 1)) })
+  use ctx, generate_random <- handler(ctx, fn(_) { dispatch(GenerateRandom) })
+  use ctx, reset <- handler(ctx, fn(_) { dispatch(ResetCount) })
+
+  let current_count = int.to_string(count)
+
+  component.render(
+    ctx,
+    fragment([
+      text("current count is: "),
+      text(current_count),
+      button([id("increment"), on_click(increment)], [text("increment")]),
+      button([id("random"), on_click(generate_random)], [text("random")]),
+      button([id("reset"), on_click(reset)], [text("reset")]),
+    ]),
+  )
+}
+
+pub fn reducer_should_run_cmds_test() {
+  let view = component(inc_random_reset_counter, TestCounterProps)
+
+  let spkt = connect(view)
+
+  let #(spkt, rendered) = render_html(spkt)
+
+  let assert True =
+    rendered
+    |> string.starts_with("current count is: 0")
+
+  let spkt = render_event(spkt, ClickEvent, "increment")
+
+  let #(_spkt, rendered) = render_html(spkt)
+
+  let assert True =
+    rendered
+    |> string.starts_with("current count is: 1")
+
+  let spkt = render_event(spkt, ClickEvent, "increment")
+
+  let #(_spkt, rendered) = render_html(spkt)
+
+  let assert True =
+    rendered
+    |> string.starts_with("current count is: 2")
+
+  let spkt = render_event(spkt, ClickEvent, "reset")
+
+  let #(_spkt, rendered) = render_html(spkt)
+
+  let assert True =
+    rendered
+    |> string.starts_with("current count is: 0")
+
+  let spkt = render_event(spkt, ClickEvent, "random")
+
+  let #(_spkt, rendered) = render_html(spkt)
+
+  let assert True =
+    rendered
+    |> string.starts_with("current count is: 42")
+}
+
+fn count_down(ctx: Context, _props) {
+  // Define a reducer to handle events and update the state
+  use ctx, Model(count: count), dispatch <- reducer(ctx, Model(42), update)
+
+  // Define event handlers
+  use ctx, start <- handler(ctx, fn(_) { dispatch(CountDown(count)) })
+
+  let current_count = int.to_string(count)
+
+  component.render(
+    ctx,
+    fragment([
+      text("current count is: "),
+      text(current_count),
+      button([id("start"), on_click(start)], [text("start")]),
+    ]),
+  )
+}
+
+pub fn reducer_should_run_cmds_recursively_test() {
+  let view = component(count_down, TestCounterProps)
+
+  let spkt = connect(view)
+
+  let #(spkt, rendered) = render_html(spkt)
+
+  let assert True =
+    rendered
+    |> string.starts_with("current count is: 42")
+
+  let spkt = render_event(spkt, ClickEvent, "start")
+
+  process.sleep(100)
 
   let #(_spkt, rendered) = render_html(spkt)
 
