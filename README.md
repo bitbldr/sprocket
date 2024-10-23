@@ -35,52 +35,35 @@ bubble up through event handler functions (which are also passed in as props, e.
 
 ### Clock Component
 ```gleam
-type Model {
-  Model(time: Int, timezone: String)
-}
-
-type Msg {
-  NoOp
-  UpdateTime(Int)
-}
-
-fn update(model: Model, msg: Msg) -> Model {
-  case msg {
-    NoOp -> model
-    UpdateTime(time) -> {
-      Model(..model, time: time)
-    }
-  }
-}
-
-fn initial() -> Model {
-  Model(time: erlang.system_time(erlang.Second), timezone: "UTC")
-}
-
 pub type ClockProps {
-  ClockProps(label: Option(String))
+  ClockProps(label: Option(String), time_unit: Option(erlang.TimeUnit))
 }
 
 pub fn clock(ctx: Context, props) {
-  let ClockProps(label) = props
+  let ClockProps(label, time_unit) = props
 
-  // Define a reducer to handle events and update the state
-  use ctx, Model(time: time, ..), dispatch <- reducer(
-    ctx,
-    initial(),
-    update,
-  )
+  // Default time unit is seconds if one is not provided
+  let time_unit =
+    time_unit
+    |> option.unwrap(erlang.Second)
+
+  // Use a state hook to track the current time
+  use ctx, time, set_time <- state(ctx, erlang.system_time(time_unit))
 
   // Example effect that runs once when the component is mounted
   // and has a cleanup function that runs when the component is unmounted
   use ctx <- effect(
     ctx,
     fn() {
+      let interval_duration = case time_unit {
+        erlang.Millisecond -> 1
+        _ -> 1000
+      }
+
       let cancel =
-        interval(
-          1000,
-          fn() { dispatch(UpdateTime(erlang.system_time(erlang.Second))) },
-        )
+        interval(interval_duration, fn() {
+          set_time(erlang.system_time(time_unit))
+        })
 
       Some(fn() { cancel() })
     },
