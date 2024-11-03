@@ -1,6 +1,6 @@
 {
   "name": "sprocket-js",
-  "version": "0.1.12",
+  "version": "0.1.13",
   "license": "MIT",
   "source": "client/src/sprocket.ts",
   "main": "client/dist/sprocket.js",
