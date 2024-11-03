@@ -59,7 +59,7 @@ function renderElement(element: Element, providers: Providers): VNode {
 
   // wire up event handlers
   if (element.events.length > 0) {
-    data.on = eventHandlerProvider(element.events);
+    data.on = eventHandlerProvider(element.tag, element.events);
   }
 
   return h(

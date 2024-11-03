@@ -58,7 +58,7 @@ pub fn new(
 
 type Payload {
   JoinPayload(csrf_token: String, initial_props: Option(Dict(String, String)))
-  EventPayload(kind: String, id: String, value: Option(String))
+  EventPayload(kind: String, id: String, value: Dynamic)
   HookEventPayload(id: String, event: String, payload: Option(Dynamic))
   EmptyPayload(nothing: Option(String))
 }
@@ -215,7 +215,7 @@ fn decode_event(data: Dynamic) {
       EventPayload,
       field("kind", dynamic.string),
       field("id", dynamic.string),
-      optional_field("value", dynamic.string),
+      field("value", dynamic.dynamic),
     ),
   )
 }

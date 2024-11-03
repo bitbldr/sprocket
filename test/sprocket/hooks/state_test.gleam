@@ -3,8 +3,9 @@ import gleam/string
 import sprocket/component.{component}
 import sprocket/context.{type Context}
 import sprocket/hooks.{handler, state}
-import sprocket/html/attributes.{id, on_click}
+import sprocket/html/attributes.{id}
 import sprocket/html/elements.{button, fragment, text}
+import sprocket/html/events.{on_click}
 import sprocket/test_helpers.{ClickEvent, connect, render_event, render_html}
 
 type TestCounterProps {

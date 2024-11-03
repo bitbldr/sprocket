@@ -2,37 +2,10 @@ import gleam/dynamic
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/string_builder
-import sprocket/context.{
-  type Attribute, type IdentifiableHandler, Attribute, ClientHook, Event,
-}
-import sprocket/internal/utils/unique.{type Unique}
+import sprocket/context.{type Attribute, Attribute}
 
 pub fn attribute(name: String, value: any) -> Attribute {
   Attribute(name, dynamic.from(value))
-}
-
-pub fn event(name: String, handler: IdentifiableHandler) -> Attribute {
-  Event(name, handler)
-}
-
-pub fn client_hook(id: Unique, name: String) -> Attribute {
-  ClientHook(id, name)
-}
-
-pub fn on_click(handler: IdentifiableHandler) -> Attribute {
-  event("click", handler)
-}
-
-pub fn on_doubleclick(handler: IdentifiableHandler) -> Attribute {
-  event("doubleclick", handler)
-}
-
-pub fn on_change(handler: IdentifiableHandler) -> Attribute {
-  event("change", handler)
-}
-
-pub fn on_input(handler: IdentifiableHandler) -> Attribute {
-  event("input", handler)
 }
 
 pub fn media(value: String) -> Attribute {

@@ -13,7 +13,7 @@ import sprocket/context.{
   type EffectResult, type Element, type Hook, type HookDependencies,
   type IdentifiableHandler, type Updater, Callback, Changed, Client, Context,
   Dispatcher, Effect, EffectResult, Handler, IdentifiableHandler, Memo, Reducer,
-  Unchanged, Updater, callback_param_from_string, compare_deps,
+  Unchanged, Updater, compare_deps,
 }
 import sprocket/internal/constants.{call_timeout}
 import sprocket/internal/exceptions.{throw_on_unexpected_hook_result}
@@ -52,11 +52,11 @@ pub opaque type State {
 pub opaque type Message {
   Shutdown
   GetReconciled(reply_with: Subject(Option(ReconciledElement)))
-  ProcessEvent(id: String, payload: Option(String))
+  ProcessEvent(id: String, payload: Dynamic)
   ProcessEventImmediate(
     reply_with: Subject(Result(Nil, Nil)),
     id: String,
-    payload: Option(String),
+    payload: Dynamic,
   )
   ProcessClientHook(
     id: String,
@@ -99,9 +99,7 @@ fn handle_message(message: Message, state: State) -> actor.Next(Message, State) 
       case handler {
         Ok(context.IdentifiableHandler(_, handler_fn)) -> {
           // call the event handler function
-          payload
-          |> option.map(callback_param_from_string)
-          |> handler_fn()
+          handler_fn(payload)
 
           actor.continue(state)
         }
@@ -123,9 +121,7 @@ fn handle_message(message: Message, state: State) -> actor.Next(Message, State) 
       case handler {
         Ok(context.IdentifiableHandler(_, handler_fn)) -> {
           // call the event handler function
-          payload
-          |> option.map(callback_param_from_string)
-          |> handler_fn()
+          handler_fn(payload)
 
           actor.send(reply_with, Ok(Nil))
 
@@ -323,7 +319,7 @@ pub fn get_reconciled(actor) {
 }
 
 /// Get the event handler for a given id
-pub fn process_event(actor, id: String, payload: Option(String)) {
+pub fn process_event(actor, id: String, payload: Dynamic) {
   logger.debug("process.try_call ProcessEvent")
 
   actor.send(actor, ProcessEvent(id, payload))
@@ -332,7 +328,7 @@ pub fn process_event(actor, id: String, payload: Option(String)) {
 pub fn process_event_immediate(
   actor,
   id: String,
-  payload: Option(String),
+  payload: Dynamic,
 ) -> Result(Nil, Nil) {
   logger.debug("process.try_call ProcessEventImmediate")
 

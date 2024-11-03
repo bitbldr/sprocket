@@ -1,6 +1,8 @@
-import gleam/io
+import gleam/dict.{type Dict}
+import gleam/dynamic
 import gleam/list
 import gleam/option.{None, Some}
+import gleam/regex
 import sprocket/context.{Updater}
 import sprocket/internal/reconcile.{
   type ReconciledElement, ReconciledAttribute, ReconciledElement,
@@ -27,8 +29,21 @@ pub fn render_html(spkt) {
   #(spkt, html)
 }
 
+pub fn render_el_html(el: ReconciledElement) {
+  use render_html <- renderer(html_renderer())
+
+  render_html(el)
+}
+
 pub type Event {
   ClickEvent
+  InputEvent(value: String)
+  MouseMoveEvent(x: Int, y: Int)
+  FormChangeEvent(data: Dict(String, String))
+  FormSubmitEvent(data: Dict(String, String))
+  BlurEvent
+  FocusEvent
+  KeyPressEvent(key: String)
 }
 
 pub fn render_event(spkt: Runtime, event: Event, html_id: String) {
@@ -59,8 +74,34 @@ pub fn render_event(spkt: Runtime, event: Event, html_id: String) {
 
       case found {
         Ok(ReconciledElement(_tag, _key, attrs, _children)) -> {
-          let event_kind = case event {
-            ClickEvent -> "click"
+          let #(event_kind, event_payload) = case event {
+            ClickEvent -> #("click", dynamic.from(Nil))
+            InputEvent(value) -> #(
+              "input",
+              dynamic.from(
+                dict.from_list([
+                  #("target", dict.from_list([#("value", value)])),
+                ]),
+              ),
+            )
+            MouseMoveEvent(x, y) -> #(
+              "mousemove",
+              dynamic.from(dict.from_list([#("clientX", x), #("clientY", y)])),
+            )
+            FormChangeEvent(data) -> #(
+              "change",
+              dynamic.from(dict.from_list([#("formData", data)])),
+            )
+            FormSubmitEvent(data) -> #(
+              "submit",
+              dynamic.from(dict.from_list([#("formData", data)])),
+            )
+            BlurEvent -> #("blur", dynamic.from(Nil))
+            FocusEvent -> #("focus", dynamic.from(Nil))
+            KeyPressEvent(key) -> #(
+              "keypress",
+              dynamic.from(dict.from_list([#("key", key)])),
+            )
           }
 
           // find click event handler id
@@ -75,28 +116,120 @@ pub fn render_event(spkt: Runtime, event: Event, html_id: String) {
 
           case rendered_event_handler {
             Ok(ReconciledEventHandler(_kind, event_id)) -> {
-              case runtime.process_event_immediate(spkt, event_id, None) {
+              case
+                runtime.process_event_immediate(spkt, event_id, event_payload)
+              {
                 Ok(_) -> spkt
                 _ -> panic
               }
             }
             _ -> {
-              io.debug("no event handler")
-              panic
+              panic as "No handler found for event"
             }
           }
         }
         _ -> {
-          io.debug("no match")
-          panic
+          panic_no_element_with_id()
         }
       }
     }
     None -> {
-      io.debug("no reconciled")
-      panic
+      panic_no_reconciled()
     }
   }
 
   spkt
+}
+
+pub type FindElementBy {
+  ById(String)
+  ByClass(String)
+  ByTag(String)
+  ByPredicate(fn(ReconciledElement) -> Bool)
+}
+
+pub fn find_element(
+  spkt: Runtime,
+  one_that is_desired: FindElementBy,
+) -> Result(ReconciledElement, Nil) {
+  case runtime.get_reconciled(spkt) {
+    Some(reconciled) -> {
+      recursive.find(reconciled, check_predicate(_, is_desired))
+    }
+    None -> {
+      panic_no_reconciled()
+    }
+  }
+}
+
+pub fn assert_element(maybe_el: Result(ReconciledElement, Nil)) {
+  case maybe_el {
+    Ok(el) -> el
+    _ -> panic as "Element not found"
+  }
+}
+
+pub fn assert_regex(maybe_el: Result(ReconciledElement, Nil), regex: String) {
+  case maybe_el {
+    Ok(el) -> {
+      let html = render_el_html(el)
+
+      let assert Ok(re) = regex.from_string(regex)
+      regex.check(re, html)
+    }
+    _ -> panic as "Element not found"
+  }
+}
+
+pub fn has_element(spkt: Runtime, one_that is_desired: FindElementBy) -> Bool {
+  case find_element(spkt, is_desired) {
+    Ok(_) -> True
+    _ -> False
+  }
+}
+
+fn check_predicate(el: ReconciledElement, is_desired: FindElementBy) {
+  case is_desired {
+    ById(id) -> find_by_matching_attr(el, "id", id)
+    ByClass(class_name) -> find_by_matching_attr(el, "class", class_name)
+    ByTag(tag_name) -> {
+      case el {
+        ReconciledElement(tag, _key, _attrs, _children) if tag == tag_name ->
+          True
+        _ -> False
+      }
+    }
+    ByPredicate(func) -> func(el)
+  }
+}
+
+fn find_by_matching_attr(el, key, expected_value) {
+  case el {
+    ReconciledElement(_tag, _key, attrs, _children) -> {
+      let matching_attr =
+        attrs
+        |> list.find(fn(attr) {
+          case attr {
+            ReconciledAttribute(attr_key, attr_value)
+              if attr_key == key && attr_value == expected_value
+            -> True
+            _ -> False
+          }
+        })
+
+      case matching_attr {
+        Ok(_) -> True
+        _ -> False
+      }
+    }
+    _ -> False
+  }
+}
+
+fn panic_no_reconciled() {
+  panic as "Nothing reconciled! This is likely because the view has not been rendered yet."
+}
+
+fn panic_no_element_with_id() {
+  panic as "No element found with matching id"
 }

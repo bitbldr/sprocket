@@ -11,18 +11,10 @@ import sprocket/internal/utils/ordered_map.{type OrderedMap}
 import sprocket/internal/utils/unique.{type Unique}
 
 pub type HandlerFn =
-  fn(Option(CallbackParam)) -> Nil
-
-pub type CallbackParam {
-  CallbackString(value: String)
-}
-
-pub fn callback_param_from_string(value: String) -> CallbackParam {
-  CallbackString(value)
-}
+  fn(Dynamic) -> Nil
 
 pub type IdentifiableHandler {
-  IdentifiableHandler(id: Unique, handler_fn: HandlerFn)
+  IdentifiableHandler(id: Unique, handler: HandlerFn)
 }
 
 pub type Attribute {

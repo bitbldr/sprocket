@@ -7,6 +7,7 @@ import sprocket/context.{type Context, type Element, Attribute}
 import sprocket/hooks.{handler, provider}
 import sprocket/html/attributes.{class, classes}
 import sprocket/html/elements.{a, div, fragment, raw, text}
+import sprocket/html/events
 import sprocket/internal/reconcile.{
   type ReconciledElement, ReconciledAttribute, ReconciledComponent,
   ReconciledCustom, ReconciledElement, ReconciledEventHandler,
@@ -53,7 +54,7 @@ fn test_component(ctx: Context, props: TestProps) {
           },
         ]),
         attributes.href("#"),
-        attributes.on_click(handle_click),
+        events.on_click(handle_click),
       ],
       [text(title)],
     ),
@@ -105,7 +106,7 @@ fn test_component_with_fragment(ctx: Context, _props: TestProps) {
         [
           class("block p-2 text-blue-500 hover:text-blue-700"),
           attributes.href("#one"),
-          attributes.on_click(handle_click),
+          events.on_click(handle_click),
         ],
         [text("One")],
       ),
@@ -113,7 +114,7 @@ fn test_component_with_fragment(ctx: Context, _props: TestProps) {
         [
           class("block p-2 text-blue-500 hover:text-blue-700"),
           attributes.href("#two"),
-          attributes.on_click(handle_click_2),
+          events.on_click(handle_click_2),
         ],
         [text("Two")],
       ),
@@ -199,7 +200,7 @@ fn test_component_with_context_title(ctx: Context, props: TestProps) {
           },
         ]),
         attributes.href("#"),
-        attributes.on_click(handle_click),
+        events.on_click(handle_click),
       ],
       [text(title)],
     ),

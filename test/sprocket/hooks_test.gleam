@@ -6,8 +6,9 @@ import gleeunit/should
 import sprocket/component.{component}
 import sprocket/context.{type Context, dep}
 import sprocket/hooks.{type Cmd, effect, handler, reducer}
-import sprocket/html/attributes.{id, on_click}
+import sprocket/html/attributes.{id}
 import sprocket/html/elements.{button, fragment, text}
+import sprocket/html/events.{on_click}
 import sprocket/test_helpers.{ClickEvent, connect, render_event, render_html}
 import sprocket/test_helpers/tally_counter
 

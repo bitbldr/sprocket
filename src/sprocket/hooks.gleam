@@ -16,7 +16,7 @@ import sprocket/context.{
 import sprocket/internal/constants.{call_timeout}
 import sprocket/internal/exceptions.{throw_on_unexpected_hook_result}
 import sprocket/internal/logger
-import sprocket/internal/utils/unique
+import sprocket/internal/utils/unique.{type Unique}
 import sprocket/internal/utils/unsafe_coerce.{unsafe_coerce}
 
 /// Callback Hook
@@ -73,6 +73,11 @@ fn maybe_trigger_update(
     // initial render
     None -> #(updater(), Some(deps))
   }
+}
+
+/// Client hook attribute that can be used to reference a client hook by its id.
+pub fn client_hook(id: Unique, name: String) -> Attribute {
+  ClientHook(id, name)
 }
 
 /// Client Hook
