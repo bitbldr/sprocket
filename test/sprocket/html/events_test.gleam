@@ -10,7 +10,7 @@ import sprocket/html/elements.{button, div, form, fragment, input, text}
 import sprocket/html/events
 import sprocket/test_helpers.{
   BlurEvent, ById, ClickEvent, FocusEvent, FormChangeEvent, FormSubmitEvent,
-  InputEvent, KeyPressEvent, MouseMoveEvent, assert_regex, connect, find_element,
+  InputEvent, assert_regex, connect, find_element, key_down, mouse_move,
   render_event, render_html,
 }
 
@@ -78,7 +78,7 @@ fn input_component(ctx: Context, _props) {
 
   // Define event handlers
   use ctx, handle_input <- handler(ctx, fn(e) {
-    case events.decode_value(e) {
+    case events.decode_target_value(e) {
       Ok(value) -> set_name(value)
       Error(_) -> Nil
     }
@@ -146,8 +146,8 @@ fn mouse_component(ctx: Context, _props) {
 
   // Define event handlers
   use ctx, handle_mousemove <- handler(ctx, fn(e) {
-    case events.decode_mouse_position(e) {
-      Ok(value) -> set_position(value)
+    case events.decode_mouse_event(e) {
+      Ok(events.MouseEvent(x:, y:, ..)) -> set_position(#(x, y))
       Error(_) -> Nil
     }
   })
@@ -177,7 +177,7 @@ pub fn mouse_events_test() {
     rendered
     |> string.starts_with("Mouse position is x: 0 y: 0")
 
-  let spkt = render_event(spkt, MouseMoveEvent(123, 456), "mouse_input")
+  let spkt = render_event(spkt, mouse_move(123, 456), "mouse_input")
 
   let #(_spkt, rendered) = render_html(spkt)
 
@@ -185,7 +185,7 @@ pub fn mouse_events_test() {
     rendered
     |> string.starts_with("Mouse position is x: 123 y: 456")
 
-  let spkt = render_event(spkt, MouseMoveEvent(-23, 1024), "mouse_input")
+  let spkt = render_event(spkt, mouse_move(-23, 1024), "mouse_input")
 
   let #(_spkt, rendered) = render_html(spkt)
 
@@ -371,7 +371,7 @@ fn keypress_component(ctx: Context, _props) {
         Some(key) -> text("Key pressed: " <> key)
         None -> text("No key pressed yet")
       },
-      input([id("input"), events.on_keypress(handle_keypress)]),
+      input([id("input"), events.on_keydown(handle_keypress)]),
     ]),
   )
 }
@@ -387,7 +387,7 @@ pub fn keypress_test() {
     rendered
     |> string.starts_with("No key pressed yet")
 
-  let spkt = render_event(spkt, KeyPressEvent("a"), "input")
+  let spkt = render_event(spkt, key_down("a", "KeyA"), "input")
 
   let #(_spkt, rendered) = render_html(spkt)
 
@@ -395,7 +395,7 @@ pub fn keypress_test() {
     rendered
     |> string.starts_with("Key pressed: a")
 
-  let spkt = render_event(spkt, KeyPressEvent("b"), "input")
+  let spkt = render_event(spkt, key_down("b", "KeyB"), "input")
 
   let #(_spkt, rendered) = render_html(spkt)
 
@@ -403,7 +403,7 @@ pub fn keypress_test() {
     rendered
     |> string.starts_with("Key pressed: b")
 
-  let spkt = render_event(spkt, KeyPressEvent("Enter"), "input")
+  let spkt = render_event(spkt, key_down("Enter", "Enter"), "input")
 
   let #(_spkt, rendered) = render_html(spkt)
 

@@ -58,7 +58,7 @@ pub fn new(
 
 type Payload {
   JoinPayload(csrf_token: String, initial_props: Option(Dict(String, String)))
-  EventPayload(kind: String, id: String, value: Dynamic)
+  EventPayload(kind: String, id: String, payload: Dynamic)
   HookEventPayload(id: String, event: String, payload: Option(Dynamic))
   EmptyPayload(nothing: Option(String))
 }
@@ -101,12 +101,12 @@ pub fn handle_ws(spkt: Sprocket(p), msg: String) -> Result(Response(p), String) 
         }
       }
     }
-    Ok(#("event", EventPayload(kind, event_id, value))) -> {
+    Ok(#("event", EventPayload(kind, event_id, payload))) -> {
       logger.debug("Event: " <> kind <> " " <> event_id)
 
       use runtime <- require_runtime(spkt)
 
-      runtime.process_event(runtime, event_id, value)
+      runtime.process_event(runtime, event_id, payload)
 
       Ok(Empty)
     }
@@ -215,7 +215,7 @@ fn decode_event(data: Dynamic) {
       EventPayload,
       field("kind", dynamic.string),
       field("id", dynamic.string),
-      field("value", dynamic.dynamic),
+      field("payload", dynamic.dynamic),
     ),
   )
 }

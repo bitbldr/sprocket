@@ -29,7 +29,7 @@ type Opts = {
   targetEl?: Element;
   hooks?: Record<string, any>;
   initialProps?: Record<string, string>;
-  customEventDecoders?: Record<string, any>;
+  customEventEncoders?: Record<string, any>;
 };
 
 export function connect(path: String, opts: Opts) {
@@ -56,7 +56,7 @@ export function connect(path: String, opts: Opts) {
 
   const eventHandlerProvider = initEventHandlerProvider(
     socket,
-    opts.customEventDecoders
+    opts.customEventEncoders
   );
 
   const providers: Providers = {

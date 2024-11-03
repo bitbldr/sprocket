@@ -4,6 +4,7 @@ import gleam/list
 import gleam/option.{None, Some}
 import gleam/regex
 import sprocket/context.{Updater}
+import sprocket/html/events
 import sprocket/internal/reconcile.{
   type ReconciledElement, ReconciledAttribute, ReconciledElement,
   ReconciledEventHandler,
@@ -35,15 +36,23 @@ pub fn render_el_html(el: ReconciledElement) {
   render_html(el)
 }
 
+pub fn mouse_move(x: Int, y: Int) -> Event {
+  MouseMoveEvent(events.MouseEvent(x, y, False, False, False, False))
+}
+
+pub fn key_down(key: String, code: String) -> Event {
+  KeyDownEvent(events.KeyEvent(key, code, False, False, False, False))
+}
+
 pub type Event {
   ClickEvent
   InputEvent(value: String)
-  MouseMoveEvent(x: Int, y: Int)
+  MouseMoveEvent(e: events.MouseEvent)
   FormChangeEvent(data: Dict(String, String))
   FormSubmitEvent(data: Dict(String, String))
   BlurEvent
   FocusEvent
-  KeyPressEvent(key: String)
+  KeyDownEvent(e: events.KeyEvent)
 }
 
 pub fn render_event(spkt: Runtime, event: Event, html_id: String) {
@@ -84,9 +93,17 @@ pub fn render_event(spkt: Runtime, event: Event, html_id: String) {
                 ]),
               ),
             )
-            MouseMoveEvent(x, y) -> #(
+            MouseMoveEvent(e) -> #(
               "mousemove",
-              dynamic.from(dict.from_list([#("clientX", x), #("clientY", y)])),
+              dynamic.from(
+                dict.new()
+                |> dict.insert("clientX", dynamic.from(e.x))
+                |> dict.insert("clientY", dynamic.from(e.y))
+                |> dict.insert("ctrlKey", dynamic.from(e.ctrl_key))
+                |> dict.insert("shiftKey", dynamic.from(e.shift_key))
+                |> dict.insert("altKey", dynamic.from(e.alt_key))
+                |> dict.insert("metaKey", dynamic.from(e.meta_key)),
+              ),
             )
             FormChangeEvent(data) -> #(
               "change",
@@ -98,9 +115,17 @@ pub fn render_event(spkt: Runtime, event: Event, html_id: String) {
             )
             BlurEvent -> #("blur", dynamic.from(Nil))
             FocusEvent -> #("focus", dynamic.from(Nil))
-            KeyPressEvent(key) -> #(
-              "keypress",
-              dynamic.from(dict.from_list([#("key", key)])),
+            KeyDownEvent(e) -> #(
+              "keydown",
+              dynamic.from(
+                dict.new()
+                |> dict.insert("key", dynamic.from(e.key))
+                |> dict.insert("code", dynamic.from(e.code))
+                |> dict.insert("ctrlKey", dynamic.from(False))
+                |> dict.insert("shiftKey", dynamic.from(False))
+                |> dict.insert("altKey", dynamic.from(False))
+                |> dict.insert("metaKey", dynamic.from(False)),
+              ),
             )
           }
 

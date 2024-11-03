@@ -13,7 +13,7 @@ export type EventHandlerProvider = (
 export const initEventHandlerProvider =
   (
     socket: WebSocket,
-    customEventDecoders: Record<string, any> = {}
+    customEventEncoders: Record<string, any> = {}
   ): EventHandlerProvider =>
   (elementTag, events: EventIdentifier[]) =>
     events.reduce((acc, { kind, id }) => {
@@ -24,7 +24,11 @@ export const initEventHandlerProvider =
             {
               id,
               kind,
-              value: valueForEvent(e, elementTag, customEventDecoders[kind]),
+              payload: payloadForEvent(
+                e,
+                elementTag,
+                customEventEncoders[kind]
+              ),
             },
           ])
         );
@@ -36,10 +40,10 @@ export const initEventHandlerProvider =
       };
     }, {});
 
-const valueForEvent = (e: Event, elementTag, customEventDecoder) => {
+const payloadForEvent = (e: Event, elementTag, customEventEncoder) => {
   // If a custom event decoder is provided, use it
-  if (customEventDecoder) {
-    return customEventDecoder(e);
+  if (customEventEncoder) {
+    return customEventEncoder(e);
   }
 
   // Otherwise, use the default event decoder based on the event type
@@ -55,12 +59,21 @@ const valueForEvent = (e: Event, elementTag, customEventDecoder) => {
     return {
       clientX: e.clientX,
       clientY: e.clientY,
+      ctrlKey: e.ctrlKey,
+      shiftKey: e.shiftKey,
+      altKey: e.altKey,
+      metaKey: e.metaKey,
     };
   }
 
   if (e instanceof KeyboardEvent) {
     return {
       key: e.key,
+      code: e.code,
+      ctrlKey: e.ctrlKey,
+      shiftKey: e.shiftKey,
+      altKey: e.altKey,
+      metaKey: e.metaKey,
     };
   }
 
