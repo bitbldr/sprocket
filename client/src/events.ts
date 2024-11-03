@@ -92,12 +92,6 @@ const payloadForEvent = (e: Event, elementTag, customEventEncoder) => {
   if (elementTag === "form" && e.type === "change") {
     const inputEl = e.target as HTMLInputElement;
 
-    if (!inputEl.form) {
-      throw new Error(
-        "form change event requires the input to be inside a form"
-      );
-    }
-
     return {
       formData: buildFormData(inputEl.form),
     };

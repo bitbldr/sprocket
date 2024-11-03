@@ -1,6 +1,5 @@
 import gleam/dict.{type Dict}
 import gleam/dynamic.{type DecodeError, type Dynamic}
-import gleam/result
 import sprocket/context.{
   type Attribute, type IdentifiableHandler, Attribute, Event,
 }
