@@ -11,12 +11,22 @@ export type EventHandlerProvider = (
 ) => On;
 
 export const initEventHandlerProvider =
-  (socket: WebSocket): EventHandlerProvider =>
-  (el, events: EventIdentifier[]) =>
+  (
+    socket: WebSocket,
+    customEventDecoders: Record<string, any> = {}
+  ): EventHandlerProvider =>
+  (elementTag, events: EventIdentifier[]) =>
     events.reduce((acc, { kind, id }) => {
       const handler = (e) => {
         socket.send(
-          JSON.stringify(["event", { id, kind, value: valueForEvent(e) }])
+          JSON.stringify([
+            "event",
+            {
+              id,
+              kind,
+              value: valueForEvent(e, elementTag, customEventDecoders[kind]),
+            },
+          ])
         );
       };
 
@@ -26,7 +36,13 @@ export const initEventHandlerProvider =
       };
     }, {});
 
-const valueForEvent = (e) => {
+const valueForEvent = (e: Event, elementTag, customEventDecoder) => {
+  // If a custom event decoder is provided, use it
+  if (customEventDecoder) {
+    return customEventDecoder(e);
+  }
+
+  // Otherwise, use the default event decoder based on the event type
   if (e instanceof InputEvent || e instanceof PointerEvent) {
     return {
       target: {
@@ -48,19 +64,39 @@ const valueForEvent = (e) => {
     };
   }
 
+  // If the event is a submit event, we want to prevent the default form
+  // submission and send the form data instead
   if (e instanceof SubmitEvent) {
     // prevent the default form submission and page reload
     e.preventDefault();
 
-    const formData = {};
-    new FormData(e.target as HTMLFormElement).forEach(
-      (value, key) => (formData[key] = value)
-    );
+    return {
+      formData: buildFormData(e.target as HTMLFormElement),
+    };
+  }
+
+  // If the event is a change event on a form, we want to send the form data
+  if (elementTag === "form" && e.type === "change") {
+    const inputEl = e.target as HTMLInputElement;
+
+    if (!inputEl.form) {
+      throw new Error(
+        "form change event requires the input to be inside a form"
+      );
+    }
 
     return {
-      formData: formData,
+      formData: buildFormData(inputEl.form),
     };
   }
 
   return null;
+};
+
+const buildFormData = (form: HTMLFormElement) => {
+  const formData = {};
+
+  new FormData(form).forEach((value, key) => (formData[key] = value));
+
+  return formData;
 };

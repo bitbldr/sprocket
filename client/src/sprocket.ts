@@ -29,12 +29,12 @@ type Opts = {
   targetEl?: Element;
   hooks?: Record<string, any>;
   initialProps?: Record<string, string>;
+  customEventDecoders?: Record<string, any>;
 };
 
 export function connect(path: String, opts: Opts) {
   const csrfToken = opts.csrfToken || new Error("Missing CSRF token");
   const targetEl = opts.targetEl || document.documentElement;
-  const hooks = opts.hooks || {};
 
   let ws_protocol = location.protocol === "https:" ? "wss:" : "ws:";
   let socket = new WebSocket(ws_protocol + "//" + location.host + path);
@@ -52,14 +52,12 @@ export function connect(path: String, opts: Opts) {
     }
   );
 
-  let clientHookMap: Record<string, any> = {};
-  const clientHookProvider = initClientHookProvider(
-    socket,
-    hooks,
-    clientHookMap
-  );
+  const clientHookProvider = initClientHookProvider(socket, opts.hooks);
 
-  const eventHandlerProvider = initEventHandlerProvider(socket);
+  const eventHandlerProvider = initEventHandlerProvider(
+    socket,
+    opts.customEventDecoders
+  );
 
   const providers: Providers = {
     clientHookProvider,

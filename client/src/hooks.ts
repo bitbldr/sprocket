@@ -17,9 +17,10 @@ export type ClientHookProvider = (elementHooks: HookIdentifier[]) => Module;
 
 export const initClientHookProvider = (
   socket: WebSocket,
-  hooks: Record<string, any>,
-  clientHookMap: Record<string, any>
+  hooks: Record<string, any> = {}
 ): ClientHookProvider => {
+  let clientHookMap: Record<string, any> = {};
+
   return (elementHooks: HookIdentifier[]) => ({
     create: (emptyVNode, vnode) => {
       elementHooks.forEach((h) => {
