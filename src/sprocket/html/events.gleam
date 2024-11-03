@@ -27,8 +27,8 @@ pub fn on_click(handler: IdentifiableHandler) -> Attribute {
   event("click", handler)
 }
 
-pub fn on_doubleclick(handler: IdentifiableHandler) -> Attribute {
-  event("doubleclick", handler)
+pub fn on_dblclick(handler: IdentifiableHandler) -> Attribute {
+  event("dblclick", handler)
 }
 
 pub fn on_focus(handler: IdentifiableHandler) -> Attribute {
