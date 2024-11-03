@@ -134,13 +134,14 @@ pub fn render_event(spkt: Runtime, event: Event, html_id: String) {
             attrs
             |> list.find(fn(attr) {
               case attr {
-                ReconciledEventHandler(kind, _id) if kind == event_kind -> True
+                ReconciledEventHandler(kind, _id, ..) if kind == event_kind ->
+                  True
                 _ -> False
               }
             })
 
           case rendered_event_handler {
-            Ok(ReconciledEventHandler(_kind, event_id)) -> {
+            Ok(ReconciledEventHandler(_kind, event_id, ..)) -> {
               case
                 runtime.process_event_immediate(spkt, event_id, event_payload)
               {

@@ -7,7 +7,12 @@ import sprocket/context.{
 
 pub type ReconciledAttribute {
   ReconciledAttribute(name: String, value: String)
-  ReconciledEventHandler(kind: String, id: String)
+  ReconciledEventHandler(
+    kind: String,
+    id: String,
+    throttle_ms: Option(Int),
+    debounce_ms: Option(Int),
+  )
   ReconciledClientHook(name: String, id: String)
 }
 

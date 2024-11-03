@@ -41,11 +41,13 @@ fn element(
         ReconciledAttribute(name, value) -> {
           #([#(name, json.string(value)), ..attrs], events, hooks)
         }
-        ReconciledEventHandler(kind, id) -> {
+        ReconciledEventHandler(kind, id, throttle_ms, debounce_ms) -> {
           #(
             attrs,
             [
               [#("kind", json.string(kind)), #("id", json.string(id))]
+                |> maybe_append("throttleMs", throttle_ms, json.int)
+                |> maybe_append("debounceMs", debounce_ms, json.int)
                 |> json.object(),
               ..events
             ],
@@ -110,13 +112,26 @@ fn custom(kind: String, data: String) -> Json {
 }
 
 // appends a string property to a json object if the value is present
-fn maybe_append_string(
+pub fn maybe_append_string(
   json_object_builder: List(#(String, Json)),
   key: String,
   value: Option(String),
 ) -> List(#(String, Json)) {
   case value {
     Some(v) -> list.append(json_object_builder, [#(key, json.string(v))])
+    None -> json_object_builder
+  }
+}
+
+// appends a property to a json object if the value is present
+pub fn maybe_append(
+  json_object_builder: List(#(String, Json)),
+  key: String,
+  value: Option(a),
+  encoder: fn(a) -> Json,
+) -> List(#(String, Json)) {
+  case value {
+    Some(v) -> list.append(json_object_builder, [#(key, encoder(v))])
     None -> json_object_builder
   }
 }

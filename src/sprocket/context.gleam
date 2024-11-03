@@ -19,7 +19,12 @@ pub type IdentifiableHandler {
 
 pub type Attribute {
   Attribute(name: String, value: Dynamic)
-  Event(name: String, handler: IdentifiableHandler)
+  Event(
+    kind: String,
+    handler: IdentifiableHandler,
+    throttle_ms: Option(Int),
+    debounce_ms: Option(Int),
+  )
   ClientHook(id: Unique, name: String)
 }
 

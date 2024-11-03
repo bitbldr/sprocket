@@ -13,7 +13,7 @@ import sprocket/internal/reconcile.{
 }
 import sprocket/internal/utils/list.{element_at} as _list_utils
 import sprocket/render.{renderer} as _
-import sprocket/renderers/json.{json_renderer} as _
+import sprocket/renderers/json.{json_renderer, maybe_append} as _
 
 pub type Patch {
   NoOp
@@ -515,13 +515,15 @@ fn attrs_to_json(attrs: List(ReconciledAttribute)) -> Json {
       ReconciledAttribute(name, value) -> {
         [#(name, json.string(value))]
       }
-      ReconciledEventHandler(kind, id) -> {
+      ReconciledEventHandler(kind, id, throttle_ms, debounce_ms) -> {
         [
           #(
             string.concat([constants.event_attr_prefix, "-", kind]),
             json.string(id),
           ),
         ]
+        |> maybe_append("throttleMs", throttle_ms, json.int)
+        |> maybe_append("debounceMs", debounce_ms, json.int)
       }
       ReconciledClientHook(name, id) -> {
         [

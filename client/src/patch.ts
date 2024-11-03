@@ -57,7 +57,7 @@ type Attributes = Record<string, string> | null;
 type Children = Record<string, Patch> | null;
 type Element = Record<string, any>;
 
-export type ProdPatch =
+export type SlimPatch =
   | ["0"]
   | ["1", Attributes, Children]
   | ["2", Element]
@@ -75,7 +75,7 @@ export type DebugPatch =
   | ["Change", string]
   | ["Move", number, Patch];
 
-export type Patch = ProdPatch | DebugPatch;
+export type Patch = SlimPatch | DebugPatch;
 
 export type Operation =
   | [OpCode.NoOp]

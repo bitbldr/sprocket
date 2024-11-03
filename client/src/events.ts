@@ -1,8 +1,11 @@
 import { On } from "snabbdom";
+import { throttle, debounce } from "./utils";
 
 export type EventIdentifier = {
   kind: string;
   id: string;
+  throttleMs?: number;
+  debounceMs?: number;
 };
 
 export type EventHandlerProvider = (
@@ -16,8 +19,8 @@ export const initEventHandlerProvider =
     customEventEncoders: Record<string, any> = {}
   ): EventHandlerProvider =>
   (elementTag, events: EventIdentifier[]) =>
-    events.reduce((acc, { kind, id }) => {
-      const handler = (e) => {
+    events.reduce((acc, { kind, id, throttleMs, debounceMs }) => {
+      let handler = (e) => {
         socket.send(
           JSON.stringify([
             "event",
@@ -34,9 +37,15 @@ export const initEventHandlerProvider =
         );
       };
 
+      console.log("throttleMs, debounceMs", throttleMs, debounceMs, handler);
+
+      const maybeDebounceOrThrottleHandler =
+        (debounceMs && debounce(handler, debounceMs, false)) ||
+        (throttleMs && throttle(handler, throttleMs));
+
       return {
         ...acc,
-        [kind]: handler,
+        [kind]: maybeDebounceOrThrottleHandler || handler,
       };
     }, {});
 

@@ -1,13 +1,15 @@
 import gleam/dict.{type Dict}
 import gleam/dynamic.{type DecodeError, type Dynamic}
+import gleam/option.{None, Some}
 import sprocket/context.{
   type Attribute, type IdentifiableHandler, Attribute, Event,
 }
+import sprocket/internal/constants.{default_debounce_ms, default_throttle_ms}
 
 // Events
 
-pub fn event(name: String, handler: IdentifiableHandler) -> Attribute {
-  Event(name, handler)
+pub fn event(kind: String, handler: IdentifiableHandler) -> Attribute {
+  Event(kind, handler, None, None)
 }
 
 pub fn on_blur(handler: IdentifiableHandler) -> Attribute {
@@ -213,4 +215,36 @@ pub fn decode_form_data(
 /// Decode the key from a key press event.
 pub fn decode_keypress(event: Dynamic) -> Result(String, List(DecodeError)) {
   event |> dynamic.field("key", dynamic.string)
+}
+
+// Modifiers
+
+pub fn debounce(event: Attribute) -> Attribute {
+  case event {
+    Event(kind, handler, ..) ->
+      Event(kind, handler, None, Some(default_debounce_ms))
+    _ -> event
+  }
+}
+
+pub fn debounce_ms(event: Attribute, ms: Int) -> Attribute {
+  case event {
+    Event(kind, handler, ..) -> Event(kind, handler, None, Some(ms))
+    _ -> event
+  }
+}
+
+pub fn throttle(event: Attribute) -> Attribute {
+  case event {
+    Event(kind, handler, ..) ->
+      Event(kind, handler, Some(default_throttle_ms), None)
+    _ -> event
+  }
+}
+
+pub fn throttle_ms(event: Attribute, ms: Int) -> Attribute {
+  case event {
+    Event(kind, handler, ..) -> Event(kind, handler, Some(ms), None)
+    _ -> event
+  }
 }

@@ -104,10 +104,15 @@ fn element(
 
           #(ctx, [ReconciledAttribute(name, value), ..rendered_attrs])
         }
-        Event(kind, identifiable_cb) -> {
+        Event(kind, identifiable_cb, throttle_ms, debounce_ms) -> {
           let #(ctx, id) = context.push_event_handler(ctx, identifiable_cb)
           #(ctx, [
-            ReconciledEventHandler(kind, unique.to_string(id)),
+            ReconciledEventHandler(
+              kind,
+              unique.to_string(id),
+              throttle_ms,
+              debounce_ms,
+            ),
             ..rendered_attrs
           ])
         }
