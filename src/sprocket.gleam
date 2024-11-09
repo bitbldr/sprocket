@@ -5,9 +5,7 @@ import gleam/option.{type Option, None, Some}
 import gleam/result
 import ids/cuid
 import sprocket/component.{component}
-import sprocket/context.{
-  type Dispatcher, type Element, type FunctionalComponent, Dispatcher, Updater,
-}
+import sprocket/context.{type Element, type FunctionalComponent, Updater}
 import sprocket/internal/logger
 import sprocket/internal/patch
 import sprocket/internal/reconcile.{type ReconciledResult, ReconciledResult}
@@ -115,12 +113,12 @@ pub fn handle_ws(spkt: Sprocket(p), msg: String) -> Result(Response(p), String) 
 
       use runtime <- require_runtime(spkt)
 
-      let reply_dispatcher = fn(event, payload) {
+      let reply_emitter = fn(event, payload) {
         hook_event_to_json(id, event, payload)
         |> spkt.ws_send()
       }
 
-      runtime.process_client_hook(runtime, id, event, payload, reply_dispatcher)
+      runtime.process_client_hook(runtime, id, event, payload, reply_emitter)
 
       Ok(Empty)
     }
@@ -166,18 +164,17 @@ fn connect(
       |> spkt.ws_send()
     })
 
-  let dispatcher =
-    Dispatcher(dispatch: fn(id, event, payload) {
-      let _ =
-        hook_event_to_json(id, event, payload)
-        |> spkt.ws_send()
+  let emitter = fn(id, event, payload) {
+    let _ =
+      hook_event_to_json(id, event, payload)
+      |> spkt.ws_send()
 
-      Ok(Nil)
-    })
+    Ok(Nil)
+  }
 
   let view = component(spkt.component, spkt.initialize_props(initial_props))
 
-  case runtime.start(view, updater, Some(dispatcher)) {
+  case runtime.start(view, updater, Some(emitter)) {
     Ok(r) -> {
       // schedule intitial render
       runtime.render_update(r)
@@ -331,10 +328,10 @@ pub fn render(el: Element, r: Renderer(a)) -> a {
       error
     })
 
-  let ctx =
-    context.new(el, cuid_channel, None, fn() { Nil }, fn(_index, _updater) {
-      Nil
-    })
+  let render_update = fn() { Nil }
+  let update_hook = fn(_index, _updater) { Nil }
+
+  let ctx = context.new(el, cuid_channel, None, render_update, update_hook)
 
   let ReconciledResult(reconciled: reconciled, ..) =
     reconcile(ctx, el, None, None)

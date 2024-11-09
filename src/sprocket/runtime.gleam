@@ -9,11 +9,11 @@ import gleam/otp/actor.{type StartError, Spec}
 import gleam/result
 import ids/cuid
 import sprocket/context.{
-  type ComponentHooks, type Context, type Dispatcher, type EffectCleanup,
-  type EffectResult, type Element, type Hook, type HookDependencies,
+  type ComponentHooks, type Context, type EffectCleanup, type EffectResult,
+  type Element, type EventEmitter, type Hook, type HookDependencies,
   type IdentifiableHandler, type Updater, Callback, Changed, Client, Context,
-  Dispatcher, Effect, EffectResult, Handler, IdentifiableHandler, Memo, Reducer,
-  Unchanged, Updater, compare_deps,
+  Effect, EffectResult, Handler, IdentifiableHandler, Memo, Reducer, Unchanged,
+  Updater, compare_deps,
 }
 import sprocket/internal/constants.{call_timeout}
 import sprocket/internal/exceptions.{throw_on_unexpected_hook_result}
@@ -62,7 +62,7 @@ pub opaque type Message {
     id: String,
     event: String,
     payload: Option(Dynamic),
-    reply_dispatcher: fn(String, Option(String)) -> Result(Nil, Nil),
+    reply_emitter: fn(String, Option(String)) -> Result(Nil, Nil),
   )
   UpdateHookState(Unique, fn(Hook) -> Hook)
   ReconcileImmediate(reply_with: Subject(ReconciledElement))
@@ -137,7 +137,7 @@ fn handle_message(message: Message, state: State) -> actor.Next(Message, State) 
       }
     }
 
-    ProcessClientHook(id, event, payload, reply_dispatcher) -> {
+    ProcessClientHook(id, event, payload, reply_emitter) -> {
       let client_hook = case state.reconciled {
         Some(reconciled) -> {
           let hook =
@@ -162,7 +162,7 @@ fn handle_message(message: Message, state: State) -> actor.Next(Message, State) 
       case client_hook {
         Ok(Client(_id, _name, handle_event)) -> {
           option.map(handle_event, fn(handle_event) {
-            handle_event(event, payload, reply_dispatcher)
+            handle_event(event, payload, reply_emitter)
           })
 
           actor.continue(state)
@@ -178,8 +178,8 @@ fn handle_message(message: Message, state: State) -> actor.Next(Message, State) 
     UpdateHookState(hook_id, update_fn) -> {
       let updated =
         state.reconciled
-        |> option.map(fn(node) {
-          traverse_rendered_hooks(node, fn(hook) {
+        |> option.map(fn(reconciled) {
+          find_and_update_hook(reconciled, hook_id, fn(hook) {
             case hook {
               // this operation is only applicable to State hooks
               context.State(id, _) -> {
@@ -253,7 +253,7 @@ fn handle_message(message: Message, state: State) -> actor.Next(Message, State) 
 pub fn start(
   view: Element,
   updater: Updater(RenderedUpdate),
-  dispatcher: Option(Dispatcher),
+  emitter: Option(EventEmitter),
 ) -> Result(Runtime, StartError) {
   let init = fn() {
     let self = process.new_subject()
@@ -280,7 +280,7 @@ pub fn start(
         ctx: context.new(
           view,
           cuid_channel,
-          dispatcher,
+          emitter,
           render_update,
           update_hook,
         ),
@@ -350,11 +350,11 @@ pub fn process_client_hook(
   id: String,
   event: String,
   payload: Option(Dynamic),
-  reply_dispatcher: fn(String, Option(String)) -> Result(Nil, Nil),
+  reply_emitter: fn(String, Option(String)) -> Result(Nil, Nil),
 ) {
   logger.debug("process.try_call GetClientHook")
 
-  actor.send(actor, ProcessClientHook(id, event, payload, reply_dispatcher))
+  actor.send(actor, ProcessClientHook(id, event, payload, reply_emitter))
 }
 
 pub fn render_update(actor) {
@@ -414,8 +414,6 @@ fn cleanup_hooks(rendered: ReconciledElement) {
         }
       }
 
-      Reducer(_, _, cleanup) -> cleanup()
-
       _ -> Nil
     }
   })
@@ -443,8 +441,6 @@ fn run_cleanup_for_disposed_hooks(
           _ -> Nil
         }
       }
-
-      Ok(Reducer(_, _, cleanup)) -> cleanup()
 
       _ -> Nil
     }
@@ -513,6 +509,7 @@ fn run_effects(rendered: ReconciledElement) -> ReconciledElement {
 
         Effect(id, effect_fn, deps, Some(result))
       }
+
       other -> other
     }
   })
@@ -554,6 +551,19 @@ fn maybe_cleanup_and_rerun_effect(
     }
     _ -> EffectResult(effect_fn(), deps)
   }
+}
+
+fn find_and_update_hook(
+  reconciled: ReconciledElement,
+  hook_id: Unique,
+  update_fn: fn(Hook) -> Hook,
+) -> ReconciledElement {
+  traverse_rendered_hooks(reconciled, fn(hook) {
+    case context.has_id(hook, hook_id) {
+      True -> update_fn(hook)
+      False -> hook
+    }
+  })
 }
 
 type HookProcessor =

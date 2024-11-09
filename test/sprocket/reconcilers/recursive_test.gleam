@@ -22,10 +22,10 @@ pub fn render_el(el: Element) -> ReconciledElement {
   // and a placeholder ctx but then discards the ctx and returns the result.
   let assert Ok(cuid_channel) = cuid.start()
 
-  let ctx =
-    context.new(el, cuid_channel, None, fn() { Nil }, fn(_index, _updater) {
-      Nil
-    })
+  let render_update = fn() { Nil }
+  let update_hook = fn(_index, _updater) { Nil }
+
+  let ctx = context.new(el, cuid_channel, None, render_update, update_hook)
 
   let ReconciledResult(reconciled: reconciled, ..) =
     reconcile(ctx, el, None, None)

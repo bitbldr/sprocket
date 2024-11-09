@@ -45,9 +45,8 @@ pub type Updater(r) {
   Updater(send: fn(r) -> Result(Nil, Nil))
 }
 
-pub type Dispatcher {
-  Dispatcher(dispatch: fn(String, String, Option(String)) -> Result(Nil, Nil))
-}
+pub type EventEmitter =
+  fn(String, String, Option(String)) -> Result(Nil, Nil)
 
 pub type ComponentHooks =
   OrderedMap(Int, Hook)
@@ -89,6 +88,19 @@ pub type Hook {
   Reducer(id: Unique, reducer: Dynamic, cleanup: fn() -> Nil)
   State(id: Unique, value: Dynamic)
   Client(id: Unique, name: String, handle_event: Option(ClientEventHandler))
+}
+
+// Returns true if the hook has the given id
+pub fn has_id(hook: Hook, hook_id: Unique) -> Bool {
+  case hook {
+    Callback(id, _, _) if id == hook_id -> True
+    Memo(id, _, _) if id == hook_id -> True
+    Effect(id, _, _, _) if id == hook_id -> True
+    Handler(id, _) if id == hook_id -> True
+    State(id, _) if id == hook_id -> True
+    Client(id, _, _) if id == hook_id -> True
+    _ -> False
+  }
 }
 
 pub type Compared(a) {
@@ -137,7 +149,7 @@ pub type Context {
     handlers: List(IdentifiableHandler),
     render_update: fn() -> Nil,
     update_hook: fn(Unique, fn(Hook) -> Hook) -> Nil,
-    dispatch_event: fn(Unique, String, Option(String)) -> Result(Nil, Nil),
+    emit: fn(Unique, String, Option(String)) -> Result(Nil, Nil),
     cuid_channel: Subject(cuid.Message),
     providers: Dict(String, Dynamic),
   )
@@ -146,7 +158,7 @@ pub type Context {
 pub fn new(
   view: Element,
   cuid_channel: Subject(cuid.Message),
-  dispatcher: Option(Dispatcher),
+  emitter: Option(EventEmitter),
   render_update: fn() -> Nil,
   update_hook: fn(Unique, fn(Hook) -> Hook) -> Nil,
 ) -> Context {
@@ -156,10 +168,9 @@ pub fn new(
     handlers: [],
     render_update: render_update,
     update_hook: update_hook,
-    dispatch_event: fn(id, name, payload) {
-      case dispatcher {
-        Some(Dispatcher(dispatch: dispatch)) ->
-          dispatch(unique.to_string(id), name, payload)
+    emit: fn(id, name, payload) {
+      case emitter {
+        Some(emitter) -> emitter(unique.to_string(id), name, payload)
         None -> Error(Nil)
       }
     },
@@ -254,13 +265,13 @@ pub fn get_event_handler(
   #(ctx, handler)
 }
 
-pub fn dispatch_event(
+pub fn emit_event(
   ctx: Context,
   id: Unique,
   name: String,
   payload: Option(String),
 ) {
-  ctx.dispatch_event(id, name, payload)
+  ctx.emit(id, name, payload)
 }
 
 pub fn provider(key: String, value: v, element: Element) -> Element {

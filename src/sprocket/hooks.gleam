@@ -105,7 +105,7 @@ pub fn client(
 
   // callback to dispatch an event to the client
   let dispatch_event = fn(name: String, payload: Option(String)) {
-    context.dispatch_event(ctx, id, name, payload)
+    context.emit_event(ctx, id, name, payload)
   }
 
   cb(ctx, bind_hook_attr, dispatch_event)
