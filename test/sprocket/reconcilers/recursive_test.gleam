@@ -24,8 +24,10 @@ pub fn render_el(el: Element) -> ReconciledElement {
 
   let render_update = fn() { Nil }
   let update_hook = fn(_index, _updater) { Nil }
+  let dispatch = fn(_id, _msg) { Nil }
 
-  let ctx = context.new(el, cuid_channel, None, render_update, update_hook)
+  let ctx =
+    context.new(el, cuid_channel, None, render_update, update_hook, dispatch)
 
   let ReconciledResult(reconciled: reconciled, ..) =
     reconcile(ctx, el, None, None)

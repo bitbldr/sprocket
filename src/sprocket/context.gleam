@@ -2,6 +2,7 @@ import gleam/dict.{type Dict}
 import gleam/dynamic.{type Dynamic}
 import gleam/erlang/process.{type Subject}
 import gleam/int
+import gleam/io
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import ids/cuid
@@ -48,6 +49,9 @@ pub type Updater(r) {
 pub type EventEmitter =
   fn(String, String, Option(String)) -> Result(Nil, Nil)
 
+pub type Dispatcher(msg) =
+  fn(msg) -> Nil
+
 pub type ComponentHooks =
   OrderedMap(Int, Hook)
 
@@ -85,8 +89,14 @@ pub type Hook {
     prev: Option(EffectResult),
   )
   Handler(id: Unique, handler_fn: HandlerFn)
-  Reducer(id: Unique, reducer: Dynamic, cleanup: fn() -> Nil)
   State(id: Unique, value: Dynamic)
+  Reducer(
+    id: Unique,
+    model: Dynamic,
+    update: fn(Dynamic, Dynamic) ->
+      #(Dynamic, List(fn(Dispatcher(Dynamic)) -> Nil)),
+    pending_cmds: List(fn(Dispatcher(Dynamic)) -> Nil),
+  )
   Client(id: Unique, name: String, handle_event: Option(ClientEventHandler))
 }
 
@@ -149,6 +159,7 @@ pub type Context {
     handlers: List(IdentifiableHandler),
     render_update: fn() -> Nil,
     update_hook: fn(Unique, fn(Hook) -> Hook) -> Nil,
+    dispatch: fn(Unique, Dynamic) -> Nil,
     emit: fn(Unique, String, Option(String)) -> Result(Nil, Nil),
     cuid_channel: Subject(cuid.Message),
     providers: Dict(String, Dynamic),
@@ -161,6 +172,7 @@ pub fn new(
   emitter: Option(EventEmitter),
   render_update: fn() -> Nil,
   update_hook: fn(Unique, fn(Hook) -> Hook) -> Nil,
+  dispatch: fn(Unique, Dynamic) -> Nil,
 ) -> Context {
   Context(
     view: view,
@@ -168,6 +180,10 @@ pub fn new(
     handlers: [],
     render_update: render_update,
     update_hook: update_hook,
+    dispatch: fn(id, msg) {
+      io.debug(#("Context Dispatching message: ", id, msg))
+      dispatch(id, msg)
+    },
     emit: fn(id, name, payload) {
       case emitter {
         Some(emitter) -> emitter(unique.to_string(id), name, payload)

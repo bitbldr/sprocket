@@ -6,6 +6,7 @@ import gleam/io
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/otp/actor.{type StartError, Spec}
+import gleam/otp/task
 import gleam/result
 import ids/cuid
 import sprocket/context.{
@@ -65,6 +66,7 @@ pub opaque type Message {
     reply_emitter: fn(String, Option(String)) -> Result(Nil, Nil),
   )
   UpdateHookState(Unique, fn(Hook) -> Hook)
+  ProcessReducerDispatch(Unique, Dynamic)
   ReconcileImmediate(reply_with: Subject(ReconciledElement))
   RenderUpdate
 }
@@ -195,6 +197,74 @@ fn handle_message(message: Message, state: State) -> actor.Next(Message, State) 
           })
         })
 
+      // let updated =
+      //   state.reconciled
+      //   |> option.map(fn(reconciled) {
+      //     update_hook(reconciled, hook_id, update_fn)
+      //   })
+
+      actor.continue(State(..state, reconciled: updated))
+    }
+
+    ProcessReducerDispatch(hook_id, msg) -> {
+      io.debug(#("ProcessReducerDispatch", hook_id, msg))
+
+      let updated =
+        state.reconciled
+        |> option.map(fn(node) {
+          traverse_rendered_hooks(node, fn(hook) {
+            case hook {
+              context.Reducer(_, model, update_fn, pending_cmds) -> {
+                io.debug(#(
+                  "model, msg, update_fn(model, msg)",
+                  model,
+                  msg,
+                  update_fn(model, msg),
+                ))
+
+                let #(updated, cmds) = update_fn(model, msg)
+
+                context.Reducer(
+                  id: hook_id,
+                  model: updated,
+                  update: update_fn,
+                  pending_cmds: list.append(pending_cmds, cmds),
+                )
+              }
+              _ -> hook
+            }
+          })
+        })
+
+      state.ctx.render_update()
+
+      // let updated =
+      //   state.reconciled
+      //   |> option.map(fn(reconciled) {
+      //     update_hook(reconciled, hook_id, fn(hook) {
+      //       case hook {
+      //         context.Reducer(_, model, update_fn, pending_cmds) -> {
+      //           io.debug(#(
+      //             "model, msg, update_fn(model, msg)",
+      //             model,
+      //             msg,
+      //             update_fn(model, msg),
+      //           ))
+
+      //           let #(updated, cmds) = update_fn(model, msg) |> unsafe_coerce
+
+      //           context.Reducer(
+      //             id: hook_id,
+      //             model: updated,
+      //             update: update_fn,
+      //             pending_cmds: list.append(pending_cmds, cmds),
+      //           )
+      //         }
+      //         _ -> hook
+      //       }
+      //     })
+      //   })
+
       actor.continue(State(..state, reconciled: updated))
     }
 
@@ -267,6 +337,13 @@ pub fn start(
 
       actor.send(self, UpdateHookState(id, updater))
     }
+    let dispatcher = fn(hook_id, msg) {
+      logger.debug("actor.send ProcessReducerDispatch")
+
+      io.debug(#("Dispatching reducer", ProcessReducerDispatch(hook_id, msg)))
+
+      actor.send(self, ProcessReducerDispatch(hook_id, msg))
+    }
 
     let assert Ok(cuid_channel) =
       cuid.start()
@@ -283,6 +360,7 @@ pub fn start(
           emitter,
           render_update,
           update_hook,
+          dispatcher,
         ),
         updater: updater,
         reconciled: None,
@@ -395,7 +473,7 @@ fn do_reconciliation(
     // hooks might contain effects that will trigger a rerender. That is okay because any
     // RenderUpdate messages sent during this operation will be placed into this actor's mailbox
     // and will be processed in order after this current render is complete
-    let reconciled = run_effects(reconciled)
+    let reconciled = run_effects(reconciled, ctx.dispatch)
 
     #(ctx, reconciled)
   })
@@ -473,7 +551,7 @@ fn build_hooks_map(
             context.State(id, _) -> {
               dict.insert(acc, id, hook)
             }
-            Reducer(id, _, _) -> {
+            Reducer(id, _, _, _) -> {
               dict.insert(acc, id, hook)
             }
             context.Client(id, _, _) -> {
@@ -501,7 +579,10 @@ fn build_hooks_map(
   }
 }
 
-fn run_effects(rendered: ReconciledElement) -> ReconciledElement {
+fn run_effects(
+  rendered: ReconciledElement,
+  dispatcher: fn(Unique, Dynamic) -> Nil,
+) -> ReconciledElement {
   process_state_hooks(rendered, fn(hook) {
     case hook {
       Effect(id, effect_fn, deps, prev) -> {
@@ -509,7 +590,25 @@ fn run_effects(rendered: ReconciledElement) -> ReconciledElement {
 
         Effect(id, effect_fn, deps, Some(result))
       }
+      Reducer(id, model, update, pending_cmds) -> {
+        io.debug(#("Reducer with pending commands", pending_cmds))
 
+        // Process commands asynchronously
+        pending_cmds
+        |> list.each(fn(cmd) {
+          task.async(fn() -> Nil {
+            let dispatch = fn(msg) {
+              io.debug(#("Dispatching command", id, msg))
+
+              dispatcher(id, msg)
+            }
+
+            cmd(dispatch)
+          })
+        })
+
+        Reducer(id, model, update, [])
+      }
       other -> other
     }
   })
