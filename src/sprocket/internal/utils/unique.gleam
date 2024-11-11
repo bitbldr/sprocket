@@ -1,44 +1,37 @@
 import gleam/erlang/process.{type Subject}
-import gleam/result
 import ids/cuid
 import ids/uuid
-import sprocket/internal/logger
 
-pub opaque type Unique {
+pub opaque type Unique(kind) {
   Unique(id: String)
 }
 
-pub fn uuid() -> Unique {
-  let assert Ok(id) =
-    uuid.generate_v4()
-    |> result.map_error(fn(error) {
-      logger.error("unique.uuid: failed to generate UUID")
-      error
-    })
+pub fn uuid() -> Unique(kind) {
+  let assert Ok(id) = uuid.generate_v4()
 
   Unique(id: id)
 }
 
-pub fn cuid(channel: Subject(cuid.Message)) -> Unique {
+pub fn cuid(channel: Subject(cuid.Message)) -> Unique(kind) {
   let id = cuid.generate(channel)
 
   Unique(id: id)
 }
 
-pub fn slug(channel: Subject(cuid.Message), label: String) -> Unique {
+pub fn slug(channel: Subject(cuid.Message), label: String) -> Unique(kind) {
   let id = label <> "-" <> cuid.slug(channel)
 
   Unique(id: id)
 }
 
-pub fn from_string(str: String) -> Unique {
+pub fn from_string(str: String) -> Unique(kind) {
   Unique(id: str)
 }
 
-pub fn to_string(unique: Unique) -> String {
+pub fn to_string(unique: Unique(kind)) -> String {
   unique.id
 }
 
-pub fn equals(a: Unique, b: Unique) -> Bool {
+pub fn equals(a: Unique(kind), b: Unique(kind)) -> Bool {
   a.id == b.id
 }

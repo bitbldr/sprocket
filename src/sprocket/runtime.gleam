@@ -10,7 +10,7 @@ import gleam/result
 import ids/cuid
 import sprocket/context.{
   type ComponentHooks, type Context, type EffectCleanup, type EffectResult,
-  type Element, type EventEmitter, type Hook, type HookDependencies,
+  type Element, type EventEmitter, type Hook, type HookDependencies, type HookId,
   type IdentifiableHandler, type Updater, Callback, Changed, Client, Context,
   Effect, EffectResult, Handler, IdentifiableHandler, Memo, Reducer, Unchanged,
   Updater, compare_deps,
@@ -66,7 +66,7 @@ pub opaque type Message {
     payload: Option(Dynamic),
     reply_emitter: fn(String, Option(String)) -> Result(Nil, Nil),
   )
-  UpdateHookState(Unique, fn(Hook) -> Hook)
+  UpdateHookState(Unique(HookId), fn(Hook) -> Hook)
   ReconcileImmediate(reply_with: Subject(ReconciledElement))
   RenderUpdate
 }
@@ -455,8 +455,8 @@ fn run_cleanup_for_disposed_hooks(
 
 fn build_hooks_map(
   node: ReconciledElement,
-  acc: Dict(Unique, Hook),
-) -> Dict(Unique, Hook) {
+  acc: Dict(Unique(HookId), Hook),
+) -> Dict(Unique(HookId), Hook) {
   case node {
     ReconciledComponent(_fc, _key, _props, hooks, el) -> {
       // add hooks from this node
@@ -569,7 +569,7 @@ fn maybe_cleanup_and_rerun_effect(
 
 fn find_and_update_hook(
   reconciled: ReconciledElement,
-  hook_id: Unique,
+  hook_id: Unique(HookId),
   update_fn: fn(Hook) -> Hook,
 ) -> ReconciledElement {
   traverse_rendered_hooks(reconciled, fn(hook) {

@@ -5,8 +5,8 @@ import gleam/result
 import sprocket/context.{
   type Attribute, type ClientDispatcher, type ClientEventHandler, type Context,
   type EffectCleanup, type Element, type HandlerFn, type HookDependencies,
-  type IdentifiableHandler, Callback, CallbackResult, Changed, Client,
-  ClientHook, Context, Effect, Handler, IdentifiableHandler, Unchanged,
+  type HookId, type IdentifiableHandler, Callback, CallbackResult, Changed,
+  Client, ClientHook, Context, Effect, Handler, IdentifiableHandler, Unchanged,
   compare_deps,
 }
 import sprocket/internal/exceptions.{throw_on_unexpected_hook_result}
@@ -75,7 +75,7 @@ fn maybe_trigger_update(
 }
 
 /// Client hook attribute that can be used to reference a client hook by its id.
-pub fn client_hook(id: Unique, name: String) -> Attribute {
+pub fn client_hook(id: Unique(HookId), name: String) -> Attribute {
   ClientHook(id, name)
 }
 

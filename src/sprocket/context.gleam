@@ -14,13 +14,13 @@ pub type HandlerFn =
   fn(Dynamic) -> Nil
 
 pub type IdentifiableHandler {
-  IdentifiableHandler(id: Unique, handler: HandlerFn)
+  IdentifiableHandler(id: Unique(HookId), handler: HandlerFn)
 }
 
 pub type Attribute {
   Attribute(name: String, value: Dynamic)
   Event(name: String, handler: IdentifiableHandler)
-  ClientHook(id: Unique, name: String)
+  ClientHook(id: Unique(HookId), name: String)
 }
 
 pub type AbstractFunctionalComponent =
@@ -75,23 +75,33 @@ pub type ClientDispatcher =
 pub type ClientEventHandler =
   fn(String, Option(Dynamic), ClientDispatcher) -> Nil
 
+pub type HookId
+
 pub type Hook {
-  Callback(id: Unique, callback: fn() -> Nil, prev: Option(CallbackResult))
-  Memo(id: Unique, value: Dynamic, prev: Option(MemoResult))
+  Callback(
+    id: Unique(HookId),
+    callback: fn() -> Nil,
+    prev: Option(CallbackResult),
+  )
+  Memo(id: Unique(HookId), value: Dynamic, prev: Option(MemoResult))
   Effect(
-    id: Unique,
+    id: Unique(HookId),
     effect: fn() -> EffectCleanup,
     deps: HookDependencies,
     prev: Option(EffectResult),
   )
-  Handler(id: Unique, handler_fn: HandlerFn)
-  Reducer(id: Unique, reducer: Dynamic, cleanup: fn() -> Nil)
-  State(id: Unique, value: Dynamic)
-  Client(id: Unique, name: String, handle_event: Option(ClientEventHandler))
+  Handler(id: Unique(HookId), handler_fn: HandlerFn)
+  Reducer(id: Unique(HookId), reducer: Dynamic, cleanup: fn() -> Nil)
+  State(id: Unique(HookId), value: Dynamic)
+  Client(
+    id: Unique(HookId),
+    name: String,
+    handle_event: Option(ClientEventHandler),
+  )
 }
 
 // Returns true if the hook has the given id
-pub fn has_id(hook: Hook, hook_id: Unique) -> Bool {
+pub fn has_id(hook: Hook, hook_id: Unique(HookId)) -> Bool {
   case hook {
     Callback(id, _, _) if id == hook_id -> True
     Memo(id, _, _) if id == hook_id -> True
@@ -148,8 +158,8 @@ pub type Context {
     wip: ComponentWip,
     handlers: List(IdentifiableHandler),
     render_update: fn() -> Nil,
-    update_hook: fn(Unique, fn(Hook) -> Hook) -> Nil,
-    emit: fn(Unique, String, Option(String)) -> Result(Nil, Nil),
+    update_hook: fn(Unique(HookId), fn(Hook) -> Hook) -> Nil,
+    emit: fn(Unique(HookId), String, Option(String)) -> Result(Nil, Nil),
     cuid_channel: Subject(cuid.Message),
     providers: Dict(String, Dynamic),
   )
@@ -160,7 +170,7 @@ pub fn new(
   cuid_channel: Subject(cuid.Message),
   emitter: Option(EventEmitter),
   render_update: fn() -> Nil,
-  update_hook: fn(Unique, fn(Hook) -> Hook) -> Nil,
+  update_hook: fn(Unique(HookId), fn(Hook) -> Hook) -> Nil,
 ) -> Context {
   Context(
     view: view,
@@ -246,7 +256,7 @@ pub fn update_hook(ctx: Context, hook: Hook, index: Int) -> Context {
 pub fn push_event_handler(
   ctx: Context,
   identifiable_cb: IdentifiableHandler,
-) -> #(Context, Unique) {
+) -> #(Context, Unique(HookId)) {
   let IdentifiableHandler(id, cb) = identifiable_cb
 
   #(Context(..ctx, handlers: [IdentifiableHandler(id, cb), ..ctx.handlers]), id)
@@ -254,7 +264,7 @@ pub fn push_event_handler(
 
 pub fn get_event_handler(
   ctx: Context,
-  id: Unique,
+  id: Unique(HookId),
 ) -> #(Context, Result(IdentifiableHandler, Nil)) {
   let handler =
     list.find(ctx.handlers, fn(h) {
@@ -267,7 +277,7 @@ pub fn get_event_handler(
 
 pub fn emit_event(
   ctx: Context,
-  id: Unique,
+  id: Unique(HookId),
   name: String,
   payload: Option(String),
 ) {
