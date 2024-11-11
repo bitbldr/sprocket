@@ -5,7 +5,7 @@ import gleam/string
 import gleeunit/should
 import sprocket/component.{component}
 import sprocket/context.{type Context, dep}
-import sprocket/hooks.{type Cmd, effect, handler, reducer}
+import sprocket/hooks.{type Cmd, effect, handler, reducer, state}
 import sprocket/html/attributes.{id}
 import sprocket/html/elements.{button, fragment, text}
 import sprocket/html/events.{on_click}
@@ -64,19 +64,15 @@ fn initial() -> #(Model, List(Cmd(Msg))) {
   #(Model(0), [])
 }
 
-type TestCounterProps {
-  TestCounterProps
-}
-
 fn inc_initial_render_counter(ctx: Context, _props) {
   // Define a reducer to handle events and update the state
-  use ctx, Model(count: count), dispatch <- reducer(ctx, initial(), update)
+  use ctx, count, set_count <- state(ctx, 0)
 
   // Example effect with an empty list of dependencies, runs once on mount
   use ctx <- effect(
     ctx,
     fn() {
-      dispatch(SetCount(count + 1))
+      set_count(count + 1)
       None
     },
     [],
@@ -91,7 +87,7 @@ fn inc_initial_render_counter(ctx: Context, _props) {
 }
 
 pub fn effect_should_only_run_on_initial_render_test() {
-  let view = component(inc_initial_render_counter, TestCounterProps)
+  let view = component(inc_initial_render_counter, Nil)
   let spkt = connect(view)
 
   let #(spkt, rendered) = render_html(spkt)
@@ -159,22 +155,21 @@ pub fn effect_should_run_on_every_update_test() {
 
 fn inc_reset_on_button_click_counter(ctx: Context, _props) {
   // Define a reducer to handle events and update the state
-  use ctx, Model(count: count), dispatch <- reducer(ctx, initial(), update)
+  use ctx, count, set_count <- state(ctx, 0)
 
   // Example effect with an empty list of dependencies, runs once on mount
   use ctx <- effect(
     ctx,
     fn() {
-      dispatch(SetCount(count + 1))
+      set_count(count + 1)
       None
     },
     [],
   )
 
   // Define event handlers
-  use ctx, increment <- handler(ctx, fn(_) { dispatch(SetCount(count + 1)) })
-  use ctx, generate_random <- handler(ctx, fn(_) { dispatch(GenerateRandom) })
-  use ctx, reset <- handler(ctx, fn(_) { dispatch(ResetCount) })
+  use ctx, increment <- handler(ctx, fn(_) { set_count(count + 1) })
+  use ctx, reset <- handler(ctx, fn(_) { set_count(0) })
 
   let current_count = int.to_string(count)
 
@@ -184,14 +179,13 @@ fn inc_reset_on_button_click_counter(ctx: Context, _props) {
       text("current count is: "),
       text(current_count),
       button([id("increment"), on_click(increment)], [text("increment")]),
-      button([id("random"), on_click(generate_random)], [text("random")]),
       button([id("reset"), on_click(reset)], [text("reset")]),
     ]),
   )
 }
 
 pub fn effect_should_run_with_empty_deps_and_handle_events_test() {
-  let view = component(inc_reset_on_button_click_counter, TestCounterProps)
+  let view = component(inc_reset_on_button_click_counter, Nil)
 
   let spkt = connect(view)
 
@@ -265,7 +259,7 @@ fn inc_random_reset_counter(ctx: Context, _props) {
 }
 
 pub fn reducer_should_run_cmds_test() {
-  let view = component(inc_random_reset_counter, TestCounterProps)
+  let view = component(inc_random_reset_counter, Nil)
 
   let spkt = connect(view)
 
@@ -277,7 +271,7 @@ pub fn reducer_should_run_cmds_test() {
 
   let spkt = render_event(spkt, ClickEvent, "increment")
 
-  let #(_spkt, rendered) = render_html(spkt)
+  let #(spkt, rendered) = render_html(spkt)
 
   let assert True =
     rendered
@@ -285,7 +279,7 @@ pub fn reducer_should_run_cmds_test() {
 
   let spkt = render_event(spkt, ClickEvent, "increment")
 
-  let #(_spkt, rendered) = render_html(spkt)
+  let #(spkt, rendered) = render_html(spkt)
 
   let assert True =
     rendered
@@ -293,7 +287,7 @@ pub fn reducer_should_run_cmds_test() {
 
   let spkt = render_event(spkt, ClickEvent, "reset")
 
-  let #(_spkt, rendered) = render_html(spkt)
+  let #(spkt, rendered) = render_html(spkt)
 
   let assert True =
     rendered
@@ -332,7 +326,7 @@ fn count_down(ctx: Context, _props) {
 }
 
 pub fn reducer_should_run_cmds_recursively_test() {
-  let view = component(count_down, TestCounterProps)
+  let view = component(count_down, Nil)
 
   let spkt = connect(view)
 
@@ -377,7 +371,7 @@ fn component_with_initial_cmds(ctx: Context, _props) {
 }
 
 pub fn reducer_should_initialize_with_cmds_test() {
-  let view = component(component_with_initial_cmds, TestCounterProps)
+  let view = component(component_with_initial_cmds, Nil)
 
   let spkt = connect(view)
 

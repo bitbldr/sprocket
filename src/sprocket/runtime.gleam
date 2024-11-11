@@ -414,6 +414,8 @@ fn cleanup_hooks(rendered: ReconciledElement) {
         }
       }
 
+      Reducer(_, _, cleanup) -> cleanup()
+
       _ -> Nil
     }
   })
@@ -441,6 +443,8 @@ fn run_cleanup_for_disposed_hooks(
           _ -> Nil
         }
       }
+
+      Ok(Reducer(_, _, cleanup)) -> cleanup()
 
       _ -> Nil
     }

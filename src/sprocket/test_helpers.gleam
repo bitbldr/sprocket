@@ -1,5 +1,7 @@
+import gleam/bool.{guard}
 import gleam/dict.{type Dict}
 import gleam/dynamic
+import gleam/erlang
 import gleam/list
 import gleam/option.{None, Some}
 import gleam/regex
@@ -226,6 +228,36 @@ fn check_predicate(el: ReconciledElement, is_desired: FindElementBy) {
     }
     ByPredicate(func) -> func(el)
   }
+}
+
+pub fn wait_while(predicate: fn() -> Bool, timeout: Int) -> Bool {
+  case
+    wait_helper(
+      fn() { !predicate() },
+      timeout,
+      erlang.system_time(erlang.Millisecond),
+    )
+  {
+    True -> True
+    False -> panic as "Timeout waiting for condition"
+  }
+}
+
+pub fn wait_until(predicate: fn() -> Bool, timeout: Int) -> Bool {
+  case wait_helper(predicate, timeout, erlang.system_time(erlang.Millisecond)) {
+    True -> True
+    False -> panic as "Timeout waiting for condition"
+  }
+}
+
+fn wait_helper(predicate: fn() -> Bool, timeout: Int, started_at: Int) -> Bool {
+  use <- guard(
+    when: erlang.system_time(erlang.Millisecond) - started_at > timeout,
+    return: False,
+  )
+  use <- guard(when: predicate(), return: True)
+
+  wait_helper(predicate, timeout, started_at)
 }
 
 fn find_by_matching_attr(el, key, expected_value) {

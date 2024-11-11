@@ -1,10 +1,6 @@
 import gleam/dict
 import gleam/dynamic
-import gleam/erlang/process.{type Subject}
-import gleam/function.{identity}
-import gleam/list
 import gleam/option.{type Option, None, Some}
-import gleam/otp/actor
 import gleam/result
 import sprocket/context.{
   type Attribute, type ClientDispatcher, type ClientEventHandler, type Context,
@@ -13,11 +9,14 @@ import sprocket/context.{
   ClientHook, Context, Effect, Handler, IdentifiableHandler, Unchanged,
   compare_deps,
 }
-import sprocket/internal/constants.{call_timeout}
 import sprocket/internal/exceptions.{throw_on_unexpected_hook_result}
 import sprocket/internal/logger
+import sprocket/internal/reducer.{type UpdateFn}
 import sprocket/internal/utils/unique.{type Unique}
 import sprocket/internal/utils/unsafe_coerce.{unsafe_coerce}
+
+pub type Cmd(msg) =
+  reducer.Cmd(msg)
 
 /// Callback Hook
 /// -------------
@@ -216,21 +215,6 @@ pub fn provider(
   cb(ctx, value)
 }
 
-type Dispatcher(msg) =
-  fn(msg) -> Nil
-
-pub type Cmd(msg) =
-  fn(Dispatcher(msg)) -> Nil
-
-type Reducer(model, msg) =
-  fn(model, msg) -> #(model, List(Cmd(msg)))
-
-type ReducerMsg(model, msg) {
-  Shutdown
-  GetState(reply_with: Subject(model))
-  ReducerDispatch(r: Reducer(model, msg), m: msg)
-}
-
 /// Reducer Hook
 /// ------------
 /// Creates a reducer hook that can be used to manage state. The reducer hook will
@@ -240,84 +224,18 @@ type ReducerMsg(model, msg) {
 pub fn reducer(
   ctx: Context,
   initial: #(model, List(Cmd(msg))),
-  reducer: Reducer(model, msg),
+  update: UpdateFn(model, msg),
   cb: fn(Context, model, fn(msg) -> Nil) -> #(Context, Element),
 ) -> #(Context, Element) {
   let Context(render_update: render_update, ..) = ctx
-
-  // create a dispatch function for updating the reducer's state and triggering a render update
-  let dispatch = fn(msg, a) -> Nil {
-    // this will update the reducer's state and trigger a re-render. To ensure we re-render
-    // with the latest state, this message must be processed before the next render cycle. However,
-    // because we also use a process.call to the same reducer actor to get the current state, we should
-    // be guaranteed to have this message processed before that call during the next render cycle.
-    actor.send(a, ReducerDispatch(r: reducer, m: msg))
-
-    render_update()
-  }
 
   // Creates an actor process for a reducer that handles two types of messages:
   //  1. GetState msg, which simply returns the state of the reducer
   //  2. ReducerDispatch msg, which will update the reducer state when a dispatch is triggered
   let reducer_init = fn() {
-    // Create the reducer actor initializer
-    let reducer_actor_init = fn() {
-      let self = process.new_subject()
-      let selector = process.selecting(process.new_selector(), self, identity)
-
-      let initial_model = initial.0
-      let initial_cmds = initial.1
-
-      // Process the initial commands
-      list.each(initial_cmds, fn(cmd) { cmd(dispatch(_, self)) })
-
-      actor.Ready(#(self, initial_model), selector)
-    }
-
-    // Define the message handler for the reducer actor. There are two levels of state being
-    // addressed here: the actor state and the reducer state. The actor state is a tuple of
-    // the actor's subject and the reducer's state. The reducer state is the current state of
-    // the reducer's model.
-    let reducer_actor_handle_message = fn(
-      message: ReducerMsg(model, msg),
-      state,
-    ) -> actor.Next(
-      ReducerMsg(model, msg),
-      #(Subject(ReducerMsg(model, msg)), model),
-    ) {
-      case message {
-        Shutdown -> actor.Stop(process.Normal)
-
-        GetState(reply_with) -> {
-          let #(_self, model) = state
-
-          process.send(reply_with, model)
-          actor.continue(state)
-        }
-
-        ReducerDispatch(r, m) -> {
-          let #(self, model) = state
-
-          // This is the main logic for updating the reducer's state. The reducer function will
-          // return the updated model and a list of zero or more commands to execute. The commands
-          // are functions that will be called with the dispatcher function which may trigger
-          // additional messages to the reducer.
-          let #(updated_model, cmds) = r(model, m)
-
-          list.each(cmds, fn(cmd) { cmd(dispatch(_, self)) })
-
-          actor.continue(#(self, updated_model))
-        }
-      }
-    }
-
-    // Finally, start the actor process
+    // Start the actor process
     let assert Ok(reducer_actor) =
-      actor.start_spec(actor.Spec(
-        reducer_actor_init,
-        call_timeout,
-        reducer_actor_handle_message,
-      ))
+      reducer.start(initial, update, fn(_) { render_update() })
       |> result.map_error(fn(error) {
         logger.error("hooks.reducer: failed to start reducer actor")
         error
@@ -326,7 +244,7 @@ pub fn reducer(
     context.Reducer(
       unique.cuid(ctx.cuid_channel),
       dynamic.from(reducer_actor),
-      fn() { process.send(reducer_actor, Shutdown) },
+      fn() { reducer.shutdown(reducer_actor) },
     )
   }
 
@@ -338,9 +256,9 @@ pub fn reducer(
   let reducer_actor = unsafe_coerce(dyn_reducer_actor)
 
   // get the current state of the reducer
-  let state = process.call(reducer_actor, GetState(_), call_timeout)
+  let state = reducer.get_state(reducer_actor)
 
-  cb(ctx, state, dispatch(_, reducer_actor))
+  cb(ctx, state, reducer.dispatch(reducer_actor, _))
 }
 
 /// State Hook
