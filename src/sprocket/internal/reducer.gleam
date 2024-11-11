@@ -24,6 +24,8 @@ pub type ReducerMessage(model, msg) {
   Shutdown
   GetState(reply_with: Subject(model))
   ReducerDispatch(msg: msg)
+  PushCommands(cmds: List(Cmd(msg)))
+  ProcessCommands
 }
 
 pub opaque type State(model, msg) {
@@ -32,6 +34,7 @@ pub opaque type State(model, msg) {
     model: model,
     update: UpdateFn(model, msg),
     notify: fn(model) -> Nil,
+    pending_commands: List(Cmd(msg)),
   )
 }
 
@@ -44,7 +47,7 @@ pub fn init(
     let self = process.new_subject()
     let selector = process.selecting(process.new_selector(), self, identity)
 
-    actor.Ready(State(self, initial, update, notify), selector)
+    actor.Ready(State(self, initial, update, notify, []), selector)
   }
 }
 
@@ -64,7 +67,7 @@ pub fn handle_message(
     }
 
     ReducerDispatch(msg) -> {
-      let State(self:, model:, update:, notify:) = state
+      let State(self:, model:, update:, notify:, ..) = state
 
       // This is the main logic for updating the reducer's state. The reducer function will
       // return the updated model and a list of zero or more commands to execute. The commands
@@ -72,7 +75,7 @@ pub fn handle_message(
       // additional messages to the reducer.
       let #(updated_model, cmds) = update(model, msg)
 
-      async_process_commands(cmds, dispatch(self, _))
+      process.send(self, PushCommands(cmds))
 
       // Notiify the parent component that the state has been updated. In the case
       // of a view component, this will trigger a re-render. The re-render will call
@@ -82,6 +85,25 @@ pub fn handle_message(
       notify(model)
 
       actor.continue(State(..state, model: updated_model))
+    }
+
+    PushCommands(cmds) -> {
+      let State(pending_commands:, ..) = state
+
+      let pending_commands = list.append(pending_commands, cmds)
+
+      actor.continue(State(..state, pending_commands:))
+    }
+
+    ProcessCommands -> {
+      let State(self:, pending_commands:, ..) = state
+
+      pending_commands
+      |> list.each(fn(cmd) {
+        process.start(fn() { cmd(dispatch(self, _)) }, False)
+      })
+
+      actor.continue(State(..state, pending_commands: []))
     }
   }
 }
@@ -108,7 +130,7 @@ pub fn start(
     )),
   )
 
-  async_process_commands(cmds, dispatch(self, _))
+  process.send(self, PushCommands(cmds))
 
   self
 }
@@ -132,7 +154,7 @@ pub fn dispatch(subject: Subject(ReducerMessage(model, msg)), msg: msg) -> Nil {
   actor.send(subject, ReducerDispatch(msg))
 }
 
-fn async_process_commands(cmds, dispatcher) -> Nil {
-  cmds
-  |> list.each(fn(cmd) { process.start(fn() { cmd(dispatcher) }, False) })
+/// Processes any pending commands in the reducer actor.
+pub fn process_commands(subject) -> Nil {
+  process.send(subject, ProcessCommands)
 }

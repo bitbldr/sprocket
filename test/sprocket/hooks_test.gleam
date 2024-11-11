@@ -295,6 +295,18 @@ pub fn reducer_should_run_cmds_test() {
 
   let spkt = render_event(spkt, ClickEvent, "random")
 
+  // reducer commands are run asynchonously so we need to wait for the command to be processed
+  // before we can test the initial state
+  test_helpers.wait_until(
+    fn() {
+      let #(_spkt, rendered) = render_html(spkt)
+
+      rendered
+      |> string.starts_with("current count is: 42")
+    },
+    1000,
+  )
+
   let #(_spkt, rendered) = render_html(spkt)
 
   let assert True =
@@ -374,6 +386,18 @@ pub fn reducer_should_initialize_with_cmds_test() {
   let view = component(component_with_initial_cmds, Nil)
 
   let spkt = connect(view)
+
+  // reducer commands are run asynchonously so we need to wait for the command to be processed
+  // before we can test the initial state
+  test_helpers.wait_until(
+    fn() {
+      let #(_spkt, rendered) = render_html(spkt)
+
+      rendered
+      |> string.starts_with("current count is: 42")
+    },
+    1000,
+  )
 
   let #(spkt, rendered) = render_html(spkt)
 
