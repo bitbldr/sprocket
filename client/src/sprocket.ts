@@ -32,15 +32,15 @@ type Opts = {
   customEventEncoders?: Record<string, any>;
 };
 
-export function connect(path: String, opts: Opts) {
+export function connect(path: String, opts: Opts, existingVNode?: VNode) {
   const csrfToken = opts.csrfToken || new Error("Missing CSRF token");
   const targetEl = opts.targetEl || document.documentElement;
 
   let ws_protocol = location.protocol === "https:" ? "wss:" : "ws:";
   let socket = new WebSocket(ws_protocol + "//" + location.host + path);
 
-  let dom: Record<string, any>;
-  let oldVNode: VNode;
+  let oldVNode: VNode = existingVNode || toVNode(targetEl);
+  let patched: Record<string, any>;
 
   const patcher = init(
     [attributesModule, eventListenersModule, rawHtmlModule],
@@ -84,16 +84,15 @@ export function connect(path: String, opts: Opts) {
         case "ok":
           topbar.hide();
 
-          dom = parsed[1];
-
-          oldVNode = update(patcher, toVNode(targetEl), dom, providers);
+          patched = parsed[1];
+          oldVNode = update(patcher, oldVNode, patched, providers);
 
           break;
 
         case "update":
-          dom = applyPatch(dom, parsed[1], parsed[2]) as Element;
+          patched = applyPatch(patched, parsed[1], parsed[2]) as Element;
 
-          oldVNode = update(patcher, oldVNode, dom, providers);
+          oldVNode = update(patcher, oldVNode, patched, providers);
 
           break;
 
@@ -109,12 +108,11 @@ export function connect(path: String, opts: Opts) {
   socket.addEventListener("close", function (_event) {
     topbar.show();
 
-    // Attempt to reconnect after a delay (e.g., 5 seconds)
     setTimeout(() => {
       console.log("Attempting to reconnect...");
 
-      // Reinitialize the socket connection
-      connect(path, opts);
+      // Reinitialize the socket connection, reuse the existing VNode
+      connect(path, opts, oldVNode);
     }, 5000);
   });
 }
@@ -128,7 +126,5 @@ function update(
 ) {
   const rendered = render(patched, providers) as VNode;
 
-  patcher(oldVNode, rendered);
-
-  return rendered;
+  return patcher(oldVNode, rendered);
 }
