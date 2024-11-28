@@ -1,5 +1,5 @@
 name = "sprocket"
-version = "0.3.1"
+version = "0.3.2"
 description = "A library for building live views and real-time server components in Gleam"
 
 # Fill out these fields if you intend to generate HTML documentation or publish
