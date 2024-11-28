@@ -3,7 +3,7 @@ import gleam/json
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/string
-import gleam/string_builder.{type StringBuilder}
+import gleam/string_tree.{type StringTree}
 import sprocket/internal/constants
 import sprocket/internal/reconcile.{
   type ReconciledAttribute, type ReconciledElement, ReconciledAttribute,
@@ -15,11 +15,11 @@ import sprocket/render.{type Renderer, Renderer}
 pub fn html_renderer() -> Renderer(String) {
   Renderer(render: fn(el: ReconciledElement) {
     render(el)
-    |> string_builder.to_string()
+    |> string_tree.to_string()
   })
 }
 
-fn render(el: ReconciledElement) -> StringBuilder {
+fn render(el: ReconciledElement) -> StringTree {
   case el {
     ReconciledElement(tag: tag, key: key, attrs: attrs, children: children) ->
       element(tag, key, attrs, children)
@@ -31,20 +31,16 @@ fn render(el: ReconciledElement) -> StringBuilder {
   }
 }
 
-fn el(
-  tag: String,
-  attrs: StringBuilder,
-  inner_html: StringBuilder,
-) -> StringBuilder {
-  string_builder.concat([
-    string_builder.from_string("<"),
-    string_builder.from_string(tag),
+fn el(tag: String, attrs: StringTree, inner_html: StringTree) -> StringTree {
+  string_tree.concat([
+    string_tree.from_string("<"),
+    string_tree.from_string(tag),
     attrs,
-    string_builder.from_string(">"),
+    string_tree.from_string(">"),
     inner_html,
-    string_builder.from_string("</"),
-    string_builder.from_string(tag),
-    string_builder.from_string(">"),
+    string_tree.from_string("</"),
+    string_tree.from_string(tag),
+    string_tree.from_string(">"),
   ])
 }
 
@@ -53,15 +49,15 @@ fn element(
   key: Option(String),
   attrs: List(ReconciledAttribute),
   children: List(ReconciledElement),
-) -> StringBuilder {
+) -> StringTree {
   let rendered_attrs =
     attrs
-    |> list.fold(string_builder.new(), fn(acc, attr) {
+    |> list.fold(string_tree.new(), fn(acc, attr) {
       case attr {
         ReconciledAttribute(name, value) -> {
-          string_builder.append_builder(
+          string_tree.append_tree(
             acc,
-            string_builder.from_strings([" ", name, "=\"", value, "\""]),
+            string_tree.from_strings([" ", name, "=\"", value, "\""]),
           )
         }
         _ -> acc
@@ -70,17 +66,17 @@ fn element(
 
   let rendered_attrs = case key {
     Some(k) ->
-      string_builder.append_builder(
+      string_tree.append_tree(
         rendered_attrs,
-        string_builder.from_strings([" ", constants.key_attr, "=\"", k, "\""]),
+        string_tree.from_strings([" ", constants.key_attr, "=\"", k, "\""]),
       )
     None -> rendered_attrs
   }
 
   let inner_html =
     children
-    |> list.fold(string_builder.new(), fn(acc, child) {
-      string_builder.append_builder(acc, render(child))
+    |> list.fold(string_tree.new(), fn(acc, child) {
+      string_tree.append_tree(acc, render(child))
     })
 
   el(tag, rendered_attrs, inner_html)
@@ -92,8 +88,8 @@ fn component(el: ReconciledElement) {
 
 fn fragment(children: List(ReconciledElement)) {
   children
-  |> list.fold(string_builder.new(), fn(acc, child) {
-    string_builder.append_builder(acc, render(child))
+  |> list.fold(string_tree.new(), fn(acc, child) {
+    string_tree.append_tree(acc, render(child))
   })
 }
 
@@ -113,31 +109,31 @@ fn safe_replace_char(key: String) -> String {
 
 fn escape_html(unsafe: String) {
   string.to_graphemes(unsafe)
-  |> list.fold(string_builder.new(), fn(sb, grapheme) {
-    string_builder.append(sb, safe_replace_char(grapheme))
+  |> list.fold(string_tree.new(), fn(sb, grapheme) {
+    string_tree.append(sb, safe_replace_char(grapheme))
   })
-  |> string_builder.to_string
+  |> string_tree.to_string
 }
 
-fn text(t: String) -> StringBuilder {
+fn text(t: String) -> StringTree {
   escape_html(t)
-  |> string_builder.from_string()
+  |> string_tree.from_string()
 }
 
-fn custom(kind: String, data: String) -> StringBuilder {
+fn custom(kind: String, data: String) -> StringTree {
   case kind {
     "raw" -> {
       case json.decode(data, decode_raw) {
         Ok(RawHtml(tag, raw_html)) ->
           el(
             tag,
-            string_builder.from_string(""),
-            string_builder.from_string(raw_html),
+            string_tree.from_string(""),
+            string_tree.from_string(raw_html),
           )
-        Error(_) -> string_builder.from_string("")
+        Error(_) -> string_tree.from_string("")
       }
     }
-    _ -> string_builder.from_string("")
+    _ -> string_tree.from_string("")
   }
 }
 
