@@ -1,4 +1,4 @@
-import topbar from "topbar";
+import ReconnectingWebSocket, { ListenersMap } from "reconnecting-websocket";
 import {
   init,
   attributesModule,
@@ -6,11 +6,12 @@ import {
   VNode,
   toVNode,
 } from "snabbdom";
-import { render, Providers } from "./render";
-import { applyPatch } from "./patch";
+import topbar from "topbar";
 import { initEventHandlerProvider } from "./events";
 import { initClientHookProvider, Hook } from "./hooks";
 import { rawHtmlModule } from "./modules/rawHtml";
+import { applyPatch } from "./patch";
+import { render, Providers } from "./render";
 
 export type ClientHook = {
   create?: (hook: Hook) => void;
@@ -32,14 +33,21 @@ type Opts = {
   customEventEncoders?: Record<string, any>;
 };
 
-export function connect(path: String, opts: Opts, existingVNode?: VNode) {
+export function connect(path: String, opts: Opts) {
   const csrfToken = opts.csrfToken || new Error("Missing CSRF token");
   const targetEl = opts.targetEl || document.documentElement;
 
   let ws_protocol = location.protocol === "https:" ? "wss:" : "ws:";
-  let socket = new WebSocket(ws_protocol + "//" + location.host + path);
+  const socket = new ReconnectingWebSocket(
+    ws_protocol + "//" + location.host + path
+  );
+  const socketSend = (data: string) => socket.send(data);
+  const socketAddEventListener = (
+    event: keyof ListenersMap,
+    listener: (event: any) => void
+  ) => socket.addEventListener(event, listener);
 
-  let oldVNode: VNode = existingVNode || toVNode(targetEl);
+  let oldVNode: VNode = toVNode(targetEl);
   let patched: Record<string, any>;
 
   const patcher = init(
@@ -52,23 +60,27 @@ export function connect(path: String, opts: Opts, existingVNode?: VNode) {
     }
   );
 
-  const clientHookProvider = initClientHookProvider(socket, opts.hooks);
-
-  const eventHandlerProvider = initEventHandlerProvider(
-    socket,
-    opts.customEventEncoders
-  );
-
-  const providers: Providers = {
-    clientHookProvider,
-    eventHandlerProvider,
-  };
+  let providers: Providers;
 
   topbar.config({ barColors: { 0: "#29d" }, barThickness: 2 });
   topbar.show(500);
 
-  socket.addEventListener("open", function (event) {
-    socket.send(
+  socketAddEventListener("open", function (event) {
+    console.log("open");
+
+    providers = {
+      clientHookProvider: initClientHookProvider(
+        socketSend,
+        socketAddEventListener,
+        opts.hooks
+      ),
+      eventHandlerProvider: initEventHandlerProvider(
+        socketSend,
+        opts.customEventEncoders
+      ),
+    };
+
+    socketSend(
       JSON.stringify([
         "join",
         { csrf: csrfToken, initialProps: opts.initialProps },
@@ -76,7 +88,7 @@ export function connect(path: String, opts: Opts, existingVNode?: VNode) {
     );
   });
 
-  socket.addEventListener("message", function (event) {
+  socketAddEventListener("message", function (event) {
     let parsed = JSON.parse(event.data);
 
     if (Array.isArray(parsed)) {
@@ -105,15 +117,8 @@ export function connect(path: String, opts: Opts, existingVNode?: VNode) {
     }
   });
 
-  socket.addEventListener("close", function (_event) {
+  socketAddEventListener("close", function (_event) {
     topbar.show();
-
-    setTimeout(() => {
-      console.log("Attempting to reconnect...");
-
-      // Reinitialize the socket connection, reuse the existing VNode
-      connect(path, opts, oldVNode);
-    }, 5000);
   });
 }
 

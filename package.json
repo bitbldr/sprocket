@@ -27,6 +27,7 @@
     "build": "gleam build && yarn run client:build"
   },
   "dependencies": {
+    "reconnecting-websocket": "^4.4.0",
     "snabbdom": "^3.5.1",
     "topbar": "^2.0.1"
   }

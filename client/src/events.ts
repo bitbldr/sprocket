@@ -12,13 +12,13 @@ export type EventHandlerProvider = (
 
 export const initEventHandlerProvider =
   (
-    socket: WebSocket,
+    sendSocket: (data: string) => void,
     customEventEncoders: Record<string, any> = {}
   ): EventHandlerProvider =>
   (elementTag, events: EventIdentifier[]) =>
     events.reduce((acc, { kind, id }) => {
       const handler = (e) => {
-        socket.send(
+        sendSocket(
           JSON.stringify([
             "event",
             {
