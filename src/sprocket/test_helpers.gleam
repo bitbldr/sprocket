@@ -4,7 +4,7 @@ import gleam/dynamic
 import gleam/erlang
 import gleam/list
 import gleam/option.{None, Some}
-import gleam/regex
+import gleam/regexp
 import sprocket/context.{Updater}
 import sprocket/html/events
 import sprocket/internal/reconcile.{
@@ -201,8 +201,8 @@ pub fn assert_regex(maybe_el: Result(ReconciledElement, Nil), regex: String) {
     Ok(el) -> {
       let html = render_el_html(el)
 
-      let assert Ok(re) = regex.from_string(regex)
-      regex.check(re, html)
+      let assert Ok(re) = regexp.from_string(regex)
+      regexp.check(re, html)
     }
     _ -> panic as "Element not found"
   }

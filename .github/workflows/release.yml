@@ -16,7 +16,7 @@ jobs:
       - name: Set up Erlang
         uses: erlef/setup-beam@v1.15.4
         with:
-          otp-version: "25.2"
+          otp-version: "27.0"
           gleam-version: "1.5.1"
           rebar3-version: "3"
 

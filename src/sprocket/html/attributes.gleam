@@ -1,7 +1,7 @@
 import gleam/dynamic
 import gleam/list
 import gleam/option.{type Option, None, Some}
-import gleam/string_builder
+import gleam/string_tree
 import sprocket/context.{type Attribute, Attribute}
 
 pub fn attribute(name: String, value: any) -> Attribute {
@@ -83,17 +83,17 @@ pub fn class(value: String) -> Attribute {
 pub fn classes(value: List(Option(String))) -> Attribute {
   attribute(
     "class",
-    list.fold(value, string_builder.new(), fn(sb, v) {
+    list.fold(value, string_tree.new(), fn(sb, v) {
       case v {
         None -> sb
         Some(v) ->
-          case string_builder.is_empty(sb) {
-            True -> string_builder.append(sb, v)
-            False -> string_builder.append(sb, " " <> v)
+          case string_tree.is_empty(sb) {
+            True -> string_tree.append(sb, v)
+            False -> string_tree.append(sb, " " <> v)
           }
       }
     })
-      |> string_builder.to_string(),
+      |> string_tree.to_string(),
   )
 }
 
