@@ -43,12 +43,14 @@ pub fn create(old: ReconciledElement, new: ReconciledElement) -> Patch {
   case old, new {
     // old and new tags are the same
     ReconciledElement(
+      id: _id,
       tag: old_tag,
       key: old_key,
       attrs: old_attrs,
       children: old_children,
     ),
       ReconciledElement(
+        id: _id,
         tag: new_tag,
         key: new_key,
         attrs: new_attrs,
@@ -56,7 +58,7 @@ pub fn create(old: ReconciledElement, new: ReconciledElement) -> Patch {
       )
       if old_tag == new_tag
     -> {
-      // check if element has same key
+      // Check if element has same key. If there is no key set for both, this will return True
       case old_key == new_key {
         True -> {
           case compare_attributes(old_attrs, new_attrs) {

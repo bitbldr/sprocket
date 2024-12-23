@@ -4,6 +4,7 @@ import sprocket/context.{
   type AbstractFunctionalComponent, type ComponentHooks, type Context,
   type Element, Context,
 }
+import sprocket/internal/utils/unique.{type Unique}
 
 pub type ReconciledAttribute {
   ReconciledAttribute(name: String, value: String)
@@ -11,8 +12,11 @@ pub type ReconciledAttribute {
   ReconciledClientHook(name: String, id: String)
 }
 
+pub type ReconciledElementId
+
 pub type ReconciledElement {
   ReconciledElement(
+    id: Unique(ReconciledElementId),
     tag: String,
     key: Option(String),
     attrs: List(ReconciledAttribute),

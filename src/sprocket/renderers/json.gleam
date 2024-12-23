@@ -3,11 +3,12 @@ import gleam/json.{type Json}
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import sprocket/internal/reconcile.{
-  type ReconciledAttribute, type ReconciledElement, ReconciledAttribute,
-  ReconciledClientHook, ReconciledComponent, ReconciledCustom, ReconciledElement,
-  ReconciledEventHandler, ReconciledFragment, ReconciledIgnoreUpdate,
-  ReconciledText,
+  type ReconciledAttribute, type ReconciledElement, type ReconciledElementId,
+  ReconciledAttribute, ReconciledClientHook, ReconciledComponent,
+  ReconciledCustom, ReconciledElement, ReconciledEventHandler,
+  ReconciledFragment, ReconciledIgnoreUpdate, ReconciledText,
 }
+import sprocket/internal/utils/unique.{type Unique}
 import sprocket/render.{type Renderer, Renderer}
 
 pub fn json_renderer() -> Renderer(Json) {
@@ -16,8 +17,13 @@ pub fn json_renderer() -> Renderer(Json) {
 
 fn render(el: ReconciledElement) -> Json {
   case el {
-    ReconciledElement(tag: tag, key: key, attrs: attrs, children: children) ->
-      element(tag, key, attrs, children)
+    ReconciledElement(
+      id: id,
+      tag: tag,
+      key: key,
+      attrs: attrs,
+      children: children,
+    ) -> element(id, tag, key, attrs, children)
     ReconciledComponent(key: key, el: el, ..) -> component(key, el)
     ReconciledFragment(key, children: children) -> fragment(key, children)
     ReconciledIgnoreUpdate(el) -> render(el)
@@ -27,6 +33,7 @@ fn render(el: ReconciledElement) -> Json {
 }
 
 fn element(
+  id: Unique(ReconciledElementId),
   tag: String,
   key: Option(String),
   attrs: List(ReconciledAttribute),
@@ -68,6 +75,7 @@ fn element(
 
   [
     #("type", json.string("element")),
+    #("id", json.string(unique.to_string(id))),
     #("tag", json.string(tag)),
     #("attrs", json.object(attrs)),
     #("events", json.preprocessed_array(events)),

@@ -209,8 +209,3 @@ pub fn decode_form_data(
 ) -> Result(Dict(String, String), List(DecodeError)) {
   dynamic.field("formData", dynamic.dict(dynamic.string, dynamic.string))(event)
 }
-
-/// Decode the key from a key press event.
-pub fn decode_keypress(event: Dynamic) -> Result(String, List(DecodeError)) {
-  event |> dynamic.field("key", dynamic.string)
-}
