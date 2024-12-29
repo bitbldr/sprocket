@@ -15,8 +15,8 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: "19"
-      - run: npm run client:build
-      - run: npm run client:test
+      - run: yarn --frozen-lockfile
+      - run: yarn run client:build
       - uses: JS-DevTools/npm-publish@v3
         with:
           token: ${{ secrets.NPM_TOKEN }}
