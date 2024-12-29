@@ -1,0 +1,22 @@
+name: Publish to npm
+
+on:
+  release:
+    types:
+      - created
+  # run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v3
+        with:
+          node-version: "20"
+      - run: npm run client:build
+      - run: npm run client:test
+      - uses: JS-DevTools/npm-publish@v3
+        with:
+          token: ${{ secrets.NPM_TOKEN }}
