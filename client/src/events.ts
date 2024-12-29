@@ -88,12 +88,19 @@ const payloadForEvent = (e: Event, elementTag, customEventEncoder) => {
     };
   }
 
-  // If the event is a change event on a form, we want to send the form data
-  if (elementTag === "form" && e.type === "change") {
-    const inputEl = e.target as HTMLInputElement;
+  if (e.type === "change" && e.target instanceof HTMLInputElement) {
+    // If the event is a change event attached to a form, we want to send all the form data
+    if (elementTag === "form") {
+      return {
+        formData: buildFormData(e.target.form),
+      };
+    }
 
+    // Otherwise, we just send the value of the target input
     return {
-      formData: buildFormData(inputEl.form),
+      target: {
+        value: e.target.value,
+      },
     };
   }
 
