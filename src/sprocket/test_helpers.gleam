@@ -12,6 +12,7 @@ import sprocket/internal/reconcile.{
   ReconciledEventHandler,
 }
 import sprocket/internal/reconcilers/recursive
+import sprocket/internal/utils/unique
 import sprocket/render.{renderer}
 import sprocket/renderers/html.{html_renderer}
 import sprocket/runtime.{type Runtime}
@@ -63,7 +64,7 @@ pub fn render_event(spkt: Runtime, event: Event, html_id: String) {
       let found =
         recursive.find(reconciled, fn(el: ReconciledElement) {
           case el {
-            ReconciledElement(_tag, _key, attrs, _children) -> {
+            ReconciledElement(_id, _tag, _key, attrs, _children) -> {
               // try and find id attr that matches the given id
               let matching_id_attr =
                 attrs
@@ -84,7 +85,7 @@ pub fn render_event(spkt: Runtime, event: Event, html_id: String) {
         })
 
       case found {
-        Ok(ReconciledElement(_tag, _key, attrs, _children)) -> {
+        Ok(ReconciledElement(id, _tag, _key, attrs, _children)) -> {
           let #(event_kind, event_payload) = case event {
             ClickEvent -> #("click", dynamic.from(Nil))
             InputEvent(value) -> #(
@@ -136,15 +137,21 @@ pub fn render_event(spkt: Runtime, event: Event, html_id: String) {
             attrs
             |> list.find(fn(attr) {
               case attr {
-                ReconciledEventHandler(kind, _id) if kind == event_kind -> True
+                ReconciledEventHandler(element_id, kind) ->
+                  element_id == id && kind == event_kind
                 _ -> False
               }
             })
 
           case rendered_event_handler {
-            Ok(ReconciledEventHandler(_kind, event_id)) -> {
+            Ok(ReconciledEventHandler(element_id, kind)) -> {
               case
-                runtime.process_event_immediate(spkt, event_id, event_payload)
+                runtime.process_event_immediate(
+                  spkt,
+                  unique.to_string(element_id),
+                  kind,
+                  event_payload,
+                )
               {
                 Ok(_) -> spkt
                 _ -> panic
@@ -221,7 +228,7 @@ fn check_predicate(el: ReconciledElement, is_desired: FindElementBy) {
     ByClass(class_name) -> find_by_matching_attr(el, "class", class_name)
     ByTag(tag_name) -> {
       case el {
-        ReconciledElement(tag, _key, _attrs, _children) if tag == tag_name ->
+        ReconciledElement(_id, tag, _key, _attrs, _children) if tag == tag_name ->
           True
         _ -> False
       }
@@ -262,7 +269,7 @@ fn wait_helper(predicate: fn() -> Bool, timeout: Int, started_at: Int) -> Bool {
 
 fn find_by_matching_attr(el, key, expected_value) {
   case el {
-    ReconciledElement(_tag, _key, attrs, _children) -> {
+    ReconciledElement(_id, _tag, _key, attrs, _children) -> {
       let matching_attr =
         attrs
         |> list.find(fn(attr) {

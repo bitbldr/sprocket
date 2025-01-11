@@ -2,12 +2,14 @@ import gleam/int
 import gleam/json.{type Json}
 import gleam/list
 import gleam/option.{type Option, None, Some}
+import sprocket/context.{type ElementId}
 import sprocket/internal/reconcile.{
   type ReconciledAttribute, type ReconciledElement, ReconciledAttribute,
   ReconciledClientHook, ReconciledComponent, ReconciledCustom, ReconciledElement,
   ReconciledEventHandler, ReconciledFragment, ReconciledIgnoreUpdate,
   ReconciledText,
 }
+import sprocket/internal/utils/unique.{type Unique}
 import sprocket/render.{type Renderer, Renderer}
 
 pub fn json_renderer() -> Renderer(Json) {
@@ -16,8 +18,13 @@ pub fn json_renderer() -> Renderer(Json) {
 
 fn render(el: ReconciledElement) -> Json {
   case el {
-    ReconciledElement(tag: tag, key: key, attrs: attrs, children: children) ->
-      element(tag, key, attrs, children)
+    ReconciledElement(
+      id: id,
+      tag: tag,
+      key: key,
+      attrs: attrs,
+      children: children,
+    ) -> element(id, tag, key, attrs, children)
     ReconciledComponent(key: key, el: el, ..) -> component(key, el)
     ReconciledFragment(key, children: children) -> fragment(key, children)
     ReconciledIgnoreUpdate(el) -> render(el)
@@ -27,6 +34,7 @@ fn render(el: ReconciledElement) -> Json {
 }
 
 fn element(
+  id: Unique(ElementId),
   tag: String,
   key: Option(String),
   attrs: List(ReconciledAttribute),
@@ -41,11 +49,14 @@ fn element(
         ReconciledAttribute(name, value) -> {
           #([#(name, json.string(value)), ..attrs], events, hooks)
         }
-        ReconciledEventHandler(kind, id) -> {
+        ReconciledEventHandler(element_id, kind) -> {
           #(
             attrs,
             [
-              [#("kind", json.string(kind)), #("id", json.string(id))]
+              [
+                #("kind", json.string(kind)),
+                #("id", element_id |> unique.to_string() |> json.string()),
+              ]
                 |> json.object(),
               ..events
             ],
@@ -68,6 +79,7 @@ fn element(
 
   [
     #("type", json.string("element")),
+    #("id", unique.to_string(id) |> json.string),
     #("tag", json.string(tag)),
     #("attrs", json.object(attrs)),
     #("events", json.preprocessed_array(events)),

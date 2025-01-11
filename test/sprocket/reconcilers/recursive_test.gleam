@@ -4,7 +4,7 @@ import gleeunit/should
 import ids/cuid
 import sprocket/component.{component, render}
 import sprocket/context.{type Context, type Element, Attribute}
-import sprocket/hooks.{handler, provider}
+import sprocket/hooks.{provider}
 import sprocket/html/attributes.{class, classes}
 import sprocket/html/elements.{a, div, fragment, raw, text}
 import sprocket/html/events
@@ -40,7 +40,7 @@ type TestProps {
 fn test_component(ctx: Context, props: TestProps) {
   let TestProps(title: title, href: _href, is_active: is_active) = props
 
-  use ctx, handle_click <- handler(ctx, fn(_) { Nil })
+  let handle_click = fn(_) { Nil }
 
   render(
     ctx,
@@ -75,6 +75,7 @@ pub fn basic_render_test() {
     props,
     _hooks,
     ReconciledElement(
+      id: _,
       tag: "a",
       key: None,
       attrs: [
@@ -83,7 +84,7 @@ pub fn basic_render_test() {
           "block p-2 text-blue-500 hover:text-blue-700 font-bold",
         ),
         ReconciledAttribute("href", "#"),
-        ReconciledEventHandler("click", _),
+        ReconciledEventHandler(_, "click"),
       ],
       children: [ReconciledText("Home")],
     ),
@@ -96,8 +97,8 @@ pub fn basic_render_test() {
 }
 
 fn test_component_with_fragment(ctx: Context, _props: TestProps) {
-  use ctx, handle_click <- handler(ctx, fn(_) { Nil })
-  use ctx, handle_click_2 <- handler(ctx, fn(_) { Nil })
+  let handle_click = fn(_) { Nil }
+  let handle_click_2 = fn(_) { Nil }
 
   render(
     ctx,
@@ -138,6 +139,7 @@ pub fn render_with_fragment_test() {
       None,
       [
         ReconciledElement(
+          id: _,
           tag: "a",
           key: None,
           attrs: [
@@ -146,11 +148,12 @@ pub fn render_with_fragment_test() {
               "block p-2 text-blue-500 hover:text-blue-700",
             ),
             ReconciledAttribute("href", "#one"),
-            ReconciledEventHandler("click", _),
+            ReconciledEventHandler(_, "click"),
           ],
           children: [ReconciledText("One")],
         ),
         ReconciledElement(
+          id: _,
           tag: "a",
           key: None,
           attrs: [
@@ -159,7 +162,7 @@ pub fn render_with_fragment_test() {
               "block p-2 text-blue-500 hover:text-blue-700",
             ),
             ReconciledAttribute("href", "#two"),
-            ReconciledEventHandler("click", _),
+            ReconciledEventHandler(_, "click"),
           ],
           children: [ReconciledText("Two")],
         ),
@@ -186,7 +189,7 @@ fn test_component_with_context_title(ctx: Context, props: TestProps) {
     None -> "No title"
   }
 
-  use ctx, handle_click <- handler(ctx, fn(_) { Nil })
+  let handle_click = fn(_) { Nil }
 
   render(
     ctx,
@@ -225,11 +228,13 @@ pub fn renders_component_with_context_provider_test() {
     )
 
   let assert ReconciledElement(
+    id: _,
     tag: "div",
     key: None,
     attrs: [ReconciledAttribute("class", "first div")],
     children: [
       ReconciledElement(
+        id: _,
         tag: "div",
         key: None,
         attrs: [ReconciledAttribute("class", "second div")],
@@ -240,6 +245,7 @@ pub fn renders_component_with_context_provider_test() {
             _props,
             _hooks,
             ReconciledElement(
+              id: _,
               tag: "a",
               key: None,
               attrs: [
@@ -248,7 +254,7 @@ pub fn renders_component_with_context_provider_test() {
                   "block p-2 text-blue-500 hover:text-blue-700 font-bold",
                 ),
                 ReconciledAttribute("href", "#"),
-                ReconciledEventHandler("click", _),
+                ReconciledEventHandler(_, "click"),
               ],
               children: [ReconciledText("A different title")],
             ),

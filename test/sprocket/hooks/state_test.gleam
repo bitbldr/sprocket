@@ -2,7 +2,7 @@ import gleam/int
 import gleam/string
 import sprocket/component.{component}
 import sprocket/context.{type Context}
-import sprocket/hooks.{handler, state}
+import sprocket/hooks.{state}
 import sprocket/html/attributes.{id}
 import sprocket/html/elements.{button, fragment, text}
 import sprocket/html/events.{on_click}
@@ -17,8 +17,8 @@ fn inc_reset_on_button_click_using_state(ctx: Context, _props) {
   use ctx, count, set_count <- state(ctx, 0)
 
   // Define event handlers
-  use ctx, on_increment <- handler(ctx, fn(_) { set_count(count + 1) })
-  use ctx, on_reset <- handler(ctx, fn(_) { set_count(0) })
+  let increment = fn(_) { set_count(count + 1) }
+  let reset = fn(_) { set_count(0) }
 
   let current_count = int.to_string(count)
 
@@ -27,8 +27,8 @@ fn inc_reset_on_button_click_using_state(ctx: Context, _props) {
     fragment([
       text("current count is: "),
       text(current_count),
-      button([id("increment"), on_click(on_increment)], [text("increment")]),
-      button([id("reset"), on_click(on_reset)], [text("reset")]),
+      button([id("increment"), on_click(increment)], [text("increment")]),
+      button([id("reset"), on_click(reset)], [text("reset")]),
     ]),
   )
 }

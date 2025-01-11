@@ -1,140 +1,141 @@
 import gleam/dict.{type Dict}
 import gleam/dynamic.{type DecodeError, type Dynamic}
-import sprocket/context.{
-  type Attribute, type IdentifiableHandler, Attribute, Event,
-}
+import sprocket/context.{type Attribute, Attribute, Event}
 
 // Events
 
-pub fn event(name: String, handler: IdentifiableHandler) -> Attribute {
+type Handler =
+  fn(Dynamic) -> Nil
+
+pub fn event(name: String, handler: Handler) -> Attribute {
   Event(name, handler)
 }
 
-pub fn on_blur(handler: IdentifiableHandler) -> Attribute {
+pub fn on_blur(handler: Handler) -> Attribute {
   event("blur", handler)
 }
 
-pub fn on_change(handler: IdentifiableHandler) -> Attribute {
+pub fn on_change(handler: Handler) -> Attribute {
   event("change", handler)
 }
 
-pub fn on_check(handler: IdentifiableHandler) -> Attribute {
+pub fn on_check(handler: Handler) -> Attribute {
   event("check", handler)
 }
 
-pub fn on_click(handler: IdentifiableHandler) -> Attribute {
+pub fn on_click(handler: Handler) -> Attribute {
   event("click", handler)
 }
 
-pub fn on_dblclick(handler: IdentifiableHandler) -> Attribute {
+pub fn on_dblclick(handler: Handler) -> Attribute {
   event("dblclick", handler)
 }
 
-pub fn on_drag(handler: IdentifiableHandler) -> Attribute {
+pub fn on_drag(handler: Handler) -> Attribute {
   event("drag", handler)
 }
 
-pub fn on_dragend(handler: IdentifiableHandler) -> Attribute {
+pub fn on_dragend(handler: Handler) -> Attribute {
   event("dragend", handler)
 }
 
-pub fn on_dragenter(handler: IdentifiableHandler) -> Attribute {
+pub fn on_dragenter(handler: Handler) -> Attribute {
   event("dragenter", handler)
 }
 
-pub fn on_dragleave(handler: IdentifiableHandler) -> Attribute {
+pub fn on_dragleave(handler: Handler) -> Attribute {
   event("dragleave", handler)
 }
 
-pub fn on_dragover(handler: IdentifiableHandler) -> Attribute {
+pub fn on_dragover(handler: Handler) -> Attribute {
   event("dragover", handler)
 }
 
-pub fn on_dragstart(handler: IdentifiableHandler) -> Attribute {
+pub fn on_dragstart(handler: Handler) -> Attribute {
   event("dragstart", handler)
 }
 
-pub fn on_drop(handler: IdentifiableHandler) -> Attribute {
+pub fn on_drop(handler: Handler) -> Attribute {
   event("drop", handler)
 }
 
-pub fn on_focus(handler: IdentifiableHandler) -> Attribute {
+pub fn on_focus(handler: Handler) -> Attribute {
   event("focus", handler)
 }
 
-pub fn on_focusin(handler: IdentifiableHandler) -> Attribute {
+pub fn on_focusin(handler: Handler) -> Attribute {
   event("focusin", handler)
 }
 
-pub fn on_focusout(handler: IdentifiableHandler) -> Attribute {
+pub fn on_focusout(handler: Handler) -> Attribute {
   event("focusout", handler)
 }
 
-pub fn on_input(handler: IdentifiableHandler) -> Attribute {
+pub fn on_input(handler: Handler) -> Attribute {
   event("input", handler)
 }
 
-pub fn on_keydown(handler: IdentifiableHandler) -> Attribute {
+pub fn on_keydown(handler: Handler) -> Attribute {
   event("keydown", handler)
 }
 
-pub fn on_keyup(handler: IdentifiableHandler) -> Attribute {
+pub fn on_keyup(handler: Handler) -> Attribute {
   event("keyup", handler)
 }
 
-pub fn on_mousedown(handler: IdentifiableHandler) -> Attribute {
+pub fn on_mousedown(handler: Handler) -> Attribute {
   event("mousedown", handler)
 }
 
-pub fn on_mouseenter(handler: IdentifiableHandler) -> Attribute {
+pub fn on_mouseenter(handler: Handler) -> Attribute {
   event("mouseenter", handler)
 }
 
-pub fn on_mouseleave(handler: IdentifiableHandler) -> Attribute {
+pub fn on_mouseleave(handler: Handler) -> Attribute {
   event("mouseleave", handler)
 }
 
-pub fn on_mousemove(handler: IdentifiableHandler) -> Attribute {
+pub fn on_mousemove(handler: Handler) -> Attribute {
   event("mousemove", handler)
 }
 
-pub fn on_mouseout(handler: IdentifiableHandler) -> Attribute {
+pub fn on_mouseout(handler: Handler) -> Attribute {
   event("mouseout", handler)
 }
 
-pub fn on_mouseover(handler: IdentifiableHandler) -> Attribute {
+pub fn on_mouseover(handler: Handler) -> Attribute {
   event("mouseover", handler)
 }
 
-pub fn on_mouseup(handler: IdentifiableHandler) -> Attribute {
+pub fn on_mouseup(handler: Handler) -> Attribute {
   event("mouseup", handler)
 }
 
-pub fn on_scroll(handler: IdentifiableHandler) -> Attribute {
+pub fn on_scroll(handler: Handler) -> Attribute {
   event("scroll", handler)
 }
 
-pub fn on_submit(handler: IdentifiableHandler) -> Attribute {
+pub fn on_submit(handler: Handler) -> Attribute {
   event("submit", handler)
 }
 
-pub fn on_touchcancel(handler: IdentifiableHandler) -> Attribute {
+pub fn on_touchcancel(handler: Handler) -> Attribute {
   event("touchcancel", handler)
 }
 
-pub fn on_touchend(handler: IdentifiableHandler) -> Attribute {
+pub fn on_touchend(handler: Handler) -> Attribute {
   event("touchend", handler)
 }
 
-pub fn on_touchmove(handler: IdentifiableHandler) -> Attribute {
+pub fn on_touchmove(handler: Handler) -> Attribute {
   event("touchmove", handler)
 }
 
-pub fn on_touchstart(handler: IdentifiableHandler) -> Attribute {
+pub fn on_touchstart(handler: Handler) -> Attribute {
   event("touchstart", handler)
 }
 
-pub fn on_wheel(handler: IdentifiableHandler) -> Attribute {
+pub fn on_wheel(handler: Handler) -> Attribute {
   event("wheel", handler)
 }
 

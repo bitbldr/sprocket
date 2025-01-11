@@ -4,7 +4,7 @@ import gleam/option.{None, Some}
 import gleam/string
 import sprocket/component.{component}
 import sprocket/context.{type Context}
-import sprocket/hooks.{handler, state}
+import sprocket/hooks.{state}
 import sprocket/html/attributes.{id, input_type, name, value}
 import sprocket/html/elements.{button, div, form, fragment, input, text}
 import sprocket/html/events
@@ -18,8 +18,8 @@ fn button_component(ctx: Context, _props) {
   use ctx, count, set_count <- state(ctx, 0)
 
   // Define event handlers
-  use ctx, handle_increment <- handler(ctx, fn(_) { set_count(count + 1) })
-  use ctx, handle_reset <- handler(ctx, fn(_) { set_count(0) })
+  let increment = fn(_) { set_count(count + 1) }
+  let reset = fn(_) { set_count(0) }
 
   let current_count = int.to_string(count)
 
@@ -27,10 +27,8 @@ fn button_component(ctx: Context, _props) {
     ctx,
     fragment([
       text("current count is: " <> current_count),
-      button([id("increment"), events.on_click(handle_increment)], [
-        text("increment"),
-      ]),
-      button([id("reset"), events.on_click(handle_reset)], [text("reset")]),
+      button([id("increment"), events.on_click(increment)], [text("increment")]),
+      button([id("reset"), events.on_click(reset)], [text("reset")]),
     ]),
   )
 }
@@ -77,12 +75,12 @@ fn input_component(ctx: Context, _props) {
   use ctx, name, set_name <- state(ctx, "bob")
 
   // Define event handlers
-  use ctx, handle_input <- handler(ctx, fn(e) {
+  let process_input = fn(e) {
     case events.decode_target_value(e) {
       Ok(value) -> set_name(value)
       Error(_) -> Nil
     }
-  })
+  }
 
   component.render(
     ctx,
@@ -90,7 +88,7 @@ fn input_component(ctx: Context, _props) {
       input([
         id("name_input"),
         input_type("text"),
-        events.on_input(handle_input),
+        events.on_input(process_input),
         value(name),
       ]),
     ]),
@@ -145,12 +143,12 @@ fn mouse_component(ctx: Context, _props) {
   use ctx, position, set_position <- state(ctx, #(0, 0))
 
   // Define event handlers
-  use ctx, handle_mousemove <- handler(ctx, fn(e) {
+  let process_mousemove = fn(e) {
     case events.decode_mouse_event(e) {
       Ok(events.MouseEvent(x:, y:, ..)) -> set_position(#(x, y))
       Error(_) -> Nil
     }
-  })
+  }
 
   component.render(
     ctx,
@@ -161,7 +159,7 @@ fn mouse_component(ctx: Context, _props) {
         <> " y: "
         <> int.to_string(position.1),
       ),
-      div([id("mouse_input"), events.on_mousemove(handle_mousemove)], []),
+      div([id("mouse_input"), events.on_mousemove(process_mousemove)], []),
     ]),
   )
 }
@@ -198,7 +196,7 @@ pub fn form_component(ctx: Context, _props) {
   use ctx, submitted, set_submitted <- state(ctx, None)
   use ctx, validation_error, set_validation_error <- state(ctx, None)
 
-  use ctx, submit_form <- handler(ctx, fn(e) {
+  let submit_form = fn(e) {
     case events.decode_form_data(e) {
       Ok(data) -> {
         case dict.get(data, "name") {
@@ -208,9 +206,9 @@ pub fn form_component(ctx: Context, _props) {
       }
       Error(_) -> Nil
     }
-  })
+  }
 
-  use ctx, validate <- handler(ctx, fn(e) {
+  let validate_form = fn(e) {
     case events.decode_form_data(e) {
       Ok(data) -> {
         case dict.get(data, "name") {
@@ -220,7 +218,7 @@ pub fn form_component(ctx: Context, _props) {
       }
       Error(_) -> Nil
     }
-  })
+  }
 
   component.render(
     ctx,
@@ -237,7 +235,7 @@ pub fn form_component(ctx: Context, _props) {
         [
           id("test_form"),
           events.on_submit(submit_form),
-          events.on_change(validate),
+          events.on_change(validate_form),
         ],
         [
           input([input_type("text"), name("name")]),
@@ -306,8 +304,8 @@ type FocusState {
 fn blur_focus_component(ctx: Context, _props) {
   use ctx, focus, set_focus <- state(ctx, NoFocus)
 
-  use ctx, handle_blur <- handler(ctx, fn(_) { set_focus(Blurred) })
-  use ctx, handle_focus <- handler(ctx, fn(_) { set_focus(Focused) })
+  let set_blurred = fn(_) { set_focus(Blurred) }
+  let set_focused = fn(_) { set_focus(Focused) }
 
   component.render(
     ctx,
@@ -319,8 +317,8 @@ fn blur_focus_component(ctx: Context, _props) {
       },
       input([
         id("input"),
-        events.on_blur(handle_blur),
-        events.on_focus(handle_focus),
+        events.on_blur(set_blurred),
+        events.on_focus(set_focused),
       ]),
     ]),
   )
@@ -357,12 +355,12 @@ pub fn blur_focus_test() {
 fn keypress_component(ctx: Context, _props) {
   use ctx, key, set_key <- state(ctx, None)
 
-  use ctx, handle_keypress <- handler(ctx, fn(e) {
+  let process_keypress = fn(e) {
     case events.decode_keypress(e) {
       Ok(key) -> set_key(Some(key))
       Error(_) -> Nil
     }
-  })
+  }
 
   component.render(
     ctx,
@@ -371,7 +369,7 @@ fn keypress_component(ctx: Context, _props) {
         Some(key) -> text("Key pressed: " <> key)
         None -> text("No key pressed yet")
       },
-      input([id("input"), events.on_keydown(handle_keypress)]),
+      input([id("input"), events.on_keydown(process_keypress)]),
     ]),
   )
 }

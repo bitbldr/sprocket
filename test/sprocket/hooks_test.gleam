@@ -5,7 +5,7 @@ import gleam/string
 import gleeunit/should
 import sprocket/component.{component}
 import sprocket/context.{type Context, dep}
-import sprocket/hooks.{type Cmd, effect, handler, reducer, state}
+import sprocket/hooks.{type Cmd, effect, reducer, state}
 import sprocket/html/attributes.{id}
 import sprocket/html/elements.{button, fragment, text}
 import sprocket/html/events.{on_click}
@@ -168,8 +168,8 @@ fn inc_reset_on_button_click_counter(ctx: Context, _props) {
   )
 
   // Define event handlers
-  use ctx, increment <- handler(ctx, fn(_) { set_count(count + 1) })
-  use ctx, reset <- handler(ctx, fn(_) { set_count(0) })
+  let increment = fn(_) { set_count(count + 1) }
+  let reset = fn(_) { set_count(0) }
 
   let current_count = int.to_string(count)
 
@@ -240,9 +240,9 @@ fn inc_random_reset_counter(ctx: Context, _props) {
   use ctx, Model(count: count), dispatch <- reducer(ctx, initial(), update)
 
   // Define event handlers
-  use ctx, increment <- handler(ctx, fn(_) { dispatch(SetCount(count + 1)) })
-  use ctx, generate_random <- handler(ctx, fn(_) { dispatch(GenerateRandom) })
-  use ctx, reset <- handler(ctx, fn(_) { dispatch(ResetCount) })
+  let increment = fn(_) { dispatch(SetCount(count + 1)) }
+  let generate_random = fn(_) { dispatch(GenerateRandom) }
+  let reset = fn(_) { dispatch(ResetCount) }
 
   let current_count = int.to_string(count)
 
@@ -323,7 +323,7 @@ fn count_down(ctx: Context, _props) {
   )
 
   // Define event handlers
-  use ctx, start <- handler(ctx, fn(_) { dispatch(CountDown(count)) })
+  let start = fn(_) { dispatch(CountDown(count)) }
 
   let current_count = int.to_string(count)
 
@@ -368,7 +368,7 @@ fn component_with_initial_cmds(ctx: Context, _props) {
   )
 
   // Define event handlers
-  use ctx, reset <- handler(ctx, fn(_) { dispatch(ResetCount) })
+  let reset = fn(_) { dispatch(ResetCount) }
 
   let current_count = int.to_string(count)
 
