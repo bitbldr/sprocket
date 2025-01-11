@@ -1,13 +1,11 @@
 import gleam/dict
 import gleam/dynamic.{type Dynamic}
-import gleam/io
 import gleam/list
 import gleam/option.{type Option, None, Some}
-import gleam/result
 import sprocket/context.{
   type AbstractFunctionalComponent, type Attribute, type Context, type Element,
   Attribute, ClientHook, Component, ComponentWip, Context, Custom, Debug,
-  Element, Event, Fragment, IgnoreUpdate, Keyed, Provider, Text,
+  Element, Event, EventHandler, Fragment, IgnoreUpdate, Keyed, Provider, Text,
 }
 import sprocket/internal/logger
 import sprocket/internal/reconcile.{
@@ -46,8 +44,12 @@ pub fn reconcile(
     Fragment(children) -> fragment(ctx, key, children, prev)
     Debug(id, meta, el) -> {
       // unwrap debug element, print details and continue with rendering
-      io.debug(#(id, meta))
-      io.debug(reconcile(ctx, el, key, prev))
+      logger.debug_meta("[DEBUG ELEMENT]", #(
+        id,
+        meta,
+        reconcile(ctx, el, key, prev),
+      ))
+      logger.debug_meta("[DEBUG ELEMENT]", reconcile(ctx, el, key, prev))
     }
     Keyed(key, el) -> reconcile(ctx, el, Some(key), prev)
     IgnoreUpdate(el) -> {
@@ -79,6 +81,25 @@ pub fn reconcile(
   }
 }
 
+fn prev_or_new_id(
+  ctx: Context,
+  tag: String,
+  key: Option(String),
+  prev: Option(ReconciledElement),
+) {
+  case prev {
+    Some(ReconciledElement(prev_id, prev_tag, prev_key, _, _))
+      if tag == prev_tag && key == prev_key
+    -> {
+      // if the previous element is the same element type and has the same key, use its id
+      prev_id
+    }
+    _ -> {
+      unique.cuid(ctx.cuid_channel)
+    }
+  }
+}
+
 fn element(
   ctx: Context,
   tag: String,
@@ -87,29 +108,35 @@ fn element(
   children: List(Element),
   prev: Option(ReconciledElement),
 ) -> ReconciledResult {
+  // We want to keep the same id for the same element across reconciliations
+  let element_id = prev_or_new_id(ctx, tag, key, prev)
+
   let #(ctx, rendered_attrs) =
     list.fold(attrs, #(ctx, []), fn(acc, current) {
       let #(ctx, rendered_attrs) = acc
 
       case current {
         Attribute(name, value) -> {
-          let assert Ok(value) =
-            dynamic.string(value)
-            |> result.map_error(fn(error) {
+          case dynamic.string(value) {
+            Ok(value) -> {
+              #(ctx, [ReconciledAttribute(name, value), ..rendered_attrs])
+            }
+            Error(_) -> {
               logger.error(
-                "render.element: failed to convert attribute value to string",
+                "reconciler: failed to convert attribute value to string",
               )
-              error
-            })
-
-          #(ctx, [ReconciledAttribute(name, value), ..rendered_attrs])
+              acc
+            }
+          }
         }
-        Event(kind, identifiable_cb) -> {
-          let #(ctx, id) = context.push_event_handler(ctx, identifiable_cb)
-          #(ctx, [
-            ReconciledEventHandler(kind, unique.to_string(id)),
-            ..rendered_attrs
-          ])
+        Event(kind, handler) -> {
+          let ctx =
+            context.push_event_handler(
+              ctx,
+              EventHandler(element_id, kind, handler),
+            )
+
+          #(ctx, [ReconciledEventHandler(element_id, kind), ..rendered_attrs])
         }
         ClientHook(id, name) -> {
           #(ctx, [
@@ -136,6 +163,7 @@ fn element(
   ReconciledResult(
     ctx,
     ReconciledElement(
+      element_id,
       tag,
       key,
       list.reverse(rendered_attrs),
@@ -229,7 +257,7 @@ fn get_prev_matching_child_by_key(
   key: Option(String),
 ) -> Option(ReconciledElement) {
   case prev, key {
-    Some(ReconciledElement(_, _, _, children)), Some(key) -> {
+    Some(ReconciledElement(_, _, _, _, children)), Some(key) -> {
       find_by_key(children, key)
     }
     Some(ReconciledFragment(_, children)), Some(key) -> {
@@ -244,7 +272,7 @@ fn find_by_key(children, key) {
   list.find(children, fn(child) {
     case child {
       ReconciledComponent(_, Some(child_key), _, _, _) -> child_key == key
-      ReconciledElement(_, Some(child_key), _, _) -> child_key == key
+      ReconciledElement(_, _, Some(child_key), _, _) -> child_key == key
       ReconciledFragment(Some(child_key), _) -> child_key == key
       _ -> False
     }
@@ -258,7 +286,7 @@ fn get_prev_matching_child_by_index(
   index: Int,
 ) -> Option(ReconciledElement) {
   case prev {
-    Some(ReconciledElement(_, _, _, children)) -> {
+    Some(ReconciledElement(_, _, _, _, children)) -> {
       case element_at(children, index, 0) {
         Ok(prev_child) -> {
           maybe_matching_el(prev_child, child)
@@ -285,7 +313,7 @@ fn maybe_matching_el(
   let child_key = get_key(child)
 
   case prev_child, child {
-    ReconciledElement(prev_tag, prev_key, _, _), Element(tag, ..) -> {
+    ReconciledElement(_, prev_tag, prev_key, _, _), Element(tag, ..) -> {
       case prev_tag == tag && prev_key == child_key {
         True -> Some(prev_child)
         False -> None
@@ -327,8 +355,9 @@ pub fn traverse(
     ReconciledComponent(fc, key, props, hooks, el) -> {
       ReconciledComponent(fc, key, props, hooks, traverse(el, updater))
     }
-    ReconciledElement(tag, key, attrs, children) -> {
+    ReconciledElement(id, tag, key, attrs, children) -> {
       ReconciledElement(
+        id,
         tag,
         key,
         attrs,
@@ -356,7 +385,7 @@ pub fn find(
         ReconciledComponent(_fc, _key, _props, _hooks, el) -> {
           find(el, matches)
         }
-        ReconciledElement(_tag, _key, _attrs, children) -> {
+        ReconciledElement(_id, _tag, _key, _attrs, children) -> {
           list.find(children, fn(child) {
             case find(child, matches) {
               Ok(_child) -> True
@@ -387,8 +416,8 @@ pub fn append_attribute(
       // we need to append the attribute to the component's element
       ReconciledComponent(fc, key, props, hooks, append_attribute(el, attr))
     }
-    ReconciledElement(tag, key, attrs, children) -> {
-      ReconciledElement(tag, key, list.append(attrs, [attr]), children)
+    ReconciledElement(id, tag, key, attrs, children) -> {
+      ReconciledElement(id, tag, key, list.append(attrs, [attr]), children)
     }
     ReconciledFragment(key, children) -> {
       // since a fragment is a list of elements, we need to append the attribute to the

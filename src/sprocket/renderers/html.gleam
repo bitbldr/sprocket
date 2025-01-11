@@ -4,12 +4,14 @@ import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/string
 import gleam/string_tree.{type StringTree}
+import sprocket/context.{type ElementId}
 import sprocket/internal/constants
 import sprocket/internal/reconcile.{
   type ReconciledAttribute, type ReconciledElement, ReconciledAttribute,
   ReconciledComponent, ReconciledCustom, ReconciledElement, ReconciledFragment,
   ReconciledIgnoreUpdate, ReconciledText,
 }
+import sprocket/internal/utils/unique.{type Unique}
 import sprocket/render.{type Renderer, Renderer}
 
 pub fn html_renderer() -> Renderer(String) {
@@ -21,8 +23,13 @@ pub fn html_renderer() -> Renderer(String) {
 
 fn render(el: ReconciledElement) -> StringTree {
   case el {
-    ReconciledElement(tag: tag, key: key, attrs: attrs, children: children) ->
-      element(tag, key, attrs, children)
+    ReconciledElement(
+      id: id,
+      tag: tag,
+      key: key,
+      attrs: attrs,
+      children: children,
+    ) -> element(id, tag, key, attrs, children)
     ReconciledComponent(el: el, ..) -> component(el)
     ReconciledFragment(children: children, ..) -> fragment(children)
     ReconciledIgnoreUpdate(el) -> render(el)
@@ -45,6 +52,7 @@ fn el(tag: String, attrs: StringTree, inner_html: StringTree) -> StringTree {
 }
 
 fn element(
+  _id: Unique(ElementId),
   tag: String,
   key: Option(String),
   attrs: List(ReconciledAttribute),

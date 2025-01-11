@@ -12,6 +12,7 @@ import sprocket/internal/reconcile.{
   ReconciledText,
 }
 import sprocket/internal/utils/list.{element_at} as _list_utils
+import sprocket/internal/utils/unique
 import sprocket/render.{renderer} as _
 import sprocket/renderers/json.{json_renderer} as _
 
@@ -43,22 +44,32 @@ pub fn create(old: ReconciledElement, new: ReconciledElement) -> Patch {
   case old, new {
     // old and new tags are the same
     ReconciledElement(
+      id: old_id,
       tag: old_tag,
-      key: old_key,
+      key: _old_key,
       attrs: old_attrs,
       children: old_children,
     ),
       ReconciledElement(
+        id: new_id,
         tag: new_tag,
-        key: new_key,
+        key: _new_key,
         attrs: new_attrs,
         children: new_children,
       )
       if old_tag == new_tag
     -> {
-      // check if element has same key
-      case old_key == new_key {
+      // Check if element has changed. We already used the key in the
+      // reconciliation process to match up child elements and determine
+      // if they have moved or been removed so all we need to do here is
+      // check if the id matches the previous id to determine if the element
+      // has changed.
+      case old_id == new_id {
         True -> {
+          // Element has not changed, so we need to compare the attributes and 
+          // recursively compare the children to determine if they have changed.
+          // If either the attributes or children have changed, we will return
+          // an Update patch.
           case compare_attributes(old_attrs, new_attrs) {
             Some(attrs) -> {
               Update(
@@ -238,8 +249,8 @@ fn attr_key(attribute) {
     ReconciledAttribute(name: name, ..) -> {
       name
     }
-    ReconciledEventHandler(id: id, ..) -> {
-      id
+    ReconciledEventHandler(element_id: id, kind: kind) -> {
+      unique.to_string(id) <> "-" <> kind
     }
     ReconciledClientHook(id: id, ..) -> {
       id
@@ -515,11 +526,11 @@ fn attrs_to_json(attrs: List(ReconciledAttribute)) -> Json {
       ReconciledAttribute(name, value) -> {
         [#(name, json.string(value))]
       }
-      ReconciledEventHandler(kind, id) -> {
+      ReconciledEventHandler(element_id, kind) -> {
         [
           #(
             string.concat([constants.event_attr_prefix, "-", kind]),
-            json.string(id),
+            element_id |> unique.to_string() |> json.string(),
           ),
         ]
       }

@@ -1,4 +1,5 @@
 import gleam/dynamic.{type Dynamic}
+import gleam/io
 
 pub type Level {
   Emergency
@@ -25,18 +26,41 @@ pub fn log(level: Level, message: String) -> Nil {
   Nil
 }
 
+pub fn log_meta(level: Level, message: String, meta: a) -> a {
+  erlang_log(level, message)
+
+  // TODO: Do something interesting to capture metadata. For now, just log it.
+  io.debug(meta)
+}
+
 pub fn info(message: String) -> Nil {
   log(Info, message)
+}
+
+pub fn info_meta(message: String, meta: a) -> a {
+  log_meta(Info, message, meta)
 }
 
 pub fn warn(message: String) -> Nil {
   log(Warning, message)
 }
 
+pub fn warn_meta(message: String, meta: a) -> a {
+  log_meta(Warning, message, meta)
+}
+
 pub fn error(message: String) -> Nil {
   log(Error, message)
 }
 
+pub fn error_meta(message: String, meta: a) -> a {
+  log_meta(Error, message, meta)
+}
+
 pub fn debug(message: String) -> Nil {
   log(Debug, message)
+}
+
+pub fn debug_meta(message: String, meta: a) -> a {
+  log_meta(Debug, message, meta)
 }

@@ -2,17 +2,19 @@ import gleam/dynamic.{type Dynamic}
 import gleam/option.{type Option}
 import sprocket/context.{
   type AbstractFunctionalComponent, type ComponentHooks, type Context,
-  type Element, Context,
+  type Element, type ElementId, Context,
 }
+import sprocket/internal/utils/unique.{type Unique}
 
 pub type ReconciledAttribute {
   ReconciledAttribute(name: String, value: String)
-  ReconciledEventHandler(kind: String, id: String)
+  ReconciledEventHandler(element_id: Unique(ElementId), kind: String)
   ReconciledClientHook(name: String, id: String)
 }
 
 pub type ReconciledElement {
   ReconciledElement(
+    id: Unique(ElementId),
     tag: String,
     key: Option(String),
     attrs: List(ReconciledAttribute),

@@ -4,9 +4,8 @@ import gleam/option.{type Option, None, Some}
 import gleam/result
 import sprocket/context.{
   type Attribute, type ClientDispatcher, type ClientEventHandler, type Context,
-  type EffectCleanup, type Element, type HandlerFn, type HookDependencies,
-  type HookId, type IdentifiableHandler, Callback, CallbackResult, Changed,
-  Client, ClientHook, Context, Effect, Handler, IdentifiableHandler, Unchanged,
+  type EffectCleanup, type Element, type HookDependencies, type HookId, Callback,
+  CallbackResult, Changed, Client, ClientHook, Context, Effect, Unchanged,
   compare_deps,
 }
 import sprocket/internal/exceptions.{throw_on_unexpected_hook_result}
@@ -134,26 +133,6 @@ pub fn effect(
   let ctx = context.update_hook(ctx, Effect(id, effect_fn, deps, prev), index)
 
   cb(ctx)
-}
-
-/// Handler Hook
-/// -------------
-/// Creates a handler callback that can be triggered from DOM event attributes. The callback
-/// function will be called with the event payload. This hook ensures that the handler
-/// identifier remains stable preventing unnecessary id changes across renders.
-pub fn handler(
-  ctx: Context,
-  handler_fn: HandlerFn,
-  cb: fn(Context, IdentifiableHandler) -> #(ctx, Element),
-) -> #(ctx, Element) {
-  let assert #(ctx, Handler(id, _handler_fn), index) =
-    context.fetch_or_init_hook(ctx, fn() {
-      Handler(unique.cuid(ctx.cuid_channel), handler_fn)
-    })
-
-  let ctx = context.update_hook(ctx, Handler(id, handler_fn), index)
-
-  cb(ctx, IdentifiableHandler(id, handler_fn))
 }
 
 /// Memo Hook

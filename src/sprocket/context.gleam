@@ -10,16 +10,15 @@ import sprocket/internal/logger
 import sprocket/internal/utils/ordered_map.{type OrderedMap}
 import sprocket/internal/utils/unique.{type Unique}
 
-pub type HandlerFn =
-  fn(Dynamic) -> Nil
+pub type ElementId
 
-pub type IdentifiableHandler {
-  IdentifiableHandler(id: Unique(HookId), handler: HandlerFn)
+pub type EventHandler {
+  EventHandler(id: Unique(ElementId), kind: String, cb: fn(Dynamic) -> Nil)
 }
 
 pub type Attribute {
   Attribute(name: String, value: Dynamic)
-  Event(name: String, handler: IdentifiableHandler)
+  Event(kind: String, cb: fn(Dynamic) -> Nil)
   ClientHook(id: Unique(HookId), name: String)
 }
 
@@ -90,7 +89,6 @@ pub type Hook {
     deps: HookDependencies,
     prev: Option(EffectResult),
   )
-  Handler(id: Unique(HookId), handler_fn: HandlerFn)
   Reducer(id: Unique(HookId), reducer: Dynamic, cleanup: fn() -> Nil)
   State(id: Unique(HookId), value: Dynamic)
   Client(
@@ -106,7 +104,6 @@ pub fn has_id(hook: Hook, hook_id: Unique(HookId)) -> Bool {
     Callback(id, _, _) if id == hook_id -> True
     Memo(id, _, _) if id == hook_id -> True
     Effect(id, _, _, _) if id == hook_id -> True
-    Handler(id, _) if id == hook_id -> True
     State(id, _) if id == hook_id -> True
     Client(id, _, _) if id == hook_id -> True
     _ -> False
@@ -156,7 +153,7 @@ pub type Context {
   Context(
     view: Element,
     wip: ComponentWip,
-    handlers: List(IdentifiableHandler),
+    handlers: List(EventHandler),
     render_update: fn() -> Nil,
     update_hook: fn(Unique(HookId), fn(Hook) -> Hook) -> Nil,
     emit: fn(Unique(HookId), String, Option(String)) -> Result(Nil, Nil),
@@ -253,22 +250,17 @@ pub fn update_hook(ctx: Context, hook: Hook, index: Int) -> Context {
   )
 }
 
-pub fn push_event_handler(
-  ctx: Context,
-  identifiable_cb: IdentifiableHandler,
-) -> #(Context, Unique(HookId)) {
-  let IdentifiableHandler(id, cb) = identifiable_cb
-
-  #(Context(..ctx, handlers: [IdentifiableHandler(id, cb), ..ctx.handlers]), id)
+pub fn push_event_handler(ctx: Context, handler: EventHandler) -> Context {
+  Context(..ctx, handlers: [handler, ..ctx.handlers])
 }
 
 pub fn get_event_handler(
   ctx: Context,
-  id: Unique(HookId),
-) -> #(Context, Result(IdentifiableHandler, Nil)) {
+  id: Unique(ElementId),
+) -> #(Context, Result(EventHandler, Nil)) {
   let handler =
     list.find(ctx.handlers, fn(h) {
-      let IdentifiableHandler(i, _) = h
+      let EventHandler(i, _, _) = h
       i == id
     })
 

@@ -2,7 +2,6 @@ import gleam/dict.{type Dict}
 import gleam/dynamic.{type Dynamic}
 import gleam/erlang/process.{type Subject}
 import gleam/function.{identity}
-import gleam/io
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/otp/actor.{type StartError, Spec}
@@ -10,10 +9,10 @@ import gleam/result
 import ids/cuid
 import sprocket/context.{
   type ComponentHooks, type Context, type EffectCleanup, type EffectResult,
-  type Element, type EventEmitter, type Hook, type HookDependencies, type HookId,
-  type IdentifiableHandler, type Updater, Callback, Changed, Client, Context,
-  Effect, EffectResult, Handler, IdentifiableHandler, Memo, Reducer, Unchanged,
-  Updater, compare_deps,
+  type Element, type ElementId, type EventEmitter, type Hook,
+  type HookDependencies, type HookId, type Updater, Callback, Changed, Client,
+  Context, Effect, EffectResult, EventHandler, Memo, Reducer, Unchanged, Updater,
+  compare_deps,
 }
 import sprocket/internal/constants.{call_timeout}
 import sprocket/internal/exceptions.{throw_on_unexpected_hook_result}
@@ -54,10 +53,11 @@ pub opaque type State {
 pub opaque type Message {
   Shutdown
   GetReconciled(reply_with: Subject(Option(ReconciledElement)))
-  ProcessEvent(id: String, payload: Dynamic)
+  ProcessEvent(element_id: Unique(ElementId), kind: String, payload: Dynamic)
   ProcessEventImmediate(
     reply_with: Subject(Result(Nil, Nil)),
-    id: String,
+    element_id: Unique(ElementId),
+    kind: String,
     payload: Dynamic,
   )
   ProcessClientHook(
@@ -91,37 +91,37 @@ fn handle_message(message: Message, state: State) -> actor.Next(Message, State) 
       actor.continue(state)
     }
 
-    ProcessEvent(id, payload) -> {
-      let handler =
+    ProcessEvent(element_id, kind, payload) -> {
+      let _ =
         list.find(state.ctx.handlers, fn(h) {
-          let IdentifiableHandler(i, _) = h
-          unique.to_string(i) == id
+          let EventHandler(handler_id, handler_kind, _) = h
+          handler_id == element_id && handler_kind == kind
+        })
+        |> result.map(fn(h) {
+          let EventHandler(_, _, handler_fn) = h
+          handler_fn(payload)
+        })
+        |> result.map_error(fn(_) {
+          logger.error(
+            "No handler found for element "
+            <> unique.to_string(element_id)
+            <> " and kind "
+            <> kind,
+          )
         })
 
-      case handler {
-        Ok(context.IdentifiableHandler(_, handler_fn)) -> {
-          // call the event handler function
-          handler_fn(payload)
-
-          actor.continue(state)
-        }
-        _ -> {
-          logger.error("No handler found with id: " <> id)
-
-          actor.continue(state)
-        }
-      }
+      actor.continue(state)
     }
 
-    ProcessEventImmediate(reply_with, id, payload) -> {
+    ProcessEventImmediate(reply_with, element_id, kind, payload) -> {
       let handler =
         list.find(state.ctx.handlers, fn(h) {
-          let IdentifiableHandler(i, _) = h
-          unique.to_string(i) == id
+          let EventHandler(handler_id, handler_kind, _) = h
+          handler_id == element_id && handler_kind == kind
         })
 
       case handler {
-        Ok(context.IdentifiableHandler(_, handler_fn)) -> {
+        Ok(EventHandler(_, _, handler_fn)) -> {
           // call the event handler function
           handler_fn(payload)
 
@@ -130,7 +130,12 @@ fn handle_message(message: Message, state: State) -> actor.Next(Message, State) 
           actor.continue(state)
         }
         _ -> {
-          logger.error("No handler found with id: " <> id)
+          logger.error(
+            "No handler found for element "
+            <> unique.to_string(element_id)
+            <> " and kind "
+            <> kind,
+          )
 
           actor.send(reply_with, Error(Nil))
 
@@ -313,34 +318,39 @@ pub fn get_reconciled(actor) {
   case process.try_call(actor, GetReconciled(_), call_timeout) {
     Ok(rendered) -> rendered
     Error(err) -> {
-      logger.error("Error getting rendered view from runtime actor")
-      io.debug(err)
+      logger.error_meta("Error getting rendered view from runtime actor", err)
+
       panic
     }
   }
 }
 
 /// Get the event handler for a given id
-pub fn process_event(actor, id: String, payload: Dynamic) {
+pub fn process_event(actor, element_id: String, kind: String, payload: Dynamic) {
   logger.debug("process.try_call ProcessEvent")
 
-  actor.send(actor, ProcessEvent(id, payload))
+  actor.send(actor, ProcessEvent(unique.from_string(element_id), kind, payload))
 }
 
 pub fn process_event_immediate(
   actor,
-  id: String,
+  element_id: String,
+  kind: String,
   payload: Dynamic,
 ) -> Result(Nil, Nil) {
   logger.debug("process.try_call ProcessEventImmediate")
 
   case
-    process.try_call(actor, ProcessEventImmediate(_, id, payload), call_timeout)
+    process.try_call(
+      actor,
+      ProcessEventImmediate(_, unique.from_string(element_id), kind, payload),
+      call_timeout,
+    )
   {
     Ok(result) -> result
     Error(err) -> {
-      logger.error("Error processing event from runtime actor")
-      io.debug(err)
+      logger.error_meta("Error processing event from runtime actor", err)
+
       Error(Nil)
     }
   }
@@ -372,8 +382,8 @@ pub fn reconcile_immediate(actor) -> ReconciledElement {
   case process.try_call(actor, ReconcileImmediate(_), call_timeout) {
     Ok(reconciled) -> reconciled
     Error(err) -> {
-      logger.error("Error reconciling view from runtime actor")
-      io.debug(err)
+      logger.error_meta("Error reconciling view from runtime actor", err)
+
       panic
     }
   }
@@ -470,9 +480,6 @@ fn build_hooks_map(
             Memo(id, _, _) -> {
               dict.insert(acc, id, hook)
             }
-            Handler(id, _) -> {
-              dict.insert(acc, id, hook)
-            }
             Effect(id, _, _, _) -> {
               dict.insert(acc, id, hook)
             }
@@ -491,7 +498,7 @@ fn build_hooks_map(
       // add hooks from child element
       build_hooks_map(el, acc)
     }
-    ReconciledElement(_tag, _key, _hooks, children) -> {
+    ReconciledElement(_id, _tag, _key, _hooks, children) -> {
       // add hooks from children
       list.fold(children, acc, fn(acc, child) {
         dict.merge(acc, build_hooks_map(child, acc))
@@ -606,7 +613,7 @@ fn find_reconciled_hook(
         }
       }
     }
-    ReconciledElement(_tag, _key, _hooks, children) -> {
+    ReconciledElement(_id, _tag, _key, _hooks, children) -> {
       list.fold(children, None, fn(acc, child) {
         case acc {
           Some(_) -> acc
@@ -639,13 +646,13 @@ fn traverse_rendered_hooks(node: ReconciledElement, process_hook: HookProcessor)
         traverse_rendered_hooks(el, process_hook),
       )
     }
-    ReconciledElement(tag, key, hooks, children) -> {
+    ReconciledElement(id, tag, key, hooks, children) -> {
       let r_children =
         list.fold(children, [], fn(acc, child) {
           [traverse_rendered_hooks(child, process_hook), ..acc]
         })
 
-      ReconciledElement(tag, key, hooks, list.reverse(r_children))
+      ReconciledElement(id, tag, key, hooks, list.reverse(r_children))
     }
     ReconciledFragment(key, children) -> {
       let r_children =
