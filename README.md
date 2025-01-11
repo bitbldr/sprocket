@@ -159,7 +159,7 @@ Sprocket is still in its early stages and has a roadmap for future development. 
 - [x] Build out full set of base HTML functions for components
 - [x] Expand the available hooks to enable more flexible component behavior
 - [x] Add documentation to modules and simplify API
-- [ ] Add support for additional event types to handle various user interactions
+- [x] Add support for additional event types to handle various user interactions
 - [ ] Improve unit test coverage to ensure code quality and reliability
 - [ ] Add support for web-based client components
 - [ ] Investigate extending to support more than just web views, such as native desktop, iOS, and Android applications.
