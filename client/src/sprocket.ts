@@ -22,6 +22,7 @@ type Opts = {
   hooks?: Record<string, any>;
   initialProps?: Record<string, string>;
   customEventEncoders?: Record<string, any>;
+  reconnectAttempt?: number;
 };
 
 export function connect(
@@ -38,6 +39,7 @@ export function connect(
 
   let dom: Record<string, any>;
   let oldVNode: VNode;
+  let reconnectAttempt = opts.reconnectAttempt || 0;
 
   const patcher = init(
     [attributesModule, eventListenersModule, rawHtmlModule],
@@ -81,6 +83,8 @@ export function connect(
         case "ok":
           topbar.hide();
 
+          reconnectAttempt = 0;
+
           // Render the full initial DOM
           dom = parsed[1];
           oldVNode = render(dom, providers) as VNode;
@@ -118,8 +122,11 @@ export function connect(
       console.log("Attempting to reconnect...");
 
       // Reinitialize the socket connection
-      connect(path, oldVNode || targetEl, csrfToken, opts);
-    }, 5000);
+      connect(path, oldVNode || targetEl, csrfToken, {
+        ...opts,
+        reconnectAttempt: reconnectAttempt + 1,
+      });
+    }, backoffReconnectAfterMs(reconnectAttempt));
   });
 }
 
@@ -135,4 +142,10 @@ function update(
   patcher(oldVNode, rendered);
 
   return rendered;
+}
+
+function backoffReconnectAfterMs(reconnectAttempt = 0) {
+  return (
+    [10, 50, 100, 150, 200, 250, 500, 1000, 2000][reconnectAttempt] || 5000
+  );
 }
