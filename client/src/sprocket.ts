@@ -1,11 +1,5 @@
 import topbar from "topbar";
-import {
-  init,
-  attributesModule,
-  eventListenersModule,
-  VNode,
-  toVNode,
-} from "snabbdom";
+import { init, attributesModule, eventListenersModule, VNode } from "snabbdom";
 import { render, Providers } from "./render";
 import { applyPatch } from "./patch";
 import { initEventHandlerProvider } from "./events";
@@ -25,19 +19,19 @@ type Patcher = (
 ) => VNode;
 
 type Opts = {
-  csrfToken: string;
-  targetEl?: Element;
   hooks?: Record<string, any>;
   initialProps?: Record<string, string>;
   customEventEncoders?: Record<string, any>;
 };
 
-export function connect(path: String, opts: Opts) {
-  const csrfToken = opts.csrfToken || new Error("Missing CSRF token");
-  const targetEl = opts.targetEl || document.documentElement;
-
-  let ws_protocol = location.protocol === "https:" ? "wss:" : "ws:";
-  let socket = new WebSocket(ws_protocol + "//" + location.host + path);
+export function connect(
+  path: String,
+  getTargetEl: () => Element,
+  csrfToken: string,
+  opts: Opts
+) {
+  const ws_protocol = location.protocol === "https:" ? "wss:" : "ws:";
+  const socket = new WebSocket(ws_protocol + "//" + location.host + path);
 
   let dom: Record<string, any>;
   let oldVNode: VNode;
@@ -86,7 +80,9 @@ export function connect(path: String, opts: Opts) {
 
           dom = parsed[1];
 
-          oldVNode = update(patcher, toVNode(targetEl), dom, providers);
+          oldVNode = render(dom, providers) as VNode;
+
+          patcher(getTargetEl(), oldVNode);
 
           break;
 
@@ -114,7 +110,7 @@ export function connect(path: String, opts: Opts) {
       console.log("Attempting to reconnect...");
 
       // Reinitialize the socket connection
-      connect(path, opts);
+      connect(path, getTargetEl, csrfToken, opts);
     }, 5000);
   });
 }
