@@ -26,10 +26,15 @@ type Opts = {
 
 export function connect(
   path: String,
-  getTargetEl: () => Element,
+  targetSelector: string,
   csrfToken: string,
   opts: Opts
 ) {
+  const targetEl = document.querySelector(targetSelector);
+
+  if (!targetEl)
+    throw new Error(`No element found for targetSelector: ${targetSelector}`);
+
   const ws_protocol = location.protocol === "https:" ? "wss:" : "ws:";
   const socket = new WebSocket(ws_protocol + "//" + location.host + path);
 
@@ -82,7 +87,7 @@ export function connect(
 
           oldVNode = render(dom, providers) as VNode;
 
-          patcher(getTargetEl(), oldVNode);
+          patcher(targetEl, oldVNode);
 
           break;
 
@@ -110,7 +115,7 @@ export function connect(
       console.log("Attempting to reconnect...");
 
       // Reinitialize the socket connection
-      connect(path, getTargetEl, csrfToken, opts);
+      connect(path, targetSelector, csrfToken, opts);
     }, 5000);
   });
 }
