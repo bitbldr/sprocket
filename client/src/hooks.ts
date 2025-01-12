@@ -1,11 +1,13 @@
+import ReconnectingWebSocket from "reconnecting-websocket";
 import { Module } from "snabbdom";
 
 type PushEvent = (event: string, payload: any) => void;
 
 export type Hook = {
-  el: Element;
+  el: Node;
   pushEvent: PushEvent;
   handleEvent: (event: string, handler: (payload: any) => any) => void;
+  [key: string]: any;
 };
 
 export interface HookIdentifier {
@@ -16,10 +18,10 @@ export interface HookIdentifier {
 export type ClientHookProvider = (elementHooks: HookIdentifier[]) => Module;
 
 export const initClientHookProvider = (
-  socket: WebSocket,
+  socket: ReconnectingWebSocket,
   hooks: Record<string, any> = {}
 ): ClientHookProvider => {
-  let clientHookMap: Record<string, any> = {};
+  let clientHookMap: Record<string, Hook> = {};
 
   return (elementHooks: HookIdentifier[]) => ({
     create: (emptyVNode, vnode) => {
@@ -50,7 +52,6 @@ export const initClientHookProvider = (
 
         clientHookMap[hookId] = {
           el: vnode.elm,
-          name: hookName,
           pushEvent,
           handleEvent,
         };
@@ -61,18 +62,21 @@ export const initClientHookProvider = (
     insert: (vnode) => {
       elementHooks.forEach((h) => {
         const { id: hookId, name: hookName } = h;
+
         execClientHook(hooks, clientHookMap, hookName, hookId, "insert");
       });
     },
     update: (oldVNode, vnode) => {
       elementHooks.forEach((h) => {
         const { id: hookId, name: hookName } = h;
+
         execClientHook(hooks, clientHookMap, hookName, hookId, "update");
       });
     },
     destroy: (vnode) => {
       elementHooks.forEach((h) => {
         const { id: hookId, name: hookName } = h;
+
         execClientHook(hooks, clientHookMap, hookName, hookId, "destroy");
 
         delete clientHookMap[hookId];
@@ -91,7 +95,8 @@ function execClientHook(
   const hook = hooks[hookName];
 
   if (hook) {
-    hook[method] && hook[method](clientHookMap[hookId]);
+    hook[method] &&
+      hook[method].call(clientHookMap[hookId], clientHookMap[hookId]);
   } else {
     throw new Error(`Client hook ${hookName} not found`);
   }

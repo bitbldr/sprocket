@@ -1,4 +1,5 @@
 import { On } from "snabbdom";
+import ReconnectingWebSocket from "reconnecting-websocket";
 
 export type EventIdentifier = {
   kind: string;
@@ -12,7 +13,7 @@ export type EventHandlerProvider = (
 
 export const initEventHandlerProvider =
   (
-    socket: WebSocket,
+    socket: ReconnectingWebSocket,
     customEventEncoders: Record<string, any> = {}
   ): EventHandlerProvider =>
   (elementTag, events: EventIdentifier[]) =>

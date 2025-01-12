@@ -1,4 +1,5 @@
 import topbar from "topbar";
+import ReconnectingWebSocket from "reconnecting-websocket";
 import { init, attributesModule, eventListenersModule, VNode } from "snabbdom";
 import { render, Providers } from "./render";
 import { applyPatch } from "./patch";
@@ -14,7 +15,7 @@ export type ClientHook = {
 };
 
 type Patcher = (
-  oldVNode: VNode | Element | DocumentFragment,
+  currentVNode: VNode | Element | DocumentFragment,
   vnode: VNode
 ) => VNode;
 
@@ -35,11 +36,13 @@ export function connect(
   if (!csrfToken) throw new Error("csrfToken is required");
 
   const ws_protocol = location.protocol === "https:" ? "wss:" : "ws:";
-  const socket = new WebSocket(ws_protocol + "//" + location.host + path);
+  const socket = new ReconnectingWebSocket(
+    ws_protocol + "//" + location.host + path
+  );
 
   let dom: Record<string, any>;
-  let oldVNode: VNode;
-  let reconnectAttempt = opts.reconnectAttempt || 0;
+  let currentVNode: VNode;
+  let firstConnect = true;
 
   const patcher = init(
     [attributesModule, eventListenersModule, rawHtmlModule],
@@ -66,7 +69,7 @@ export function connect(
   topbar.config({ barColors: { 0: "#29d" }, barThickness: 2 });
   topbar.show(500);
 
-  socket.addEventListener("open", function (event) {
+  socket.addEventListener("open", function (_event) {
     socket.send(
       JSON.stringify([
         "join",
@@ -83,14 +86,21 @@ export function connect(
         case "ok":
           topbar.hide();
 
-          reconnectAttempt = 0;
-
           // Render the full initial DOM
           dom = parsed[1];
-          oldVNode = render(dom, providers) as VNode;
+          const rendered = render(dom, providers) as VNode;
 
-          // Patch the target element
-          patcher(targetEl, oldVNode);
+          if (firstConnect) {
+            firstConnect = false;
+
+            // Patch the target element
+            patcher(targetEl, rendered);
+          } else {
+            // Patch the currentVNode element
+            patcher(currentVNode, rendered);
+          }
+
+          currentVNode = rendered;
 
           break;
 
@@ -101,7 +111,7 @@ export function connect(
           dom = applyPatch(dom, patch, updateOpts) as Element;
 
           // Update the target DOM element
-          oldVNode = update(patcher, oldVNode, dom, providers);
+          currentVNode = update(patcher, currentVNode, dom, providers);
 
           break;
 
@@ -116,36 +126,19 @@ export function connect(
 
   socket.addEventListener("close", function (_event) {
     topbar.show();
-
-    // Attempt to reconnect after a delay (e.g., 5 seconds)
-    setTimeout(() => {
-      console.log("Attempting to reconnect...");
-
-      // Reinitialize the socket connection
-      connect(path, oldVNode || targetEl, csrfToken, {
-        ...opts,
-        reconnectAttempt: reconnectAttempt + 1,
-      });
-    }, backoffReconnectAfterMs(reconnectAttempt));
   });
 }
 
 // update the target DOM element using a given JSON DOM
 function update(
   patcher: Patcher,
-  oldVNode: VNode,
+  currentVNode: VNode,
   patched: Record<string, any>,
   providers: Providers
 ) {
   const rendered = render(patched, providers) as VNode;
 
-  patcher(oldVNode, rendered);
+  patcher(currentVNode, rendered);
 
   return rendered;
-}
-
-function backoffReconnectAfterMs(reconnectAttempt = 0) {
-  return (
-    [10, 50, 100, 150, 200, 250, 500, 1000, 2000][reconnectAttempt] || 5000
-  );
 }
