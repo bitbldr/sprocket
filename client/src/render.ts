@@ -48,7 +48,6 @@ function renderElement(element: Element, providers: Providers): VNode {
     data.key = element.key;
   }
 
-  // TODO: figure out how to actually ignore updates with snabbdom
   if (element.ignore) {
     data.ignore = true;
   }
