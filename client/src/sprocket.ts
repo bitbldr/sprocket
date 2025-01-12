@@ -118,7 +118,7 @@ export function connect(
       console.log("Attempting to reconnect...");
 
       // Reinitialize the socket connection
-      connect(path, oldVNode, csrfToken, opts);
+      connect(path, oldVNode || targetEl, csrfToken, opts);
     }, 5000);
   });
 }
