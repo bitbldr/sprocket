@@ -32,6 +32,7 @@ export function render(
 
 interface Element {
   type: "element";
+  id: string;
   tag: string;
   attrs: Record<string, any>;
   events: EventIdentifier[];
@@ -43,6 +44,8 @@ interface Element {
 function renderElement(element: Element, providers: Providers): VNode {
   let { clientHookProvider, eventHandlerProvider } = providers;
   let data: VNodeData = { attrs: element.attrs };
+
+  data.elementId = element.id;
 
   if (element.key) {
     data.key = element.key;

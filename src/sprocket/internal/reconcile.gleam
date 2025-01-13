@@ -9,7 +9,7 @@ import sprocket/internal/utils/unique.{type Unique}
 pub type ReconciledAttribute {
   ReconciledAttribute(name: String, value: String)
   ReconciledEventHandler(element_id: Unique(ElementId), kind: String)
-  ReconciledClientHook(name: String, id: String)
+  ReconciledClientHook(name: String)
 }
 
 pub type ReconciledElement {

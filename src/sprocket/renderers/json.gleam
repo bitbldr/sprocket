@@ -63,9 +63,9 @@ fn element(
             hooks,
           )
         }
-        ReconciledClientHook(name, id) -> {
+        ReconciledClientHook(name) -> {
           #(attrs, events, [
-            [#("name", json.string(name)), #("id", json.string(id))]
+            [#("name", json.string(name))]
               |> json.object(),
             ..hooks
           ])
