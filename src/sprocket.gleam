@@ -57,7 +57,12 @@ pub fn new(
 type Payload {
   JoinPayload(csrf_token: String, initial_props: Option(Dict(String, String)))
   EventPayload(element_id: String, kind: String, payload: Dynamic)
-  HookEventPayload(element_id: String, hook: String, kind: String, payload: Option(Dynamic))
+  HookEventPayload(
+    element_id: String,
+    hook: String,
+    kind: String,
+    payload: Option(Dynamic),
+  )
   EmptyPayload(nothing: Option(String))
 }
 
@@ -289,7 +294,11 @@ fn hook_event_to_json(
           #("payload", json.string(payload)),
         ])
       None ->
-        json.object([#("id", json.string(id)), #("hook", json.string(hook)), #("kind", json.string(kind))])
+        json.object([
+          #("id", json.string(id)),
+          #("hook", json.string(hook)),
+          #("kind", json.string(kind)),
+        ])
     },
   ])
   |> json.to_string()
