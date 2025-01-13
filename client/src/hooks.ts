@@ -25,6 +25,37 @@ export const initClientHookProvider = (
 ): ClientHookProvider => {
   let clientHookMap: Record<ElementId, Record<HookName, Hook>> = {};
 
+  socket.addEventListener("message", function (msg) {
+    let parsed = JSON.parse(msg.data);
+
+    if (Array.isArray(parsed)) {
+      switch (parsed[0]) {
+        case "hook:event":
+          // find handler by elementId
+          const {
+            id: elementId,
+            hook: hookName,
+            kind: eventKind,
+            payload,
+          } = parsed[1];
+          const handlers =
+            clientHookMap[elementId] &&
+            clientHookMap[elementId][hookName] &&
+            clientHookMap[elementId][hookName].handlers;
+
+          if (handlers) {
+            handlers.forEach((h) => {
+              if (h.kind === eventKind) {
+                h.handler(payload);
+              }
+            });
+          }
+
+          break;
+      }
+    }
+  });
+
   return (elementHooks: HookIdentifier[]) => ({
     create: (emptyVNode, vnode) => {
       const elementId = vnode.data.elementId;
@@ -42,23 +73,10 @@ export const initClientHookProvider = (
         };
 
         const handleEvent = (kind: string, handler: (payload: any) => any) => {
-          socket.addEventListener("message", function (msg) {
-            let parsed = JSON.parse(msg.data);
-
-            if (Array.isArray(parsed)) {
-              switch (parsed[0]) {
-                case "hook:event":
-                  if (
-                    parsed[1].id === elementId &&
-                    // parsed[1].name === hookName
-                    parsed[1].kind === kind
-                  ) {
-                    handler(parsed[1].payload);
-                  }
-                  break;
-              }
-            }
-          });
+          clientHookMap[elementId][hookName].handlers = [
+            ...(clientHookMap[elementId][hookName].handlers || []),
+            { kind, handler },
+          ];
         };
 
         // Initialize the client hook map if it doesn't already exist and add the hook
@@ -86,8 +104,32 @@ export const initClientHookProvider = (
     update: (oldVNode, vnode) => {
       const elementId = vnode.data.elementId;
 
+      // If the element id has changed, we need to update the client hook map to reflect the new element id
+      if (oldVNode.data.elementId !== vnode.data.elementId) {
+        // Move the hook state to the new element id
+        clientHookMap[vnode.data.elementId] =
+          clientHookMap[oldVNode.data.elementId];
+
+        delete clientHookMap[oldVNode.data.elementId];
+      }
+
       elementHooks.forEach((h) => {
         const { name: hookName } = h;
+
+        // If the element id has changed, we also need to update the pushEvent function for each hook
+        if (oldVNode.data.elementId !== vnode.data.elementId) {
+          // Update the pushEvent function to use the new element id
+          const pushEvent = (kind: string, payload: any) => {
+            socket.send(
+              JSON.stringify([
+                "hook:event",
+                { id: vnode.data.elementId, hook: hookName, kind, payload },
+              ])
+            );
+          };
+
+          clientHookMap[vnode.data.elementId][hookName].pushEvent = pushEvent;
+        }
 
         execClientHook(hooks, clientHookMap, elementId, hookName, "update");
       });
