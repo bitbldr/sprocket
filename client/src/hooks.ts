@@ -17,9 +17,16 @@ export interface HookIdentifier {
   name: string;
 }
 
+type Emit = {
+  id: ElementId;
+  hook: HookName;
+  kind: string;
+  payload: any;
+};
+
 export type ClientHookProvider = {
   hook: (elementHooks: HookIdentifier[]) => Module;
-  handle_message: (msg: MessageEvent) => void;
+  handle_emit: (emit: Emit) => void;
 };
 
 export const initClientHookProvider = (
@@ -122,34 +129,21 @@ export const initClientHookProvider = (
         });
       },
     }),
-    handle_message: (msg) => {
-      let parsed = JSON.parse(msg.data);
+    handle_emit: (emit) => {
+      // find handler by elementId
+      const { id: elementId, hook: hookName, kind: eventKind, payload } = emit;
 
-      if (Array.isArray(parsed)) {
-        switch (parsed[0]) {
-          case "hook:event":
-            // find handler by elementId
-            const {
-              id: elementId,
-              hook: hookName,
-              kind: eventKind,
-              payload,
-            } = parsed[1];
-            const handlers =
-              clientHookMap[elementId] &&
-              clientHookMap[elementId][hookName] &&
-              clientHookMap[elementId][hookName].handlers;
+      const handlers =
+        clientHookMap[elementId] &&
+        clientHookMap[elementId][hookName] &&
+        clientHookMap[elementId][hookName].handlers;
 
-            if (handlers) {
-              handlers.forEach((h) => {
-                if (h.kind === eventKind) {
-                  h.handler(payload);
-                }
-              });
-            }
-
-            break;
-        }
+      if (handlers) {
+        handlers.forEach((h) => {
+          if (h.kind === eventKind) {
+            h.handler(payload);
+          }
+        });
       }
     },
   };

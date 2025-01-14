@@ -78,8 +78,8 @@ export function connect(
     );
   });
 
-  socket.addEventListener("message", function (event) {
-    let parsed = JSON.parse(event.data);
+  socket.addEventListener("message", function (msg) {
+    let parsed = JSON.parse(msg.data);
 
     if (Array.isArray(parsed)) {
       switch (parsed[0]) {
@@ -115,8 +115,8 @@ export function connect(
 
           break;
 
-        case "hook:event":
-          clientHookProvider.handle_message(event);
+        case "hook:emit":
+          clientHookProvider.handle_emit(parsed[1]);
 
           break;
 

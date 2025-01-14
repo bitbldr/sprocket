@@ -113,7 +113,7 @@ pub fn handle_ws(spkt: Sprocket(p), msg: String) -> Result(Response(p), String) 
 
       let reply_emitter = fn(kind, payload) {
         let _ =
-          hook_event_to_json(element_id, hook_name, kind, payload)
+          hook_emit_to_json(element_id, hook_name, kind, payload)
           |> spkt.ws_send()
           |> result.map_error(fn(e) {
             logger.error_meta("Error sending hook event reply", e)
@@ -186,7 +186,7 @@ fn connect(
 
   let emitter = fn(element_id, hook, kind, payload) {
     let _ =
-      hook_event_to_json(element_id, hook, kind, payload)
+      hook_emit_to_json(element_id, hook, kind, payload)
       |> spkt.ws_send()
 
     Ok(Nil)
@@ -276,14 +276,14 @@ fn update_to_json(update: RenderedUpdate, debug: Bool) -> Json {
   }
 }
 
-fn hook_event_to_json(
+fn hook_emit_to_json(
   id: String,
   hook: String,
   kind: String,
   payload: Option(String),
 ) -> String {
   json.preprocessed_array([
-    json.string("hook:event"),
+    json.string("hook:emit"),
     case payload {
       Some(payload) ->
         json.object([
