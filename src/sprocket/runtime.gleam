@@ -153,7 +153,7 @@ fn handle_message(message: Message, state: State) -> actor.Next(Message, State) 
     }
 
     ProcessClientHook(element_id, hook_name, kind, payload, reply_emitter) -> {
-      use reconciled <- require_some(state.reconciled, or: fn() {
+      use reconciled <- require_some(state.reconciled, otherwise: fn() {
         logger.error(
             "Runtime must be reconciled before processing client hooks",
         )
