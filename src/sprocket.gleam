@@ -105,10 +105,7 @@ pub fn handle_ws(spkt: Sprocket(p), msg: String) -> Result(Response(p), String) 
       }
     }
     Ok(#("hook:event", HookEventPayload(element_id, hook_name, kind, payload))) -> {
-      logger.debug_meta(
-        "Hook Event: element " <> element_id <> " " <> hook_name <> " " <> kind,
-        payload,
-      )
+      logger.debug("Hook Event: element " <> element_id <> " " <> hook_name <> " " <> kind)
 
       use runtime <- require_runtime(spkt)
 

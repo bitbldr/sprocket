@@ -212,26 +212,14 @@ fn handle_message(message: Message, state: State) -> actor.Next(Message, State) 
     }
 
     EmitClientHookEvent(hook_id, kind, payload) -> {
-      logger.debug_meta("EmitClientHookEvent", #(hook_id, kind, payload))
-
       case state.reconciled {
         Some(reconciled) -> {
-          logger.debug_meta(
-            "EmitClientHookEvent: reconciled",
-            state.ctx.client_hooks,
-          )
-
           let _ =
             list.find(state.ctx.client_hooks, fn(h) {
               let ClientHookId(_element_id, _name, client_hook_id) = h
               client_hook_id == hook_id
             })
             |> result.map(fn(h) {
-              logger.debug(
-                "EmitClientHookEvent: found client hook "
-                <> unique.to_string(hook_id),
-              )
-
               let ClientHookId(element_id, hook_name, _client_hook_id) = h
 
               state.emitter
