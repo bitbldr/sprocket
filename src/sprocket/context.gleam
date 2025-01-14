@@ -3,7 +3,7 @@ import gleam/dynamic.{type Dynamic}
 import gleam/erlang/process.{type Subject}
 import gleam/int
 import gleam/list
-import gleam/option.{type Option, None, Some}
+import gleam/option.{type Option}
 import ids/cuid
 import sprocket/internal/exceptions.{throw_on_unexpected_deps_mismatch}
 import sprocket/internal/logger

@@ -28,6 +28,7 @@ import sprocket/internal/utils/ordered_map.{
   type KeyedItem, type OrderedMapIter, KeyedItem,
 }
 import sprocket/internal/utils/timer
+import sprocket/internal/utils/common.{require_some}
 import sprocket/internal/utils/unique.{type Unique}
 import sprocket/internal/utils/unsafe_coerce
 
@@ -152,38 +153,33 @@ fn handle_message(message: Message, state: State) -> actor.Next(Message, State) 
     }
 
     ProcessClientHook(element_id, hook_name, kind, payload, reply_emitter) -> {
-      case state.reconciled {
-        Some(reconciled) -> {
-          let _ =
-            list.find(state.ctx.client_hooks, fn(h) {
-              h.element_id == element_id && h.name == hook_name
-            })
-            |> result.map(fn(h) {
-              find_reconciled_hook(reconciled, fn(hook) {
-                case hook {
-                  context.Client(hook_id, _, _) -> hook_id == h.hook_id
-                  _ -> False
-                }
-              })
-              |> option.map(fn(hook) {
-                let assert Client(_id, _name, handle_event) = hook
-
-                option.map(handle_event, fn(handle_event) {
-                  handle_event(kind, payload, reply_emitter)
-                })
-              })
-            })
-
-          Nil
-        }
-        None -> {
-          logger.error(
+      use reconciled <- require_some(state.reconciled, or: fn() {
+        logger.error(
             "Runtime must be reconciled before processing client hooks",
-          )
+        )
 
-          Nil
-        }
-      }
+        actor.continue(state)
+      })
+
+      let _ =
+        list.find(state.ctx.client_hooks, fn(h) {
+          h.element_id == element_id && h.name == hook_name
+        })
+        |> result.map(fn(h) {
+          find_reconciled_hook(reconciled, fn(hook) {
+            case hook {
+              context.Client(hook_id, _, _) -> hook_id == h.hook_id
+              _ -> False
+            }
+          })
+          |> option.map(fn(hook) {
+            let assert Client(_id, _name, handle_event) = hook
+
+            option.map(handle_event, fn(handle_event) {
+              handle_event(kind, payload, reply_emitter)
+            })
+          })
+        })
 
       actor.continue(state)
     }
@@ -212,32 +208,19 @@ fn handle_message(message: Message, state: State) -> actor.Next(Message, State) 
     }
 
     EmitClientHookEvent(hook_id, kind, payload) -> {
-      case state.reconciled {
-        Some(reconciled) -> {
-          let _ =
-            list.find(state.ctx.client_hooks, fn(h) {
-              let ClientHookId(_element_id, _name, client_hook_id) = h
-              client_hook_id == hook_id
-            })
-            |> result.map(fn(h) {
-              let ClientHookId(element_id, hook_name, _client_hook_id) = h
+      let _ =
+        list.find(state.ctx.client_hooks, fn(h) {
+          let ClientHookId(_element_id, _name, client_hook_id) = h
+          client_hook_id == hook_id
+        })
+        |> result.map(fn(h) {
+          let ClientHookId(element_id, hook_name, _client_hook_id) = h
 
-              state.emitter
-              |> option.map(fn(emitter) {
-                emitter(unique.to_string(element_id), hook_name, kind, payload)
-              })
-            })
-
-          Nil
-        }
-        None -> {
-          logger.error(
-            "Runtime must be reconciled before emitting client hook events",
-          )
-
-          Nil
-        }
-      }
+          state.emitter
+          |> option.map(fn(emitter) {
+            emitter(unique.to_string(element_id), hook_name, kind, payload)
+          })
+        })
 
       actor.continue(state)
     }
