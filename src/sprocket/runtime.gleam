@@ -8,11 +8,11 @@ import gleam/otp/actor.{type StartError, Spec}
 import gleam/result
 import ids/cuid
 import sprocket/context.{
-  type ComponentHooks, type Context, type EffectCleanup, type EffectResult,
-  type Element, type ElementId, type EventEmitter, type Hook,
+  type ClientHookId, type ComponentHooks, type Context, type EffectCleanup,
+  type EffectResult, type Element, type ElementId, type EventEmitter, type Hook,
   type HookDependencies, type HookId, type Updater, Callback, Changed, Client,
-  Context, Effect, EffectResult, EventHandler, Memo, Reducer, Unchanged, Updater,
-  compare_deps,
+  ClientHookId, Context, Effect, EffectResult, EventHandler, Memo, Reducer,
+  Unchanged, Updater, compare_deps,
 }
 import sprocket/internal/constants.{call_timeout}
 import sprocket/internal/exceptions.{throw_on_unexpected_hook_result}
@@ -45,6 +45,7 @@ pub opaque type State {
     updater: Updater(RenderedUpdate),
     reconciled: Option(ReconciledElement),
     cuid_channel: Subject(cuid.Message),
+    emitter: Option(EventEmitter),
   )
 }
 
@@ -61,12 +62,18 @@ pub opaque type Message {
     payload: Dynamic,
   )
   ProcessClientHook(
-    id: String,
+    element_id: Unique(ElementId),
+    hook_name: String,
     event: String,
     payload: Option(Dynamic),
-    reply_emitter: fn(String, Option(String)) -> Result(Nil, Nil),
+    reply_emitter: fn(String, Option(String)) -> Nil,
   )
   UpdateHookState(Unique(HookId), fn(Hook) -> Hook)
+  EmitClientHookEvent(
+    hook_id: Unique(HookId),
+    event: String,
+    payload: Option(String),
+  )
   ReconcileImmediate(reply_with: Subject(ReconciledElement))
   RenderUpdate
 }
@@ -144,42 +151,41 @@ fn handle_message(message: Message, state: State) -> actor.Next(Message, State) 
       }
     }
 
-    ProcessClientHook(id, event, payload, reply_emitter) -> {
-      let client_hook = case state.reconciled {
+    ProcessClientHook(element_id, hook_name, kind, payload, reply_emitter) -> {
+      case state.reconciled {
         Some(reconciled) -> {
-          let hook =
-            find_reconciled_hook(reconciled, fn(hook) {
-              case hook {
-                context.Client(i, _, _) -> unique.to_string(i) == id
-                _ -> False
-              }
+          let _ =
+            list.find(state.ctx.client_hooks, fn(h) {
+              h.element_id == element_id && h.name == hook_name
+            })
+            |> result.map(fn(h) {
+              find_reconciled_hook(reconciled, fn(hook) {
+                case hook {
+                  context.Client(hook_id, _, _) -> hook_id == h.hook_id
+                  _ -> False
+                }
+              })
+              |> option.map(fn(hook) {
+                let assert Client(_id, _name, handle_event) = hook
+
+                option.map(handle_event, fn(handle_event) {
+                  handle_event(kind, payload, reply_emitter)
+                })
+              })
             })
 
-          option.to_result(hook, Nil)
+          Nil
         }
         None -> {
           logger.error(
             "Runtime must be reconciled before processing client hooks",
           )
 
-          Error(Nil)
+          Nil
         }
       }
 
-      case client_hook {
-        Ok(Client(_id, _name, handle_event)) -> {
-          option.map(handle_event, fn(handle_event) {
-            handle_event(event, payload, reply_emitter)
-          })
-
-          actor.continue(state)
-        }
-        _ -> {
-          logger.error("No client hook found with id: " <> id)
-
-          actor.continue(state)
-        }
-      }
+      actor.continue(state)
     }
 
     UpdateHookState(hook_id, update_fn) -> {
@@ -203,6 +209,37 @@ fn handle_message(message: Message, state: State) -> actor.Next(Message, State) 
         })
 
       actor.continue(State(..state, reconciled: updated))
+    }
+
+    EmitClientHookEvent(hook_id, kind, payload) -> {
+      case state.reconciled {
+        Some(reconciled) -> {
+          let _ =
+            list.find(state.ctx.client_hooks, fn(h) {
+              let ClientHookId(_element_id, _name, client_hook_id) = h
+              client_hook_id == hook_id
+            })
+            |> result.map(fn(h) {
+              let ClientHookId(element_id, hook_name, _client_hook_id) = h
+
+              state.emitter
+              |> option.map(fn(emitter) {
+                emitter(unique.to_string(element_id), hook_name, kind, payload)
+              })
+            })
+
+          Nil
+        }
+        None -> {
+          logger.error(
+            "Runtime must be reconciled before emitting client hook events",
+          )
+
+          Nil
+        }
+      }
+
+      actor.continue(state)
     }
 
     ReconcileImmediate(reply_with) -> {
@@ -282,18 +319,25 @@ pub fn start(
         error
       })
 
+    let emit = fn(id, name, payload) {
+      logger.debug("actor.send EmitClientHookEvent")
+
+      actor.send(self, EmitClientHookEvent(id, name, payload))
+    }
+
     let state =
       State(
         ctx: context.new(
           view,
           cuid_channel,
-          emitter,
+          Some(emit),
           render_update,
           update_hook,
         ),
         updater: updater,
         reconciled: None,
         cuid_channel: cuid_channel,
+        emitter: emitter,
       )
 
     let selector = process.selecting(process.new_selector(), self, identity)
@@ -359,14 +403,24 @@ pub fn process_event_immediate(
 /// Get the client hook for a given id
 pub fn process_client_hook(
   actor,
-  id: String,
+  element_id: String,
+  hook_name: String,
   event: String,
   payload: Option(Dynamic),
-  reply_emitter: fn(String, Option(String)) -> Result(Nil, Nil),
+  reply_emitter: fn(String, Option(String)) -> Nil,
 ) {
-  logger.debug("process.try_call GetClientHook")
+  logger.debug("actor.send ProcessClientHook")
 
-  actor.send(actor, ProcessClientHook(id, event, payload, reply_emitter))
+  actor.send(
+    actor,
+    ProcessClientHook(
+      unique.from_string(element_id),
+      hook_name,
+      event,
+      payload,
+      reply_emitter,
+    ),
+  )
 }
 
 pub fn render_update(actor) {

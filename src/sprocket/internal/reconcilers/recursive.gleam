@@ -4,8 +4,9 @@ import gleam/list
 import gleam/option.{type Option, None, Some}
 import sprocket/context.{
   type AbstractFunctionalComponent, type Attribute, type Context, type Element,
-  Attribute, ClientHook, Component, ComponentWip, Context, Custom, Debug,
-  Element, Event, EventHandler, Fragment, IgnoreUpdate, Keyed, Provider, Text,
+  Attribute, ClientHook, ClientHookId, Component, ComponentWip, Context, Custom,
+  Debug, Element, Event, EventHandler, Fragment, IgnoreUpdate, Keyed, Provider,
+  Text,
 }
 import sprocket/internal/logger
 import sprocket/internal/reconcile.{
@@ -139,10 +140,10 @@ fn element(
           #(ctx, [ReconciledEventHandler(element_id, kind), ..rendered_attrs])
         }
         ClientHook(id, name) -> {
-          #(ctx, [
-            ReconciledClientHook(name, unique.to_string(id)),
-            ..rendered_attrs
-          ])
+          let ctx =
+            context.push_client_hook(ctx, ClientHookId(element_id, name, id))
+
+          #(ctx, [ReconciledClientHook(name), ..rendered_attrs])
         }
       }
     })

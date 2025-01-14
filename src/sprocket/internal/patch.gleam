@@ -252,8 +252,8 @@ fn attr_key(attribute) {
     ReconciledEventHandler(element_id: id, kind: kind) -> {
       unique.to_string(id) <> "-" <> kind
     }
-    ReconciledClientHook(id: id, ..) -> {
-      id
+    ReconciledClientHook(name) -> {
+      name
     }
   }
 }
@@ -534,14 +534,8 @@ fn attrs_to_json(attrs: List(ReconciledAttribute)) -> Json {
           ),
         ]
       }
-      ReconciledClientHook(name, id) -> {
-        [
-          #(constants.event_attr_prefix, json.string(name)),
-          #(
-            string.concat([constants.event_attr_prefix, "-id"]),
-            json.string(id),
-          ),
-        ]
+      ReconciledClientHook(name) -> {
+        [#(constants.client_hook_attr_prefix, json.string(name))]
       }
     }
   })
