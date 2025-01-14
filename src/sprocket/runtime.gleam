@@ -24,7 +24,7 @@ import sprocket/internal/reconcile.{
 }
 import sprocket/internal/reconcilers/recursive
 import sprocket/internal/reducer
-import sprocket/internal/utils/common.{require_some}
+import sprocket/internal/utils/common.{require}
 import sprocket/internal/utils/ordered_map.{
   type KeyedItem, type OrderedMapIter, KeyedItem,
 }
@@ -153,7 +153,7 @@ fn handle_message(message: Message, state: State) -> actor.Next(Message, State) 
     }
 
     ProcessClientHook(element_id, hook_name, kind, payload, reply_emitter) -> {
-      use reconciled <- require_some(state.reconciled, otherwise: fn() {
+      use reconciled <- require(some: state.reconciled, otherwise: fn() {
         logger.error(
           "Runtime must be reconciled before processing client hooks",
         )

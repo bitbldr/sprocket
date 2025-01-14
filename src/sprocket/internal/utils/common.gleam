@@ -1,12 +1,12 @@
 import gleam/option.{type Option, None, Some}
 
-pub fn require_some(
-  optional: Option(a),
-  otherwise none: fn() -> b,
-  then some: fn(a) -> b,
+pub fn require(
+  some optional: Option(a),
+  otherwise bail: fn() -> b,
+  do f: fn(a) -> b,
 ) -> b {
   case optional {
-    Some(value) -> some(value)
-    None -> none()
+    Some(value) -> f(value)
+    None -> bail()
   }
 }
