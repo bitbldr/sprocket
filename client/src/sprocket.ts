@@ -115,6 +115,11 @@ export function connect(
 
           break;
 
+        case "hook:event":
+          clientHookProvider.handle_message(event);
+
+          break;
+
         case "error":
           const { code, msg } = parsed[1];
           console.error(`Error ${code}: ${msg}`);

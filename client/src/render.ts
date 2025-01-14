@@ -56,7 +56,7 @@ function renderElement(element: Element, providers: Providers): VNode {
   }
 
   if (element.hooks.length > 0) {
-    data.hook = clientHookProvider(element.hooks);
+    data.hook = clientHookProvider.hook(element.hooks);
   }
 
   // wire up event handlers
