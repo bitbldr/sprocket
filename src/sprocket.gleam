@@ -57,7 +57,12 @@ pub fn new(
 type Payload {
   JoinPayload(csrf_token: String, initial_props: Option(Dict(String, String)))
   EventPayload(element_id: String, kind: String, payload: Dynamic)
-  HookEventPayload(id: String, event: String, payload: Option(Dynamic))
+  HookEventPayload(
+    element_id: String,
+    hook: String,
+    kind: String,
+    payload: Option(Dynamic),
+  )
   EmptyPayload(nothing: Option(String))
 }
 
@@ -77,7 +82,7 @@ pub fn handle_ws(spkt: Sprocket(p), msg: String) -> Result(Response(p), String) 
   case
     json.decode(
       msg,
-      dynamic.any([decode_join, decode_event, decode_hook_event, decode_empty]),
+      dynamic.any([decode_join, decode_hook_event, decode_event, decode_empty]),
     )
   {
     Ok(#("join", JoinPayload(csrf, initial_props))) -> {
@@ -99,26 +104,41 @@ pub fn handle_ws(spkt: Sprocket(p), msg: String) -> Result(Response(p), String) 
         }
       }
     }
+    Ok(#("hook:event", HookEventPayload(element_id, hook_name, kind, payload))) -> {
+      logger.debug(
+        "Hook Event: element " <> element_id <> " " <> hook_name <> " " <> kind,
+      )
+
+      use runtime <- require_runtime(spkt)
+
+      let reply_emitter = fn(kind, payload) {
+        let _ =
+          hook_emit_to_json(element_id, hook_name, kind, payload)
+          |> spkt.ws_send()
+          |> result.map_error(fn(e) {
+            logger.error_meta("Error sending hook event reply", e)
+          })
+
+        Nil
+      }
+
+      runtime.process_client_hook(
+        runtime,
+        element_id,
+        hook_name,
+        kind,
+        payload,
+        reply_emitter,
+      )
+
+      Ok(Empty)
+    }
     Ok(#("event", EventPayload(element_id, kind, payload))) -> {
       logger.debug("Event: element " <> element_id <> " " <> kind)
 
       use runtime <- require_runtime(spkt)
 
       runtime.process_event(runtime, element_id, kind, payload)
-
-      Ok(Empty)
-    }
-    Ok(#("hook:event", HookEventPayload(id, event, payload))) -> {
-      logger.debug("Hook Event: " <> event <> " " <> id)
-
-      use runtime <- require_runtime(spkt)
-
-      let reply_emitter = fn(event, payload) {
-        hook_event_to_json(id, event, payload)
-        |> spkt.ws_send()
-      }
-
-      runtime.process_client_hook(runtime, id, event, payload, reply_emitter)
 
       Ok(Empty)
     }
@@ -164,9 +184,9 @@ fn connect(
       |> spkt.ws_send()
     })
 
-  let emitter = fn(id, event, payload) {
+  let emitter = fn(element_id, hook, kind, payload) {
     let _ =
-      hook_event_to_json(id, event, payload)
+      hook_emit_to_json(element_id, hook, kind, payload)
       |> spkt.ws_send()
 
     Ok(Nil)
@@ -221,10 +241,11 @@ fn decode_hook_event(data: Dynamic) {
   data
   |> dynamic.tuple2(
     dynamic.string,
-    dynamic.decode3(
+    dynamic.decode4(
       HookEventPayload,
       field("id", dynamic.string),
-      field("name", dynamic.string),
+      field("hook", dynamic.string),
+      field("kind", dynamic.string),
       optional_field("payload", dynamic.dynamic),
     ),
   )
@@ -255,22 +276,28 @@ fn update_to_json(update: RenderedUpdate, debug: Bool) -> Json {
   }
 }
 
-fn hook_event_to_json(
+fn hook_emit_to_json(
   id: String,
-  event: String,
+  hook: String,
+  kind: String,
   payload: Option(String),
 ) -> String {
   json.preprocessed_array([
-    json.string("hook:event"),
+    json.string("hook:emit"),
     case payload {
       Some(payload) ->
         json.object([
           #("id", json.string(id)),
-          #("kind", json.string(event)),
+          #("hook", json.string(hook)),
+          #("kind", json.string(kind)),
           #("payload", json.string(payload)),
         ])
       None ->
-        json.object([#("id", json.string(id)), #("kind", json.string(event))])
+        json.object([
+          #("id", json.string(id)),
+          #("hook", json.string(hook)),
+          #("kind", json.string(kind)),
+        ])
     },
   ])
   |> json.to_string()

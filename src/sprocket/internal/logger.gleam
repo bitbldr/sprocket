@@ -30,6 +30,7 @@ pub fn log_meta(level: Level, message: String, meta: a) -> a {
   erlang_log(level, message)
 
   // TODO: Do something interesting to capture metadata. For now, just log it.
+  // This will print regardless of the log level which is an issue.
   io.debug(meta)
 }
 

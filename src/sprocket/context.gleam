@@ -16,6 +16,14 @@ pub type EventHandler {
   EventHandler(id: Unique(ElementId), kind: String, cb: fn(Dynamic) -> Nil)
 }
 
+pub type ClientHookId {
+  ClientHookId(
+    element_id: Unique(ElementId),
+    name: String,
+    hook_id: Unique(HookId),
+  )
+}
+
 pub type Attribute {
   Attribute(name: String, value: Dynamic)
   Event(kind: String, cb: fn(Dynamic) -> Nil)
@@ -45,7 +53,10 @@ pub type Updater(r) {
 }
 
 pub type EventEmitter =
-  fn(String, String, Option(String)) -> Result(Nil, Nil)
+  fn(String, String, String, Option(String)) -> Result(Nil, Nil)
+
+pub type ClientHookEmitter =
+  fn(Unique(HookId), String, Option(String)) -> Nil
 
 pub type ComponentHooks =
   OrderedMap(Int, Hook)
@@ -69,7 +80,7 @@ pub type MemoResult {
 }
 
 pub type ClientDispatcher =
-  fn(String, Option(String)) -> Result(Nil, Nil)
+  fn(String, Option(String)) -> Nil
 
 pub type ClientEventHandler =
   fn(String, Option(Dynamic), ClientDispatcher) -> Nil
@@ -154,9 +165,10 @@ pub type Context {
     view: Element,
     wip: ComponentWip,
     handlers: List(EventHandler),
+    client_hooks: List(ClientHookId),
     render_update: fn() -> Nil,
     update_hook: fn(Unique(HookId), fn(Hook) -> Hook) -> Nil,
-    emit: fn(Unique(HookId), String, Option(String)) -> Result(Nil, Nil),
+    emit: fn(Unique(HookId), String, Option(String)) -> Nil,
     cuid_channel: Subject(cuid.Message),
     providers: Dict(String, Dynamic),
   )
@@ -165,7 +177,7 @@ pub type Context {
 pub fn new(
   view: Element,
   cuid_channel: Subject(cuid.Message),
-  emitter: Option(EventEmitter),
+  emit: Option(ClientHookEmitter),
   render_update: fn() -> Nil,
   update_hook: fn(Unique(HookId), fn(Hook) -> Hook) -> Nil,
 ) -> Context {
@@ -173,21 +185,17 @@ pub fn new(
     view: view,
     wip: ComponentWip(hooks: ordered_map.new(), index: 0, is_first_render: True),
     handlers: [],
+    client_hooks: [],
     render_update: render_update,
     update_hook: update_hook,
-    emit: fn(id, name, payload) {
-      case emitter {
-        Some(emitter) -> emitter(unique.to_string(id), name, payload)
-        None -> Error(Nil)
-      }
-    },
+    emit: option.unwrap(emit, fn(_, _, _) { Nil }),
     cuid_channel: cuid_channel,
     providers: dict.new(),
   )
 }
 
 pub fn prepare_for_reconciliation(ctx: Context) {
-  Context(..ctx, handlers: [])
+  Context(..ctx, handlers: [], client_hooks: [])
 }
 
 pub fn fetch_or_init_hook(
@@ -265,6 +273,24 @@ pub fn get_event_handler(
     })
 
   #(ctx, handler)
+}
+
+pub fn push_client_hook(ctx: Context, hook: ClientHookId) -> Context {
+  Context(..ctx, client_hooks: [hook, ..ctx.client_hooks])
+}
+
+pub fn get_client_hook(
+  ctx: Context,
+  id: Unique(ElementId),
+  name: String,
+) -> #(Context, Result(ClientHookId, Nil)) {
+  let hook =
+    list.find(ctx.client_hooks, fn(h) {
+      let ClientHookId(i, n, _) = h
+      i == id && n == name
+    })
+
+  #(ctx, hook)
 }
 
 pub fn emit_event(

@@ -32,6 +32,7 @@ export function render(
 
 interface Element {
   type: "element";
+  id: string;
   tag: string;
   attrs: Record<string, any>;
   events: EventIdentifier[];
@@ -44,17 +45,22 @@ function renderElement(element: Element, providers: Providers): VNode {
   let { clientHookProvider, eventHandlerProvider } = providers;
   let data: VNodeData = { attrs: element.attrs };
 
+  // It's important that we set the elementId on the vnode data here
+  // so that we can reference it in the client hooks when we receive
+  // and update to check if the elementId has changed and update the
+  // client hook map accordingly.
+  data.elementId = element.id;
+
   if (element.key) {
     data.key = element.key;
   }
 
-  // TODO: figure out how to actually ignore updates with snabbdom
   if (element.ignore) {
     data.ignore = true;
   }
 
   if (element.hooks.length > 0) {
-    data.hook = clientHookProvider(element.hooks);
+    data.hook = clientHookProvider.hook(element.hooks);
   }
 
   // wire up event handlers
