@@ -45,6 +45,10 @@ function renderElement(element: Element, providers: Providers): VNode {
   let { clientHookProvider, eventHandlerProvider } = providers;
   let data: VNodeData = { attrs: element.attrs };
 
+  // It's important that we set the elementId on the vnode data here
+  // so that we can reference it in the client hooks when we receive
+  // and update to check if the elementId has changed and update the
+  // client hook map accordingly.
   data.elementId = element.id;
 
   if (element.key) {
