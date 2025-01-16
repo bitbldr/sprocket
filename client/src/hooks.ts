@@ -1,4 +1,3 @@
-import ReconnectingWebSocket from "reconnecting-websocket";
 import { Module } from "snabbdom";
 
 type PushEvent = (event: string, payload: any) => void;
@@ -30,8 +29,13 @@ export type ClientHookProvider = {
 };
 
 export const initClientHookProvider = (
-  socket: ReconnectingWebSocket,
-  hooks: Record<string, any> = {}
+  hooks: Record<string, any> = {},
+  sendHookMsg: (
+    elementId: string,
+    hook: string,
+    kind: string,
+    payload: any
+  ) => void
 ): ClientHookProvider => {
   let clientHookMap: Record<ElementId, Record<HookName, Hook>> = {};
 
@@ -43,14 +47,8 @@ export const initClientHookProvider = (
         elementHooks.forEach((h) => {
           const { name: hookName } = h;
 
-          const pushEvent = (kind: string, payload: any) => {
-            socket.send(
-              JSON.stringify([
-                "hook:event",
-                { id: vnode.data.elementId, hook: hookName, kind, payload },
-              ])
-            );
-          };
+          const pushEvent = (kind: string, payload: any) =>
+            sendHookMsg(vnode.data.elementId, hookName, kind, payload);
 
           const handleEvent = (
             kind: string,
@@ -102,14 +100,8 @@ export const initClientHookProvider = (
           // If the element id has changed, we also need to update the pushEvent function for each hook
           if (oldVNode.data.elementId !== vnode.data.elementId) {
             // Update the pushEvent function to use the new element id
-            const pushEvent = (kind: string, payload: any) => {
-              socket.send(
-                JSON.stringify([
-                  "hook:event",
-                  { id: vnode.data.elementId, hook: hookName, kind, payload },
-                ])
-              );
-            };
+            const pushEvent = (kind: string, payload: any) =>
+              sendHookMsg(vnode.data.elementId, hookName, kind, payload);
 
             clientHookMap[vnode.data.elementId][hookName].pushEvent = pushEvent;
           }

@@ -40,7 +40,7 @@ export function connect(
     ws_protocol + "//" + location.host + path
   );
 
-  let dom: Record<string, any>;
+  let vdom: Record<string, any>;
   let currentVNode: VNode;
   let firstConnect = true;
 
@@ -54,11 +54,33 @@ export function connect(
     }
   );
 
-  const clientHookProvider = initClientHookProvider(socket, opts.hooks);
+  const sendHookMsg = (
+    elementId: string,
+    hook: string,
+    kind: string,
+    payload: any
+  ) =>
+    socket.send(
+      JSON.stringify(["hook:event", { elementId, hook, kind, payload }])
+    );
+
+  const clientHookProvider = initClientHookProvider(opts.hooks, sendHookMsg);
+
+  const sendEvent = (elementId: string, kind: string, payload: any) =>
+    socket.send(
+      JSON.stringify([
+        "event",
+        {
+          elementId,
+          kind,
+          payload,
+        },
+      ])
+    );
 
   const eventHandlerProvider = initEventHandlerProvider(
-    socket,
-    opts.customEventEncoders
+    opts.customEventEncoders,
+    sendEvent
   );
 
   const providers: Providers = {
@@ -87,8 +109,8 @@ export function connect(
           topbar.hide();
 
           // Render the full initial DOM
-          dom = parsed[1];
-          const rendered = render(dom, providers) as VNode;
+          vdom = parsed[1];
+          const rendered = render(vdom, providers) as VNode;
 
           if (firstConnect) {
             firstConnect = false;
@@ -108,10 +130,10 @@ export function connect(
           // Apply the patch to the existing DOM
           const patch = parsed[1];
           const updateOpts = parsed[2];
-          dom = applyPatch(dom, patch, updateOpts) as Element;
+          vdom = applyPatch(vdom, patch, updateOpts) as Element;
 
           // Update the target DOM element
-          currentVNode = update(patcher, currentVNode, dom, providers);
+          currentVNode = update(patcher, currentVNode, vdom, providers);
 
           break;
 
@@ -134,16 +156,16 @@ export function connect(
   });
 }
 
-// update the target DOM element using a given JSON DOM
+// update the target VNode using the given virtual DOM
 function update(
   patcher: Patcher,
-  currentVNode: VNode,
-  patched: Record<string, any>,
+  targetVNode: VNode,
+  vdom: Record<string, any>,
   providers: Providers
 ) {
-  const rendered = render(patched, providers) as VNode;
+  const rendered = render(vdom, providers) as VNode;
 
-  patcher(currentVNode, rendered);
+  patcher(targetVNode, rendered);
 
   return rendered;
 }
