@@ -57,20 +57,20 @@ pub fn text_change_test() {
       props: props,
       hooks: ordered_map.new(),
       el: ReconciledElement(
-        id: unique.from_string("d"),
+        id: unique.from_string("a"),
         tag: "div",
         key: None,
         attrs: [],
         children: [
           ReconciledElement(
-            id: unique.from_string("e"),
+            id: unique.from_string("b"),
             tag: "p",
             key: None,
             attrs: [],
             children: [ReconciledText("Hello")],
           ),
           ReconciledElement(
-            id: unique.from_string("f"),
+            id: unique.from_string("c"),
             tag: "p",
             key: None,
             attrs: [],
@@ -129,20 +129,20 @@ pub fn first_fc_without_children_test() {
       props: props,
       hooks: ordered_map.new(),
       el: ReconciledElement(
-        id: unique.from_string("b"),
+        id: unique.from_string("a"),
         tag: "div",
         key: None,
         attrs: [],
         children: [
           ReconciledElement(
-            id: unique.from_string("c"),
+            id: unique.from_string("b"),
             tag: "p",
             key: None,
             attrs: [],
             children: [ReconciledText("Hello")],
           ),
           ReconciledElement(
-            id: unique.from_string("d"),
+            id: unique.from_string("c"),
             tag: "p",
             key: None,
             attrs: [],
@@ -164,7 +164,7 @@ pub fn first_fc_without_children_test() {
             #(
               0,
               Insert(
-                ReconciledElement(unique.from_string("c"), "p", None, [], [
+                ReconciledElement(unique.from_string("b"), "p", None, [], [
                   ReconciledText("Hello"),
                 ]),
               ),
@@ -172,7 +172,7 @@ pub fn first_fc_without_children_test() {
             #(
               1,
               Insert(
-                ReconciledElement(unique.from_string("d"), "p", None, [], [
+                ReconciledElement(unique.from_string("c"), "p", None, [], [
                   ReconciledText("Changed"),
                 ]),
               ),
@@ -225,34 +225,34 @@ pub fn add_child_test() {
       props: props,
       hooks: ordered_map.new(),
       el: ReconciledElement(
-        id: unique.from_string("d"),
+        id: unique.from_string("a"),
         tag: "div",
         key: None,
         attrs: [],
         children: [
           ReconciledElement(
-            id: unique.from_string("e"),
+            id: unique.from_string("b"),
             tag: "p",
             key: None,
             attrs: [],
             children: [ReconciledText("Hello")],
           ),
           ReconciledElement(
-            id: unique.from_string("f"),
+            id: unique.from_string("d"),
             tag: "p",
             key: None,
             attrs: [],
             children: [ReconciledText("Great")],
           ),
           ReconciledElement(
-            id: unique.from_string("g"),
+            id: unique.from_string("e"),
             tag: "p",
             key: None,
             attrs: [],
             children: [ReconciledText("Big")],
           ),
           ReconciledElement(
-            id: unique.from_string("h"),
+            id: unique.from_string("c"),
             tag: "p",
             key: None,
             attrs: [],
@@ -271,12 +271,23 @@ pub fn add_child_test() {
         Update(
           attrs: None,
           children: Some([
-            #(1, Update(attrs: None, children: Some([#(0, Change("Great"))]))),
+            #(
+              1,
+              Replace(
+                ReconciledElement(
+                  id: unique.from_string("d"),
+                  tag: "p",
+                  key: None,
+                  attrs: [],
+                  children: [ReconciledText("Great")],
+                ),
+              ),
+            ),
             #(
               2,
               Insert(
                 ReconciledElement(
-                  id: unique.from_string("g"),
+                  id: unique.from_string("e"),
                   tag: "p",
                   key: None,
                   attrs: [],
@@ -288,7 +299,7 @@ pub fn add_child_test() {
               3,
               Insert(
                 ReconciledElement(
-                  id: unique.from_string("h"),
+                  id: unique.from_string("c"),
                   tag: "p",
                   key: None,
                   attrs: [],
@@ -344,34 +355,34 @@ pub fn add_move_child_with_keys_test() {
       props: props,
       hooks: ordered_map.new(),
       el: ReconciledElement(
-        id: unique.from_string("d"),
+        id: unique.from_string("a"),
         tag: "div",
         key: None,
         attrs: [],
         children: [
           ReconciledElement(
-            id: unique.from_string("e"),
+            id: unique.from_string("b"),
             tag: "p",
             key: Some("hello"),
             attrs: [],
             children: [ReconciledText("Hello")],
           ),
           ReconciledElement(
-            id: unique.from_string("f"),
+            id: unique.from_string("d"),
             tag: "p",
             key: Some("great"),
             attrs: [],
             children: [ReconciledText("Great")],
           ),
           ReconciledElement(
-            id: unique.from_string("g"),
+            id: unique.from_string("e"),
             tag: "p",
             key: Some("big"),
             attrs: [],
             children: [ReconciledText("Big")],
           ),
           ReconciledElement(
-            id: unique.from_string("h"),
+            id: unique.from_string("c"),
             tag: "p",
             key: Some("world"),
             attrs: [],
@@ -394,7 +405,7 @@ pub fn add_move_child_with_keys_test() {
               1,
               Replace(
                 ReconciledElement(
-                  id: unique.from_string("f"),
+                  id: unique.from_string("d"),
                   tag: "p",
                   key: Some("great"),
                   attrs: [],
@@ -406,7 +417,7 @@ pub fn add_move_child_with_keys_test() {
               2,
               Insert(
                 ReconciledElement(
-                  id: unique.from_string("g"),
+                  id: unique.from_string("e"),
                   tag: "p",
                   key: Some("big"),
                   attrs: [],
@@ -463,34 +474,34 @@ pub fn add_move_update_child_with_keys_test() {
       props: props,
       hooks: ordered_map.new(),
       el: ReconciledElement(
-        id: unique.from_string("d"),
+        id: unique.from_string("a"),
         tag: "div",
         key: None,
         attrs: [],
         children: [
           ReconciledElement(
-            id: unique.from_string("e"),
+            id: unique.from_string("b"),
             tag: "p",
             key: Some("hello"),
             attrs: [],
             children: [ReconciledText("Hello")],
           ),
           ReconciledElement(
-            id: unique.from_string("f"),
+            id: unique.from_string("d"),
             tag: "p",
             key: Some("great"),
             attrs: [],
             children: [ReconciledText("Great")],
           ),
           ReconciledElement(
-            id: unique.from_string("g"),
+            id: unique.from_string("e"),
             tag: "p",
             key: Some("big"),
             attrs: [],
             children: [ReconciledText("Big")],
           ),
           ReconciledElement(
-            id: unique.from_string("h"),
+            id: unique.from_string("c"),
             tag: "p",
             key: Some("world"),
             attrs: [
@@ -516,7 +527,7 @@ pub fn add_move_update_child_with_keys_test() {
               1,
               Replace(
                 ReconciledElement(
-                  id: unique.from_string("f"),
+                  id: unique.from_string("d"),
                   tag: "p",
                   key: Some("great"),
                   attrs: [],
@@ -528,7 +539,7 @@ pub fn add_move_update_child_with_keys_test() {
               2,
               Insert(
                 ReconciledElement(
-                  id: unique.from_string("g"),
+                  id: unique.from_string("e"),
                   tag: "p",
                   key: Some("big"),
                   attrs: [],
@@ -569,14 +580,28 @@ pub fn add_move_replace_child_with_keys_test() {
       key: None,
       props: props,
       hooks: ordered_map.new(),
-      el: ReconciledElement(tag: "div", key: None, attrs: [], children: [
-        ReconciledElement(tag: "p", key: Some("hello"), attrs: [], children: [
-          ReconciledText("Hello"),
-        ]),
-        ReconciledElement(tag: "p", key: Some("world"), attrs: [], children: [
-          ReconciledText("World"),
-        ]),
-      ]),
+      el: ReconciledElement(
+        id: unique.from_string("a"),
+        tag: "div",
+        key: None,
+        attrs: [],
+        children: [
+          ReconciledElement(
+            id: unique.from_string("b"),
+            tag: "p",
+            key: Some("hello"),
+            attrs: [],
+            children: [ReconciledText("Hello")],
+          ),
+          ReconciledElement(
+            id: unique.from_string("c"),
+            tag: "p",
+            key: Some("world"),
+            attrs: [],
+            children: [ReconciledText("World")],
+          ),
+        ],
+      ),
     )
 
   let second =
@@ -585,21 +610,42 @@ pub fn add_move_replace_child_with_keys_test() {
       key: None,
       props: props,
       hooks: ordered_map.new(),
-      el: ReconciledElement(tag: "div", key: None, attrs: [], children: [
-        ReconciledElement(tag: "p", key: Some("hello"), attrs: [], children: [
-          ReconciledText("Hello"),
-        ]),
-        ReconciledElement(tag: "p", key: Some("great"), attrs: [], children: [
-          ReconciledText("Great"),
-        ]),
-        ReconciledElement(tag: "p", key: Some("big"), attrs: [], children: [
-          ReconciledText("Big"),
-        ]),
-        ReconciledElement(tag: "div", key: Some("world"), attrs: [], children: [
-          ReconciledText("Blue"),
-          ReconciledText("World"),
-        ]),
-      ]),
+      el: ReconciledElement(
+        id: unique.from_string("a"),
+        tag: "div",
+        key: None,
+        attrs: [],
+        children: [
+          ReconciledElement(
+            id: unique.from_string("b"),
+            tag: "p",
+            key: Some("hello"),
+            attrs: [],
+            children: [ReconciledText("Hello")],
+          ),
+          ReconciledElement(
+            id: unique.from_string("d"),
+            tag: "p",
+            key: Some("great"),
+            attrs: [],
+            children: [ReconciledText("Great")],
+          ),
+          ReconciledElement(
+            id: unique.from_string("e"),
+            tag: "p",
+            key: Some("big"),
+            attrs: [],
+            children: [ReconciledText("Big")],
+          ),
+          ReconciledElement(
+            id: unique.from_string("c"),
+            tag: "div",
+            key: Some("world"),
+            attrs: [],
+            children: [ReconciledText("Blue"), ReconciledText("World")],
+          ),
+        ],
+      ),
     )
 
   patch.create(first, second)
@@ -615,6 +661,7 @@ pub fn add_move_replace_child_with_keys_test() {
               1,
               Replace(
                 ReconciledElement(
+                  id: unique.from_string("d"),
                   tag: "p",
                   key: Some("great"),
                   attrs: [],
@@ -626,6 +673,7 @@ pub fn add_move_replace_child_with_keys_test() {
               2,
               Insert(
                 ReconciledElement(
+                  id: unique.from_string("e"),
                   tag: "p",
                   key: Some("big"),
                   attrs: [],
@@ -639,6 +687,7 @@ pub fn add_move_replace_child_with_keys_test() {
                 from: 1,
                 patch: Replace(
                   ReconciledElement(
+                    id: unique.from_string("c"),
                     tag: "div",
                     key: Some("world"),
                     attrs: [],
@@ -664,23 +713,49 @@ pub fn remove_middle_child_in_list_with_keys_test() {
       key: None,
       props: props,
       hooks: ordered_map.new(),
-      el: ReconciledElement(tag: "ul", key: None, attrs: [], children: [
-        ReconciledElement(tag: "li", key: Some("one"), attrs: [], children: [
-          ReconciledText("One"),
-        ]),
-        ReconciledElement(tag: "li", key: Some("two"), attrs: [], children: [
-          ReconciledText("Two"),
-        ]),
-        ReconciledElement(tag: "li", key: Some("three"), attrs: [], children: [
-          ReconciledText("Three"),
-        ]),
-        ReconciledElement(tag: "li", key: Some("four"), attrs: [], children: [
-          ReconciledText("Four"),
-        ]),
-        ReconciledElement(tag: "li", key: Some("five"), attrs: [], children: [
-          ReconciledText("Five"),
-        ]),
-      ]),
+      el: ReconciledElement(
+        id: unique.from_string("a"),
+        tag: "ul",
+        key: None,
+        attrs: [],
+        children: [
+          ReconciledElement(
+            id: unique.from_string("b"),
+            tag: "li",
+            key: Some("one"),
+            attrs: [],
+            children: [ReconciledText("One")],
+          ),
+          ReconciledElement(
+            id: unique.from_string("c"),
+            tag: "li",
+            key: Some("two"),
+            attrs: [],
+            children: [ReconciledText("Two")],
+          ),
+          ReconciledElement(
+            id: unique.from_string("d"),
+            tag: "li",
+            key: Some("three"),
+            attrs: [],
+            children: [ReconciledText("Three")],
+          ),
+          ReconciledElement(
+            id: unique.from_string("e"),
+            tag: "li",
+            key: Some("four"),
+            attrs: [],
+            children: [ReconciledText("Four")],
+          ),
+          ReconciledElement(
+            id: unique.from_string("f"),
+            tag: "li",
+            key: Some("five"),
+            attrs: [],
+            children: [ReconciledText("Five")],
+          ),
+        ],
+      ),
     )
 
   let second =
@@ -689,21 +764,42 @@ pub fn remove_middle_child_in_list_with_keys_test() {
       key: None,
       props: props,
       hooks: ordered_map.new(),
-      el: ReconciledElement(tag: "ul", key: None, attrs: [], children: [
-        ReconciledElement(tag: "li", key: Some("one"), attrs: [], children: [
-          ReconciledText("One"),
-        ]),
-        ReconciledElement(tag: "li", key: Some("two"), attrs: [], children: [
-          ReconciledText("Two"),
-        ]),
-        ReconciledElement(tag: "li", key: Some("four"), attrs: [], children: [
-          ReconciledText("Four"),
-          ReconciledText("and a half"),
-        ]),
-        ReconciledElement(tag: "li", key: Some("five"), attrs: [], children: [
-          ReconciledText("Five"),
-        ]),
-      ]),
+      el: ReconciledElement(
+        id: unique.from_string("a"),
+        tag: "ul",
+        key: None,
+        attrs: [],
+        children: [
+          ReconciledElement(
+            id: unique.from_string("b"),
+            tag: "li",
+            key: Some("one"),
+            attrs: [],
+            children: [ReconciledText("One")],
+          ),
+          ReconciledElement(
+            id: unique.from_string("c"),
+            tag: "li",
+            key: Some("two"),
+            attrs: [],
+            children: [ReconciledText("Two")],
+          ),
+          ReconciledElement(
+            id: unique.from_string("e"),
+            tag: "li",
+            key: Some("four"),
+            attrs: [],
+            children: [ReconciledText("Four"), ReconciledText("and a half")],
+          ),
+          ReconciledElement(
+            id: unique.from_string("f"),
+            tag: "li",
+            key: Some("five"),
+            attrs: [],
+            children: [ReconciledText("Five")],
+          ),
+        ],
+      ),
     )
 
   patch.create(first, second)
@@ -744,20 +840,42 @@ pub fn restore_full_list_from_partial_with_keys_test() {
       key: None,
       props: props,
       hooks: ordered_map.new(),
-      el: ReconciledElement(tag: "ul", key: None, attrs: [], children: [
-        ReconciledElement(tag: "li", key: Some("one"), attrs: [], children: [
-          ReconciledText("One"),
-        ]),
-        ReconciledElement(tag: "li", key: Some("two"), attrs: [], children: [
-          ReconciledText("Two"),
-        ]),
-        ReconciledElement(tag: "li", key: Some("four"), attrs: [], children: [
-          ReconciledText("Four"),
-        ]),
-        ReconciledElement(tag: "li", key: Some("five"), attrs: [], children: [
-          ReconciledText("Five"),
-        ]),
-      ]),
+      el: ReconciledElement(
+        id: unique.from_string("a"),
+        tag: "ul",
+        key: None,
+        attrs: [],
+        children: [
+          ReconciledElement(
+            id: unique.from_string("b"),
+            tag: "li",
+            key: Some("one"),
+            attrs: [],
+            children: [ReconciledText("One")],
+          ),
+          ReconciledElement(
+            id: unique.from_string("c"),
+            tag: "li",
+            key: Some("two"),
+            attrs: [],
+            children: [ReconciledText("Two")],
+          ),
+          ReconciledElement(
+            id: unique.from_string("d"),
+            tag: "li",
+            key: Some("four"),
+            attrs: [],
+            children: [ReconciledText("Four")],
+          ),
+          ReconciledElement(
+            id: unique.from_string("e"),
+            tag: "li",
+            key: Some("five"),
+            attrs: [],
+            children: [ReconciledText("Five")],
+          ),
+        ],
+      ),
     )
 
   let second =
@@ -766,23 +884,49 @@ pub fn restore_full_list_from_partial_with_keys_test() {
       key: None,
       props: props,
       hooks: ordered_map.new(),
-      el: ReconciledElement(tag: "ul", key: None, attrs: [], children: [
-        ReconciledElement(tag: "li", key: Some("one"), attrs: [], children: [
-          ReconciledText("One"),
-        ]),
-        ReconciledElement(tag: "li", key: Some("two"), attrs: [], children: [
-          ReconciledText("Two"),
-        ]),
-        ReconciledElement(tag: "li", key: Some("three"), attrs: [], children: [
-          ReconciledText("Three"),
-        ]),
-        ReconciledElement(tag: "li", key: Some("four"), attrs: [], children: [
-          ReconciledText("Four"),
-        ]),
-        ReconciledElement(tag: "li", key: Some("five"), attrs: [], children: [
-          ReconciledText("Five"),
-        ]),
-      ]),
+      el: ReconciledElement(
+        id: unique.from_string("a"),
+        tag: "ul",
+        key: None,
+        attrs: [],
+        children: [
+          ReconciledElement(
+            id: unique.from_string("b"),
+            tag: "li",
+            key: Some("one"),
+            attrs: [],
+            children: [ReconciledText("One")],
+          ),
+          ReconciledElement(
+            id: unique.from_string("c"),
+            tag: "li",
+            key: Some("two"),
+            attrs: [],
+            children: [ReconciledText("Two")],
+          ),
+          ReconciledElement(
+            id: unique.from_string("f"),
+            tag: "li",
+            key: Some("three"),
+            attrs: [],
+            children: [ReconciledText("Three")],
+          ),
+          ReconciledElement(
+            id: unique.from_string("d"),
+            tag: "li",
+            key: Some("four"),
+            attrs: [],
+            children: [ReconciledText("Four")],
+          ),
+          ReconciledElement(
+            id: unique.from_string("e"),
+            tag: "li",
+            key: Some("five"),
+            attrs: [],
+            children: [ReconciledText("Five")],
+          ),
+        ],
+      ),
     )
 
   patch.create(first, second)
@@ -798,6 +942,7 @@ pub fn restore_full_list_from_partial_with_keys_test() {
               2,
               Replace(
                 ReconciledElement(
+                  id: unique.from_string("f"),
                   tag: "li",
                   key: Some("three"),
                   attrs: [],
@@ -824,20 +969,42 @@ pub fn remove_first_couple_items_in_list_with_keys_test() {
       key: None,
       props: props,
       hooks: ordered_map.new(),
-      el: ReconciledElement(tag: "ul", key: None, attrs: [], children: [
-        ReconciledElement(tag: "li", key: Some("one"), attrs: [], children: [
-          ReconciledText("One"),
-        ]),
-        ReconciledElement(tag: "li", key: Some("two"), attrs: [], children: [
-          ReconciledText("Two"),
-        ]),
-        ReconciledElement(tag: "li", key: Some("four"), attrs: [], children: [
-          ReconciledText("Four"),
-        ]),
-        ReconciledElement(tag: "li", key: Some("five"), attrs: [], children: [
-          ReconciledText("Five"),
-        ]),
-      ]),
+      el: ReconciledElement(
+        id: unique.from_string("a"),
+        tag: "ul",
+        key: None,
+        attrs: [],
+        children: [
+          ReconciledElement(
+            id: unique.from_string("b"),
+            tag: "li",
+            key: Some("one"),
+            attrs: [],
+            children: [ReconciledText("One")],
+          ),
+          ReconciledElement(
+            id: unique.from_string("c"),
+            tag: "li",
+            key: Some("two"),
+            attrs: [],
+            children: [ReconciledText("Two")],
+          ),
+          ReconciledElement(
+            id: unique.from_string("d"),
+            tag: "li",
+            key: Some("four"),
+            attrs: [],
+            children: [ReconciledText("Four")],
+          ),
+          ReconciledElement(
+            id: unique.from_string("e"),
+            tag: "li",
+            key: Some("five"),
+            attrs: [],
+            children: [ReconciledText("Five")],
+          ),
+        ],
+      ),
     )
 
   let second =
@@ -846,24 +1013,44 @@ pub fn remove_first_couple_items_in_list_with_keys_test() {
       key: None,
       props: props,
       hooks: ordered_map.new(),
-      el: ReconciledElement(tag: "ul", key: None, attrs: [], children: [
-        ReconciledElement(tag: "li", key: Some("three"), attrs: [], children: [
-          ReconciledText("Three"),
-        ]),
-        ReconciledElement(tag: "li", key: Some("four"), attrs: [], children: [
-          ReconciledText("Four"),
-        ]),
-        ReconciledElement(tag: "li", key: Some("five"), attrs: [], children: [
-          ReconciledText("Five"),
-          ReconciledComponent(
-            fc,
-            None,
-            props,
-            ordered_map.new(),
-            ReconciledText("and some change"),
+      el: ReconciledElement(
+        id: unique.from_string("a"),
+        tag: "ul",
+        key: None,
+        attrs: [],
+        children: [
+          ReconciledElement(
+            id: unique.from_string("f"),
+            tag: "li",
+            key: Some("three"),
+            attrs: [],
+            children: [ReconciledText("Three")],
           ),
-        ]),
-      ]),
+          ReconciledElement(
+            id: unique.from_string("d"),
+            tag: "li",
+            key: Some("four"),
+            attrs: [],
+            children: [ReconciledText("Four")],
+          ),
+          ReconciledElement(
+            id: unique.from_string("e"),
+            tag: "li",
+            key: Some("five"),
+            attrs: [],
+            children: [
+              ReconciledText("Five"),
+              ReconciledComponent(
+                fc,
+                None,
+                props,
+                ordered_map.new(),
+                ReconciledText("and some change"),
+              ),
+            ],
+          ),
+        ],
+      ),
     )
 
   patch.create(first, second)
@@ -879,6 +1066,7 @@ pub fn remove_first_couple_items_in_list_with_keys_test() {
               0,
               Replace(
                 ReconciledElement(
+                  id: unique.from_string("f"),
                   tag: "li",
                   key: Some("three"),
                   attrs: [],
@@ -926,20 +1114,42 @@ pub fn noop_test() {
       key: None,
       props: props,
       hooks: ordered_map.new(),
-      el: ReconciledElement(tag: "ul", key: None, attrs: [], children: [
-        ReconciledElement(tag: "li", key: Some("one"), attrs: [], children: [
-          ReconciledText("One"),
-        ]),
-        ReconciledElement(tag: "li", key: Some("two"), attrs: [], children: [
-          ReconciledText("Two"),
-        ]),
-        ReconciledElement(tag: "li", key: Some("four"), attrs: [], children: [
-          ReconciledText("Four"),
-        ]),
-        ReconciledElement(tag: "li", key: Some("five"), attrs: [], children: [
-          ReconciledText("Five"),
-        ]),
-      ]),
+      el: ReconciledElement(
+        id: unique.from_string("a"),
+        tag: "ul",
+        key: None,
+        attrs: [],
+        children: [
+          ReconciledElement(
+            id: unique.from_string("b"),
+            tag: "li",
+            key: Some("one"),
+            attrs: [],
+            children: [ReconciledText("One")],
+          ),
+          ReconciledElement(
+            id: unique.from_string("c"),
+            tag: "li",
+            key: Some("two"),
+            attrs: [],
+            children: [ReconciledText("Two")],
+          ),
+          ReconciledElement(
+            id: unique.from_string("d"),
+            tag: "li",
+            key: Some("four"),
+            attrs: [],
+            children: [ReconciledText("Four")],
+          ),
+          ReconciledElement(
+            id: unique.from_string("e"),
+            tag: "li",
+            key: Some("five"),
+            attrs: [],
+            children: [ReconciledText("Five")],
+          ),
+        ],
+      ),
     )
 
   let second =
@@ -948,20 +1158,42 @@ pub fn noop_test() {
       key: None,
       props: props,
       hooks: ordered_map.new(),
-      el: ReconciledElement(tag: "ul", key: None, attrs: [], children: [
-        ReconciledElement(tag: "li", key: Some("one"), attrs: [], children: [
-          ReconciledText("One"),
-        ]),
-        ReconciledElement(tag: "li", key: Some("two"), attrs: [], children: [
-          ReconciledText("Two"),
-        ]),
-        ReconciledElement(tag: "li", key: Some("four"), attrs: [], children: [
-          ReconciledText("Four"),
-        ]),
-        ReconciledElement(tag: "li", key: Some("five"), attrs: [], children: [
-          ReconciledText("Five"),
-        ]),
-      ]),
+      el: ReconciledElement(
+        id: unique.from_string("a"),
+        tag: "ul",
+        key: None,
+        attrs: [],
+        children: [
+          ReconciledElement(
+            id: unique.from_string("b"),
+            tag: "li",
+            key: Some("one"),
+            attrs: [],
+            children: [ReconciledText("One")],
+          ),
+          ReconciledElement(
+            id: unique.from_string("c"),
+            tag: "li",
+            key: Some("two"),
+            attrs: [],
+            children: [ReconciledText("Two")],
+          ),
+          ReconciledElement(
+            id: unique.from_string("d"),
+            tag: "li",
+            key: Some("four"),
+            attrs: [],
+            children: [ReconciledText("Four")],
+          ),
+          ReconciledElement(
+            id: unique.from_string("e"),
+            tag: "li",
+            key: Some("five"),
+            attrs: [],
+            children: [ReconciledText("Five")],
+          ),
+        ],
+      ),
     )
 
   patch.create(first, second)
@@ -978,22 +1210,44 @@ pub fn ignored_test() {
       key: None,
       props: props,
       hooks: ordered_map.new(),
-      el: ReconciledElement(tag: "ul", key: None, attrs: [], children: [
-        reconcile.ReconciledIgnoreUpdate(
-          ReconciledElement(tag: "li", key: Some("one"), attrs: [], children: [
-            ReconciledText("One"),
-          ]),
-        ),
-        ReconciledElement(tag: "li", key: Some("two"), attrs: [], children: [
-          ReconciledText("Two"),
-        ]),
-        ReconciledElement(tag: "li", key: Some("four"), attrs: [], children: [
-          ReconciledText("Four"),
-        ]),
-        ReconciledElement(tag: "li", key: Some("five"), attrs: [], children: [
-          ReconciledText("Five"),
-        ]),
-      ]),
+      el: ReconciledElement(
+        id: unique.from_string("a"),
+        tag: "ul",
+        key: None,
+        attrs: [],
+        children: [
+          reconcile.ReconciledIgnoreUpdate(
+            ReconciledElement(
+              id: unique.from_string("b"),
+              tag: "li",
+              key: Some("one"),
+              attrs: [],
+              children: [ReconciledText("One")],
+            ),
+          ),
+          ReconciledElement(
+            id: unique.from_string("c"),
+            tag: "li",
+            key: Some("two"),
+            attrs: [],
+            children: [ReconciledText("Two")],
+          ),
+          ReconciledElement(
+            id: unique.from_string("d"),
+            tag: "li",
+            key: Some("four"),
+            attrs: [],
+            children: [ReconciledText("Four")],
+          ),
+          ReconciledElement(
+            id: unique.from_string("e"),
+            tag: "li",
+            key: Some("five"),
+            attrs: [],
+            children: [ReconciledText("Five")],
+          ),
+        ],
+      ),
     )
 
   let second =
@@ -1002,22 +1256,44 @@ pub fn ignored_test() {
       key: None,
       props: props,
       hooks: ordered_map.new(),
-      el: ReconciledElement(tag: "ul", key: None, attrs: [], children: [
-        reconcile.ReconciledIgnoreUpdate(
-          ReconciledElement(tag: "li", key: Some("one"), attrs: [], children: [
-            ReconciledText("Changed"),
-          ]),
-        ),
-        ReconciledElement(tag: "li", key: Some("two"), attrs: [], children: [
-          ReconciledText("Two"),
-        ]),
-        ReconciledElement(tag: "li", key: Some("four"), attrs: [], children: [
-          ReconciledText("Four"),
-        ]),
-        ReconciledElement(tag: "li", key: Some("five"), attrs: [], children: [
-          ReconciledText("Five"),
-        ]),
-      ]),
+      el: ReconciledElement(
+        id: unique.from_string("a"),
+        tag: "ul",
+        key: None,
+        attrs: [],
+        children: [
+          reconcile.ReconciledIgnoreUpdate(
+            ReconciledElement(
+              id: unique.from_string("b"),
+              tag: "li",
+              key: Some("one"),
+              attrs: [],
+              children: [ReconciledText("Changed")],
+            ),
+          ),
+          ReconciledElement(
+            id: unique.from_string("c"),
+            tag: "li",
+            key: Some("two"),
+            attrs: [],
+            children: [ReconciledText("Two")],
+          ),
+          ReconciledElement(
+            id: unique.from_string("d"),
+            tag: "li",
+            key: Some("four"),
+            attrs: [],
+            children: [ReconciledText("Four")],
+          ),
+          ReconciledElement(
+            id: unique.from_string("e"),
+            tag: "li",
+            key: Some("five"),
+            attrs: [],
+            children: [ReconciledText("Five")],
+          ),
+        ],
+      ),
     )
 
   patch.create(first, second)
@@ -1034,20 +1310,42 @@ pub fn shift_list_with_keys_test() {
       key: None,
       props: props,
       hooks: ordered_map.new(),
-      el: ReconciledElement(tag: "ul", key: None, attrs: [], children: [
-        ReconciledElement(tag: "li", key: Some("one"), attrs: [], children: [
-          ReconciledText("One"),
-        ]),
-        ReconciledElement(tag: "li", key: Some("two"), attrs: [], children: [
-          ReconciledText("Two"),
-        ]),
-        ReconciledElement(tag: "li", key: Some("four"), attrs: [], children: [
-          ReconciledText("Four"),
-        ]),
-        ReconciledElement(tag: "li", key: Some("five"), attrs: [], children: [
-          ReconciledText("Five"),
-        ]),
-      ]),
+      el: ReconciledElement(
+        id: unique.from_string("a"),
+        tag: "ul",
+        key: None,
+        attrs: [],
+        children: [
+          ReconciledElement(
+            id: unique.from_string("b"),
+            tag: "li",
+            key: Some("one"),
+            attrs: [],
+            children: [ReconciledText("One")],
+          ),
+          ReconciledElement(
+            id: unique.from_string("c"),
+            tag: "li",
+            key: Some("two"),
+            attrs: [],
+            children: [ReconciledText("Two")],
+          ),
+          ReconciledElement(
+            id: unique.from_string("d"),
+            tag: "li",
+            key: Some("four"),
+            attrs: [],
+            children: [ReconciledText("Four")],
+          ),
+          ReconciledElement(
+            id: unique.from_string("e"),
+            tag: "li",
+            key: Some("five"),
+            attrs: [],
+            children: [ReconciledText("Five")],
+          ),
+        ],
+      ),
     )
 
   let second =
@@ -1056,29 +1354,63 @@ pub fn shift_list_with_keys_test() {
       key: None,
       props: props,
       hooks: ordered_map.new(),
-      el: ReconciledElement(tag: "ul", key: None, attrs: [], children: [
-        ReconciledElement(tag: "li", key: Some("uno"), attrs: [], children: [
-          ReconciledText("Uno"),
-        ]),
-        ReconciledElement(tag: "li", key: Some("dos"), attrs: [], children: [
-          ReconciledText("Dos"),
-        ]),
-        ReconciledElement(tag: "li", key: Some("tres"), attrs: [], children: [
-          ReconciledText("Tres"),
-        ]),
-        ReconciledElement(tag: "li", key: Some("one"), attrs: [], children: [
-          ReconciledText("One"),
-        ]),
-        ReconciledElement(tag: "li", key: Some("two"), attrs: [], children: [
-          ReconciledText("Two"),
-        ]),
-        ReconciledElement(tag: "li", key: Some("four"), attrs: [], children: [
-          ReconciledText("Four"),
-        ]),
-        ReconciledElement(tag: "li", key: Some("five"), attrs: [], children: [
-          ReconciledText("Five"),
-        ]),
-      ]),
+      el: ReconciledElement(
+        id: unique.from_string("a"),
+        tag: "ul",
+        key: None,
+        attrs: [],
+        children: [
+          ReconciledElement(
+            id: unique.from_string("f"),
+            tag: "li",
+            key: Some("uno"),
+            attrs: [],
+            children: [ReconciledText("Uno")],
+          ),
+          ReconciledElement(
+            id: unique.from_string("g"),
+            tag: "li",
+            key: Some("dos"),
+            attrs: [],
+            children: [ReconciledText("Dos")],
+          ),
+          ReconciledElement(
+            id: unique.from_string("h"),
+            tag: "li",
+            key: Some("tres"),
+            attrs: [],
+            children: [ReconciledText("Tres")],
+          ),
+          ReconciledElement(
+            id: unique.from_string("b"),
+            tag: "li",
+            key: Some("one"),
+            attrs: [],
+            children: [ReconciledText("One")],
+          ),
+          ReconciledElement(
+            id: unique.from_string("c"),
+            tag: "li",
+            key: Some("two"),
+            attrs: [],
+            children: [ReconciledText("Two")],
+          ),
+          ReconciledElement(
+            id: unique.from_string("d"),
+            tag: "li",
+            key: Some("four"),
+            attrs: [],
+            children: [ReconciledText("Four")],
+          ),
+          ReconciledElement(
+            id: unique.from_string("e"),
+            tag: "li",
+            key: Some("five"),
+            attrs: [],
+            children: [ReconciledText("Five")],
+          ),
+        ],
+      ),
     )
 
   patch.create(first, second)
@@ -1094,6 +1426,7 @@ pub fn shift_list_with_keys_test() {
               0,
               Replace(
                 ReconciledElement(
+                  id: unique.from_string("f"),
                   tag: "li",
                   key: Some("uno"),
                   attrs: [],
@@ -1105,6 +1438,7 @@ pub fn shift_list_with_keys_test() {
               1,
               Replace(
                 ReconciledElement(
+                  id: unique.from_string("g"),
                   tag: "li",
                   key: Some("dos"),
                   attrs: [],
@@ -1116,6 +1450,7 @@ pub fn shift_list_with_keys_test() {
               2,
               Replace(
                 ReconciledElement(
+                  id: unique.from_string("h"),
                   tag: "li",
                   key: Some("tres"),
                   attrs: [],
@@ -1144,20 +1479,28 @@ pub fn attribute_change_test() {
       key: None,
       props: props,
       hooks: ordered_map.new(),
-      el: ReconciledElement(tag: "div", key: None, attrs: [], children: [
-        ReconciledElement(
-          tag: "p",
-          key: None,
-          attrs: [ReconciledAttribute("class", "bold")],
-          children: [ReconciledText("Hello")],
-        ),
-        ReconciledElement(
-          tag: "p",
-          key: None,
-          attrs: [ReconciledAttribute("class", "italic")],
-          children: [ReconciledText("World")],
-        ),
-      ]),
+      el: ReconciledElement(
+        id: unique.from_string("a"),
+        tag: "div",
+        key: None,
+        attrs: [],
+        children: [
+          ReconciledElement(
+            id: unique.from_string("b"),
+            tag: "p",
+            key: None,
+            attrs: [ReconciledAttribute("class", "bold")],
+            children: [ReconciledText("Hello")],
+          ),
+          ReconciledElement(
+            id: unique.from_string("c"),
+            tag: "p",
+            key: None,
+            attrs: [ReconciledAttribute("class", "italic")],
+            children: [ReconciledText("World")],
+          ),
+        ],
+      ),
     )
 
   let second =
@@ -1166,20 +1509,31 @@ pub fn attribute_change_test() {
       key: None,
       props: props,
       hooks: ordered_map.new(),
-      el: ReconciledElement(tag: "div", key: None, attrs: [], children: [
-        ReconciledElement(
-          tag: "p",
-          key: None,
-          attrs: [
-            ReconciledAttribute("class", "bold"),
-            ReconciledAttribute("class", "italic"),
-          ],
-          children: [ReconciledText("Hello")],
-        ),
-        ReconciledElement(tag: "p", key: None, attrs: [], children: [
-          ReconciledText("Changed"),
-        ]),
-      ]),
+      el: ReconciledElement(
+        id: unique.from_string("a"),
+        tag: "div",
+        key: None,
+        attrs: [],
+        children: [
+          ReconciledElement(
+            id: unique.from_string("b"),
+            tag: "p",
+            key: None,
+            attrs: [
+              ReconciledAttribute("class", "bold"),
+              ReconciledAttribute("class", "italic"),
+            ],
+            children: [ReconciledText("Hello")],
+          ),
+          ReconciledElement(
+            id: unique.from_string("c"),
+            tag: "p",
+            key: None,
+            attrs: [],
+            children: [ReconciledText("Changed")],
+          ),
+        ],
+      ),
     )
 
   patch.create(first, second)
@@ -1226,11 +1580,21 @@ pub fn fc_change_test() {
       key: None,
       props: props,
       hooks: ordered_map.new(),
-      el: ReconciledElement(tag: "div", key: None, attrs: [], children: [
-        ReconciledElement(tag: "p", key: None, attrs: [], children: [
-          ReconciledText("Original Functional Component"),
-        ]),
-      ]),
+      el: ReconciledElement(
+        id: unique.from_string("a"),
+        tag: "div",
+        key: None,
+        attrs: [],
+        children: [
+          ReconciledElement(
+            id: unique.from_string("b"),
+            tag: "p",
+            key: None,
+            attrs: [],
+            children: [ReconciledText("Original Functional Component")],
+          ),
+        ],
+      ),
     )
 
   let fc2 = fn(ctx, _) { #(ctx, empty_element) }
@@ -1241,14 +1605,28 @@ pub fn fc_change_test() {
       key: None,
       props: props,
       hooks: ordered_map.new(),
-      el: ReconciledElement(tag: "div", key: None, attrs: [], children: [
-        ReconciledElement(tag: "p", key: None, attrs: [], children: [
-          ReconciledText("Functional Component"),
-        ]),
-        ReconciledElement(tag: "p", key: None, attrs: [], children: [
-          ReconciledText("Changed"),
-        ]),
-      ]),
+      el: ReconciledElement(
+        id: unique.from_string("a"),
+        tag: "div",
+        key: None,
+        attrs: [],
+        children: [
+          ReconciledElement(
+            id: unique.from_string("b"),
+            tag: "p",
+            key: None,
+            attrs: [],
+            children: [ReconciledText("Functional Component")],
+          ),
+          ReconciledElement(
+            id: unique.from_string("c"),
+            tag: "p",
+            key: None,
+            attrs: [],
+            children: [ReconciledText("Changed")],
+          ),
+        ],
+      ),
     )
 
   patch.create(first, second)
@@ -1258,14 +1636,28 @@ pub fn fc_change_test() {
       key: None,
       props: props,
       hooks: ordered_map.new(),
-      el: ReconciledElement(tag: "div", key: None, attrs: [], children: [
-        ReconciledElement(tag: "p", key: None, attrs: [], children: [
-          ReconciledText("Functional Component"),
-        ]),
-        ReconciledElement(tag: "p", key: None, attrs: [], children: [
-          ReconciledText("Changed"),
-        ]),
-      ]),
+      el: ReconciledElement(
+        id: unique.from_string("a"),
+        tag: "div",
+        key: None,
+        attrs: [],
+        children: [
+          ReconciledElement(
+            id: unique.from_string("b"),
+            tag: "p",
+            key: None,
+            attrs: [],
+            children: [ReconciledText("Functional Component")],
+          ),
+          ReconciledElement(
+            id: unique.from_string("c"),
+            tag: "p",
+            key: None,
+            attrs: [],
+            children: [ReconciledText("Changed")],
+          ),
+        ],
+      ),
     )),
   )
 }
@@ -1281,11 +1673,21 @@ pub fn fc_props_change_test() {
       key: None,
       props: original_props,
       hooks: ordered_map.new(),
-      el: ReconciledElement(tag: "div", key: None, attrs: [], children: [
-        ReconciledElement(tag: "p", key: None, attrs: [], children: [
-          ReconciledText("Original Functional Component"),
-        ]),
-      ]),
+      el: ReconciledElement(
+        id: unique.from_string("a"),
+        tag: "div",
+        key: None,
+        attrs: [],
+        children: [
+          ReconciledElement(
+            id: unique.from_string("b"),
+            tag: "p",
+            key: None,
+            attrs: [],
+            children: [ReconciledText("Original Functional Component")],
+          ),
+        ],
+      ),
     )
 
   let new_props = dynamic.from(["changed"])
@@ -1296,14 +1698,28 @@ pub fn fc_props_change_test() {
       key: None,
       props: new_props,
       hooks: ordered_map.new(),
-      el: ReconciledElement(tag: "div", key: None, attrs: [], children: [
-        ReconciledElement(tag: "p", key: None, attrs: [], children: [
-          ReconciledText("Functional Component"),
-        ]),
-        ReconciledElement(tag: "p", key: None, attrs: [], children: [
-          ReconciledText("Props Changed"),
-        ]),
-      ]),
+      el: ReconciledElement(
+        id: unique.from_string("a"),
+        tag: "div",
+        key: None,
+        attrs: [],
+        children: [
+          ReconciledElement(
+            id: unique.from_string("b"),
+            tag: "p",
+            key: None,
+            attrs: [],
+            children: [ReconciledText("Functional Component")],
+          ),
+          ReconciledElement(
+            id: unique.from_string("c"),
+            tag: "p",
+            key: None,
+            attrs: [],
+            children: [ReconciledText("Props Changed")],
+          ),
+        ],
+      ),
     )
 
   patch.create(first, second)
@@ -1313,14 +1729,28 @@ pub fn fc_props_change_test() {
       key: None,
       props: new_props,
       hooks: ordered_map.new(),
-      el: ReconciledElement(tag: "div", key: None, attrs: [], children: [
-        ReconciledElement(tag: "p", key: None, attrs: [], children: [
-          ReconciledText("Functional Component"),
-        ]),
-        ReconciledElement(tag: "p", key: None, attrs: [], children: [
-          ReconciledText("Props Changed"),
-        ]),
-      ]),
+      el: ReconciledElement(
+        id: unique.from_string("a"),
+        tag: "div",
+        key: None,
+        attrs: [],
+        children: [
+          ReconciledElement(
+            id: unique.from_string("b"),
+            tag: "p",
+            key: None,
+            attrs: [],
+            children: [ReconciledText("Functional Component")],
+          ),
+          ReconciledElement(
+            id: unique.from_string("c"),
+            tag: "p",
+            key: None,
+            attrs: [],
+            children: [ReconciledText("Props Changed")],
+          ),
+        ],
+      ),
     )),
   )
 }
@@ -1335,14 +1765,28 @@ pub fn patch_to_json_test() {
       key: None,
       props: props,
       hooks: ordered_map.new(),
-      el: ReconciledElement(tag: "div", key: None, attrs: [], children: [
-        ReconciledElement(tag: "p", key: Some("hello"), attrs: [], children: [
-          ReconciledText("Hello"),
-        ]),
-        ReconciledElement(tag: "p", key: Some("world"), attrs: [], children: [
-          ReconciledText("World"),
-        ]),
-      ]),
+      el: ReconciledElement(
+        id: unique.from_string("a"),
+        tag: "div",
+        key: None,
+        attrs: [],
+        children: [
+          ReconciledElement(
+            id: unique.from_string("b"),
+            tag: "p",
+            key: Some("hello"),
+            attrs: [],
+            children: [ReconciledText("Hello")],
+          ),
+          ReconciledElement(
+            id: unique.from_string("c"),
+            tag: "p",
+            key: Some("world"),
+            attrs: [],
+            children: [ReconciledText("World")],
+          ),
+        ],
+      ),
     )
 
   let second =
@@ -1351,20 +1795,42 @@ pub fn patch_to_json_test() {
       key: None,
       props: props,
       hooks: ordered_map.new(),
-      el: ReconciledElement(tag: "div", key: None, attrs: [], children: [
-        ReconciledElement(tag: "p", key: Some("hello"), attrs: [], children: [
-          ReconciledText("Hello"),
-        ]),
-        ReconciledElement(tag: "p", key: Some("great"), attrs: [], children: [
-          ReconciledText("Great"),
-        ]),
-        ReconciledElement(tag: "p", key: Some("big"), attrs: [], children: [
-          ReconciledText("Big"),
-        ]),
-        ReconciledElement(tag: "p", key: Some("world"), attrs: [], children: [
-          ReconciledText("World"),
-        ]),
-      ]),
+      el: ReconciledElement(
+        id: unique.from_string("a"),
+        tag: "div",
+        key: None,
+        attrs: [],
+        children: [
+          ReconciledElement(
+            id: unique.from_string("b"),
+            tag: "p",
+            key: Some("hello"),
+            attrs: [],
+            children: [ReconciledText("Hello")],
+          ),
+          ReconciledElement(
+            id: unique.from_string("d"),
+            tag: "p",
+            key: Some("great"),
+            attrs: [],
+            children: [ReconciledText("Great")],
+          ),
+          ReconciledElement(
+            id: unique.from_string("e"),
+            tag: "p",
+            key: Some("big"),
+            attrs: [],
+            children: [ReconciledText("Big")],
+          ),
+          ReconciledElement(
+            id: unique.from_string("c"),
+            tag: "p",
+            key: Some("world"),
+            attrs: [],
+            children: [ReconciledText("World")],
+          ),
+        ],
+      ),
     )
 
   patch.create(first, second)
@@ -1383,6 +1849,7 @@ pub fn patch_to_json_test() {
                   \"Replace\",
                   {
                       \"type\": \"element\",
+                      \"id\": \"d\",
                       \"tag\": \"p\",
                       \"attrs\": {},
                       \"events\": [],
@@ -1395,6 +1862,7 @@ pub fn patch_to_json_test() {
                   \"Insert\",
                   {
                       \"type\": \"element\",
+                      \"id\": \"e\",
                       \"tag\": \"p\",
                       \"attrs\": {},
                       \"events\": [],
@@ -1428,20 +1896,42 @@ pub fn patch_to_json_replace_list_with_component_test() {
       key: None,
       props: props,
       hooks: ordered_map.new(),
-      el: ReconciledElement(tag: "div", key: None, attrs: [], children: [
-        ReconciledElement(tag: "p", key: Some("hello"), attrs: [], children: [
-          ReconciledText("Hello"),
-        ]),
-        ReconciledElement(tag: "p", key: Some("great"), attrs: [], children: [
-          ReconciledText("Great"),
-        ]),
-        ReconciledElement(tag: "p", key: Some("big"), attrs: [], children: [
-          ReconciledText("big"),
-        ]),
-        ReconciledElement(tag: "p", key: Some("world"), attrs: [], children: [
-          ReconciledText("World"),
-        ]),
-      ]),
+      el: ReconciledElement(
+        id: unique.from_string("a"),
+        tag: "div",
+        key: None,
+        attrs: [],
+        children: [
+          ReconciledElement(
+            id: unique.from_string("b"),
+            tag: "p",
+            key: Some("hello"),
+            attrs: [],
+            children: [ReconciledText("Hello")],
+          ),
+          ReconciledElement(
+            id: unique.from_string("c"),
+            tag: "p",
+            key: Some("great"),
+            attrs: [],
+            children: [ReconciledText("Great")],
+          ),
+          ReconciledElement(
+            id: unique.from_string("d"),
+            tag: "p",
+            key: Some("big"),
+            attrs: [],
+            children: [ReconciledText("big")],
+          ),
+          ReconciledElement(
+            id: unique.from_string("e"),
+            tag: "p",
+            key: Some("world"),
+            attrs: [],
+            children: [ReconciledText("World")],
+          ),
+        ],
+      ),
     )
 
   let fc2 = fn(ctx, _) { #(ctx, empty_element) }
@@ -1452,18 +1942,34 @@ pub fn patch_to_json_replace_list_with_component_test() {
       key: None,
       props: props,
       hooks: ordered_map.new(),
-      el: ReconciledElement(tag: "div", key: None, attrs: [], children: [
-        ReconciledElement(tag: "p", key: Some("hello"), attrs: [], children: [
-          ReconciledText("Hello"),
-        ]),
-        ReconciledComponent(
-          fc: fc2,
-          key: Some("fc2"),
-          props: props,
-          hooks: ordered_map.new(),
-          el: ReconciledElement(tag: "div", key: None, attrs: [], children: []),
-        ),
-      ]),
+      el: ReconciledElement(
+        id: unique.from_string("a"),
+        tag: "div",
+        key: None,
+        attrs: [],
+        children: [
+          ReconciledElement(
+            id: unique.from_string("b"),
+            tag: "p",
+            key: Some("hello"),
+            attrs: [],
+            children: [ReconciledText("Hello")],
+          ),
+          ReconciledComponent(
+            fc: fc2,
+            key: Some("fc2"),
+            props: props,
+            hooks: ordered_map.new(),
+            el: ReconciledElement(
+              id: unique.from_string("f"),
+              tag: "div",
+              key: None,
+              attrs: [],
+              children: [],
+            ),
+          ),
+        ],
+      ),
     )
 
   patch.create(first, second)
@@ -1485,6 +1991,7 @@ pub fn patch_to_json_replace_list_with_component_test() {
                       \"key\": \"fc2\",
                       \"0\": {
                           \"type\": \"element\",
+                          \"id\": \"f\",
                           \"tag\": \"div\",
                           \"attrs\": {},
                           \"events\": [],
@@ -1519,10 +2026,16 @@ pub fn op_code_test() {
   op_code(Update(None, None), False)
   |> should.equal("1")
 
-  op_code(Replace(ReconciledElement("div", None, [], [])), False)
+  op_code(
+    Replace(ReconciledElement(unique.from_string("a"), "div", None, [], [])),
+    False,
+  )
   |> should.equal("2")
 
-  op_code(Insert(ReconciledElement("div", None, [], [])), False)
+  op_code(
+    Insert(ReconciledElement(unique.from_string("b"), "div", None, [], [])),
+    False,
+  )
   |> should.equal("3")
 
   op_code(Remove, False)
@@ -1540,10 +2053,16 @@ pub fn op_code_test() {
   op_code(Update(None, None), True)
   |> should.equal("Update")
 
-  op_code(Replace(ReconciledElement("div", None, [], [])), True)
+  op_code(
+    Replace(ReconciledElement(unique.from_string("c"), "div", None, [], [])),
+    True,
+  )
   |> should.equal("Replace")
 
-  op_code(Insert(ReconciledElement("div", None, [], [])), True)
+  op_code(
+    Insert(ReconciledElement(unique.from_string("d"), "div", None, [], [])),
+    True,
+  )
   |> should.equal("Insert")
 
   op_code(Remove, True)
