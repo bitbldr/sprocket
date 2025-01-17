@@ -45,17 +45,17 @@ export const initClientHookProvider = (
         const elementId = vnode.data.elementId;
 
         elementHooks.forEach((h) => {
-          const { name: hookName } = h;
+          const { name } = h;
 
           const pushEvent = (kind: string, payload: any) =>
-            sendHookMsg(vnode.data.elementId, hookName, kind, payload);
+            sendHookMsg(vnode.data.elementId, name, kind, payload);
 
           const handleEvent = (
             kind: string,
             handler: (payload: any) => any
           ) => {
-            clientHookMap[elementId][hookName].handlers = [
-              ...(clientHookMap[elementId][hookName].handlers || []),
+            clientHookMap[elementId][name].handlers = [
+              ...(clientHookMap[elementId][name].handlers || []),
               { kind, handler },
             ];
           };
@@ -63,23 +63,23 @@ export const initClientHookProvider = (
           // Initialize the client hook map if it doesn't already exist and add the hook
           clientHookMap[vnode.data.elementId] = {
             ...(clientHookMap[vnode.data.elementId] || {}),
-            [hookName]: {
+            [name]: {
               el: vnode.elm,
               pushEvent,
               handleEvent,
             },
           };
 
-          execClientHook(hooks, clientHookMap, elementId, hookName, "create");
+          execClientHook(hooks, clientHookMap, elementId, name, "create");
         });
       },
       insert: (vnode) => {
         const elementId = vnode.data.elementId;
 
         elementHooks.forEach((h) => {
-          const { name: hookName } = h;
+          const { name } = h;
 
-          execClientHook(hooks, clientHookMap, elementId, hookName, "insert");
+          execClientHook(hooks, clientHookMap, elementId, name, "insert");
         });
       },
       update: (oldVNode, vnode) => {
@@ -92,30 +92,34 @@ export const initClientHookProvider = (
             clientHookMap[oldVNode.data.elementId];
 
           delete clientHookMap[oldVNode.data.elementId];
+
+          // we also need to update the el and pushEvent function for each hook
+          elementHooks.forEach((h) => {
+            const { name } = h;
+
+            clientHookMap[vnode.data.elementId][name].el = vnode.elm;
+
+            // Update the pushEvent function to use the new element id
+            const pushEvent = (kind: string, payload: any) =>
+              sendHookMsg(vnode.data.elementId, name, kind, payload);
+
+            clientHookMap[vnode.data.elementId][name].pushEvent = pushEvent;
+          });
         }
 
         elementHooks.forEach((h) => {
-          const { name: hookName } = h;
+          const { name } = h;
 
-          // If the element id has changed, we also need to update the pushEvent function for each hook
-          if (oldVNode.data.elementId !== vnode.data.elementId) {
-            // Update the pushEvent function to use the new element id
-            const pushEvent = (kind: string, payload: any) =>
-              sendHookMsg(vnode.data.elementId, hookName, kind, payload);
-
-            clientHookMap[vnode.data.elementId][hookName].pushEvent = pushEvent;
-          }
-
-          execClientHook(hooks, clientHookMap, elementId, hookName, "update");
+          execClientHook(hooks, clientHookMap, elementId, name, "update");
         });
       },
       destroy: (vnode) => {
         const elementId = vnode.data.elementId;
 
         elementHooks.forEach((h) => {
-          const { name: hookName } = h;
+          const { name } = h;
 
-          execClientHook(hooks, clientHookMap, elementId, hookName, "destroy");
+          execClientHook(hooks, clientHookMap, elementId, name, "destroy");
 
           delete clientHookMap[elementId];
         });
@@ -123,12 +127,12 @@ export const initClientHookProvider = (
     }),
     handle_emit: (emit) => {
       // find handler by elementId
-      const { id: elementId, hook: hookName, kind: eventKind, payload } = emit;
+      const { id: elementId, hook: name, kind: eventKind, payload } = emit;
 
       const handlers =
         clientHookMap[elementId] &&
-        clientHookMap[elementId][hookName] &&
-        clientHookMap[elementId][hookName].handlers;
+        clientHookMap[elementId][name] &&
+        clientHookMap[elementId][name].handlers;
 
       if (handlers) {
         handlers.forEach((h) => {
@@ -145,18 +149,18 @@ function execClientHook(
   hooks: Record<string, any>,
   clientHookMap: Record<string, any>,
   elementId: string,
-  hookName: string,
+  name: string,
   method: string
 ) {
-  const hook = hooks[hookName];
+  const hook = hooks[name];
 
   if (hook) {
     hook[method] &&
       hook[method].call(
-        clientHookMap[elementId][hookName],
-        clientHookMap[elementId][hookName]
+        clientHookMap[elementId][name],
+        clientHookMap[elementId][name]
       );
   } else {
-    throw new Error(`Client hook ${hookName} not found`);
+    throw new Error(`Client hook ${name} not found`);
   }
 }
