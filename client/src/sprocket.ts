@@ -54,24 +54,17 @@ export function connect(
     }
   );
 
-  const sendHookMsg = (
-    elementId: string,
-    hook: string,
-    kind: string,
-    payload: any
-  ) =>
-    socket.send(
-      JSON.stringify(["hook:event", { elementId, hook, kind, payload }])
-    );
+  const sendHookMsg = (id: string, hook: string, kind: string, payload: any) =>
+    socket.send(JSON.stringify(["hook:event", { id, hook, kind, payload }]));
 
   const clientHookProvider = initClientHookProvider(opts.hooks, sendHookMsg);
 
-  const sendEvent = (elementId: string, kind: string, payload: any) =>
+  const sendEvent = (id: string, kind: string, payload: any) =>
     socket.send(
       JSON.stringify([
         "event",
         {
-          elementId,
+          id,
           kind,
           payload,
         },
