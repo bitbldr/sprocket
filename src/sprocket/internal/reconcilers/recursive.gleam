@@ -3,7 +3,7 @@ import gleam/dynamic.{type Dynamic}
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import sprocket/context.{
-  type AbstractFunctionalComponent, type Attribute, type Context, type Element,
+  type Attribute, type Context, type DynamicStatefulComponent, type Element,
   Attribute, ClientHook, ClientHookId, Component, ComponentWip, Context, Custom,
   Debug, Element, Event, EventHandler, Fragment, IgnoreUpdate, Keyed, Provider,
   Text,
@@ -197,7 +197,7 @@ fn fragment(
 
 fn component(
   ctx: Context,
-  fc: AbstractFunctionalComponent,
+  fc: DynamicStatefulComponent,
   key: Option(String),
   props: Dynamic,
   prev: Option(ReconciledElement),

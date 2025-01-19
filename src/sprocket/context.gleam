@@ -30,15 +30,15 @@ pub type Attribute {
   ClientHook(id: Unique(HookId), name: String)
 }
 
-pub type AbstractFunctionalComponent =
-  fn(Context, Dynamic) -> #(Context, Element)
-
-pub type FunctionalComponent(p) =
+pub type StatefulComponent(p) =
   fn(Context, p) -> #(Context, Element)
+
+pub type DynamicStatefulComponent =
+  fn(Context, Dynamic) -> #(Context, Element)
 
 pub type Element {
   Element(tag: String, attrs: List(Attribute), children: List(Element))
-  Component(component: FunctionalComponent(Dynamic), props: Dynamic)
+  Component(component: DynamicStatefulComponent, props: Dynamic)
   Fragment(children: List(Element))
   Debug(id: String, meta: Option(Dynamic), element: Element)
   Keyed(key: String, element: Element)

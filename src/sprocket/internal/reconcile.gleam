@@ -1,8 +1,8 @@
 import gleam/dynamic.{type Dynamic}
 import gleam/option.{type Option}
 import sprocket/context.{
-  type AbstractFunctionalComponent, type ComponentHooks, type Context,
-  type Element, type ElementId, Context,
+  type ComponentHooks, type Context, type DynamicStatefulComponent, type Element,
+  type ElementId, Context,
 }
 import sprocket/internal/utils/unique.{type Unique}
 
@@ -21,7 +21,7 @@ pub type ReconciledElement {
     children: List(ReconciledElement),
   )
   ReconciledComponent(
-    fc: AbstractFunctionalComponent,
+    fc: DynamicStatefulComponent,
     key: Option(String),
     props: Dynamic,
     hooks: ComponentHooks,

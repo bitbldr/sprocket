@@ -5,7 +5,7 @@ import gleam/option.{type Option, None, Some}
 import gleam/result
 import ids/cuid
 import sprocket/component.{component}
-import sprocket/context.{type Element, type FunctionalComponent, Updater}
+import sprocket/context.{type Element, type StatefulComponent, Updater}
 import sprocket/internal/logger
 import sprocket/internal/patch
 import sprocket/internal/reconcile.{type ReconciledResult, ReconciledResult}
@@ -28,7 +28,7 @@ pub type SprocketOpts {
 
 pub type Sprocket(p) {
   Sprocket(
-    component: FunctionalComponent(p),
+    component: StatefulComponent(p),
     initialize_props: fn(Option(PropList)) -> p,
     runtime: Option(Runtime),
     ws_send: WSSend,
@@ -38,7 +38,7 @@ pub type Sprocket(p) {
 }
 
 pub fn new(
-  component: FunctionalComponent(p),
+  component: StatefulComponent(p),
   initialize_props: fn(Option(PropList)) -> p,
   ws_send: WSSend,
   csrf_validator: CSRFValidator,
