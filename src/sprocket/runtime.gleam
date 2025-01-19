@@ -9,7 +9,7 @@ import gleam/result
 import ids/cuid
 import sprocket/context.{
   type ClientHookId, type ComponentHooks, type Context, type EffectCleanup,
-  type EffectResult, type Element, type ElementId, type EventEmitter, type Hook,
+  type EffectResult, type Element, type ElementId, type Hook,
   type HookDependencies, type HookId, type Updater, Callback, Changed, Client,
   ClientHookId, Context, Effect, EffectResult, EventHandler, Memo, Reducer,
   Unchanged, Updater, compare_deps,
@@ -34,6 +34,9 @@ import sprocket/internal/utils/unsafe_coerce
 
 pub type Runtime =
   Subject(Message)
+
+pub type EventEmitter =
+  fn(String, String, String, Option(String)) -> Result(Nil, Nil)
 
 pub type RenderedUpdate {
   FullUpdate(ReconciledElement)

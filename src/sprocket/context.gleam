@@ -52,9 +52,6 @@ pub type Updater(r) {
   Updater(send: fn(r) -> Result(Nil, Nil))
 }
 
-pub type EventEmitter =
-  fn(String, String, String, Option(String)) -> Result(Nil, Nil)
-
 pub type ClientHookEmitter =
   fn(Unique(HookId), String, Option(String)) -> Nil
 
