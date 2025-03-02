@@ -5,6 +5,7 @@ import gleam/option.{type Option, None, Some}
 import gleam/result
 import ids/cuid
 import sprocket/context.{type Element}
+import sprocket/component
 import sprocket/internal/logger
 import sprocket/internal/patch
 import sprocket/internal/reconcile.{type ReconciledResult, ReconciledResult}
@@ -20,6 +21,9 @@ pub type StatefulComponent(p) =
 
 pub type RuntimeEvent =
   runtime.Event
+
+// Re-export component function for convenience
+pub const component = component.component
 
 pub type Sprocket {
   Sprocket(runtime: Runtime)
