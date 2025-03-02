@@ -55,20 +55,18 @@ export function connect(
   );
 
   const sendHookMsg = (id: string, hook: string, kind: string, payload: any) =>
-    socket.send(JSON.stringify(["hook:event", { id, hook, kind, payload }]));
+    socket.send(JSON.stringify({ type: "hook:event", id, hook, kind, payload }));
 
   const clientHookProvider = initClientHookProvider(opts.hooks, sendHookMsg);
 
   const sendEvent = (id: string, kind: string, payload: any) =>
     socket.send(
-      JSON.stringify([
-        "event",
-        {
+      JSON.stringify({
+          type: "event",
           id,
           kind,
           payload,
-        },
-      ])
+        })
     );
 
   const eventHandlerProvider = initEventHandlerProvider(
@@ -86,10 +84,7 @@ export function connect(
 
   socket.addEventListener("open", function (_event) {
     socket.send(
-      JSON.stringify([
-        "join",
-        { csrf: csrfToken, initialProps: opts.initialProps },
-      ])
+      JSON.stringify({ type: "join", csrf: csrfToken, initialProps: opts.initialProps })
     );
   });
 

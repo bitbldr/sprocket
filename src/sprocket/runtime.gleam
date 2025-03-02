@@ -35,10 +35,20 @@ import sprocket/internal/utils/unsafe_coerce
 pub type Runtime =
   Subject(Message)
 
-pub type Event {
+pub type RuntimeMessage {
   FullUpdate(ReconciledElement)
   PatchUpdate(patch: Patch)
-  ClientHookEvent(
+  OutboundClientHookEvent(
+    element_id: String,
+    hook: String,
+    kind: String,
+    payload: Option(Dynamic),
+  )
+}
+
+pub type ClientMessage {
+  ClientEvent(element_id: String, kind: String, payload: Dynamic)
+  InboundClientHookEvent(
     element_id: String,
     hook: String,
     kind: String,
@@ -47,7 +57,7 @@ pub type Event {
 }
 
 pub type EventDispatcher =
-  fn(Event) -> Result(Nil, Nil)
+  fn(RuntimeMessage) -> Result(Nil, Nil)
 
 pub opaque type State {
   State(
@@ -63,8 +73,12 @@ pub opaque type State {
 pub opaque type Message {
   Shutdown
   GetReconciled(reply_with: Subject(Option(ReconciledElement)))
-  ProcessEvent(element_id: Unique(ElementId), kind: String, payload: Dynamic)
-  ProcessEventImmediate(
+  ProcessClientMessage(
+    element_id: Unique(ElementId),
+    kind: String,
+    payload: Dynamic,
+  )
+  ProcessClientMessageImmediate(
     reply_with: Subject(Result(Nil, Nil)),
     element_id: Unique(ElementId),
     kind: String,
@@ -106,7 +120,7 @@ fn handle_message(message: Message, state: State) -> actor.Next(Message, State) 
       actor.continue(state)
     }
 
-    ProcessEvent(element_id, kind, payload) -> {
+    ProcessClientMessage(element_id, kind, payload) -> {
       let _ =
         list.find(state.ctx.handlers, fn(h) {
           let EventHandler(handler_id, handler_kind, _) = h
@@ -128,7 +142,7 @@ fn handle_message(message: Message, state: State) -> actor.Next(Message, State) 
       actor.continue(state)
     }
 
-    ProcessEventImmediate(reply_with, element_id, kind, payload) -> {
+    ProcessClientMessageImmediate(reply_with, element_id, kind, payload) -> {
       let handler =
         list.find(state.ctx.handlers, fn(h) {
           let EventHandler(handler_id, handler_kind, _) = h
@@ -228,7 +242,7 @@ fn handle_message(message: Message, state: State) -> actor.Next(Message, State) 
         |> result.map(fn(h) {
           let ClientHookId(element_id, hook_name, _client_hook_id) = h
 
-          state.dispatch(ClientHookEvent(
+          state.dispatch(OutboundClientHookEvent(
             unique.to_string(element_id),
             hook_name,
             kind,
@@ -314,7 +328,7 @@ pub fn start(
       })
 
     let dispatch_client_hook_event = fn(id, kind, payload) {
-      logger.debug("actor.send EmitClientHookEvent")
+      logger.debug("actor.send DispatchClientHookEvent")
 
       actor.send(self, DispatchClientHookEvent(id, kind, payload))
     }
@@ -362,25 +376,50 @@ pub fn get_reconciled(actor) {
   }
 }
 
-/// Get the event handler for a given id
-pub fn process_event(actor, element_id: String, kind: String, payload: Dynamic) {
-  logger.debug("process.try_call ProcessEvent")
+/// Process a client message
+pub fn handle_client_message(actor, msg: ClientMessage) {
+  case msg {
+    ClientEvent(element_id, kind, payload) -> {
+      logger.debug("process.try_call ProcessClientMessage")
 
-  actor.send(actor, ProcessEvent(unique.from_string(element_id), kind, payload))
+      actor.send(
+        actor,
+        ProcessClientMessage(unique.from_string(element_id), kind, payload),
+      )
+    }
+    InboundClientHookEvent(element_id, hook, kind, payload) -> {
+      logger.debug("actor.send ProcessClientHookEvent")
+
+      actor.send(
+        actor,
+        ProcessClientHookEvent(
+          unique.from_string(element_id),
+          hook,
+          kind,
+          payload,
+        ),
+      )
+    }
+  }
 }
 
-pub fn process_event_immediate(
+pub fn process_client_message_immediate(
   actor,
   element_id: String,
   kind: String,
   payload: Dynamic,
 ) -> Result(Nil, Nil) {
-  logger.debug("process.try_call ProcessEventImmediate")
+  logger.debug("process.try_call ProcessClientMessageImmediate")
 
   case
     process.try_call(
       actor,
-      ProcessEventImmediate(_, unique.from_string(element_id), kind, payload),
+      ProcessClientMessageImmediate(
+        _,
+        unique.from_string(element_id),
+        kind,
+        payload,
+      ),
       call_timeout,
     )
   {
@@ -391,26 +430,6 @@ pub fn process_event_immediate(
       Error(Nil)
     }
   }
-}
-
-pub fn process_client_hook_event(
-  actor,
-  element_id: String,
-  hook_name: String,
-  event: String,
-  payload: Option(Dynamic),
-) {
-  logger.debug("actor.send ProcessClientHookEvent")
-
-  actor.send(
-    actor,
-    ProcessClientHookEvent(
-      unique.from_string(element_id),
-      hook_name,
-      event,
-      payload,
-    ),
-  )
 }
 
 pub fn render_update(actor) {

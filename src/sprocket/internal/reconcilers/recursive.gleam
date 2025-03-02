@@ -45,12 +45,13 @@ pub fn reconcile(
     Fragment(children) -> fragment(ctx, key, children, prev)
     Debug(id, meta, el) -> {
       // unwrap debug element, print details and continue with rendering
-      logger.debug_meta("[DEBUG ELEMENT]", #(
-        id,
-        meta,
-        reconcile(ctx, el, key, prev),
-      ))
-      logger.debug_meta("[DEBUG ELEMENT]", reconcile(ctx, el, key, prev))
+      logger.debug_meta("[DEBUG ELEMENT]", #(id, meta))
+
+      let reconciled = reconcile(ctx, el, key, prev)
+
+      logger.debug_meta("[DEBUG ELEMENT]", reconciled)
+
+      reconciled
     }
     Keyed(key, el) -> reconcile(ctx, el, Some(key), prev)
     IgnoreUpdate(el) -> {

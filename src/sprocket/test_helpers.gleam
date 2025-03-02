@@ -146,7 +146,7 @@ pub fn render_event(spkt: Runtime, event: Event, html_id: String) {
           case rendered_event_handler {
             Ok(ReconciledEventHandler(element_id, kind)) -> {
               case
-                runtime.process_event_immediate(
+                runtime.process_client_message_immediate(
                   spkt,
                   unique.to_string(element_id),
                   kind,
