@@ -48,12 +48,11 @@ pub type Element {
   Custom(kind: String, data: String)
 }
 
-pub type Updater(r) {
-  Updater(send: fn(r) -> Result(Nil, Nil))
-}
+pub type Updater(r) =
+  fn(r) -> Result(Nil, Nil)
 
-pub type ClientHookEmitter =
-  fn(Unique(HookId), String, Option(String)) -> Nil
+pub type ClientHookEventDispatcher =
+  fn(Unique(HookId), String, Option(Dynamic)) -> Nil
 
 pub type ComponentHooks =
   OrderedMap(Int, Hook)
@@ -76,11 +75,11 @@ pub type MemoResult {
   MemoResult(deps: Option(HookDependencies))
 }
 
-pub type ClientDispatcher =
-  fn(String, Option(String)) -> Nil
+pub type ClientHookDispatcher =
+  fn(String, Option(Dynamic)) -> Nil
 
-pub type ClientEventHandler =
-  fn(String, Option(Dynamic), ClientDispatcher) -> Nil
+pub type ClientHookEventHandler =
+  fn(String, Option(Dynamic), ClientHookDispatcher) -> Nil
 
 pub type HookId
 
@@ -102,7 +101,7 @@ pub type Hook {
   Client(
     id: Unique(HookId),
     name: String,
-    handle_event: Option(ClientEventHandler),
+    handle_event: Option(ClientHookEventHandler),
   )
 }
 
@@ -159,33 +158,33 @@ pub type ComponentWip {
 
 pub type Context {
   Context(
-    view: Element,
+    el: Element,
     wip: ComponentWip,
     handlers: List(EventHandler),
     client_hooks: List(ClientHookId),
-    render_update: fn() -> Nil,
+    schedule_reconciliation: fn() -> Nil,
     update_hook: fn(Unique(HookId), fn(Hook) -> Hook) -> Nil,
-    emit: fn(Unique(HookId), String, Option(String)) -> Nil,
+    dispatch_client_hook_event: ClientHookEventDispatcher,
     cuid_channel: Subject(cuid.Message),
     providers: Dict(String, Dynamic),
   )
 }
 
 pub fn new(
-  view: Element,
+  el: Element,
   cuid_channel: Subject(cuid.Message),
-  emit: Option(ClientHookEmitter),
-  render_update: fn() -> Nil,
+  dispatch_client_hook_event: ClientHookEventDispatcher,
+  schedule_reconciliation: fn() -> Nil,
   update_hook: fn(Unique(HookId), fn(Hook) -> Hook) -> Nil,
 ) -> Context {
   Context(
-    view: view,
+    el: el,
     wip: ComponentWip(hooks: ordered_map.new(), index: 0, is_first_render: True),
     handlers: [],
     client_hooks: [],
-    render_update: render_update,
+    schedule_reconciliation: schedule_reconciliation,
     update_hook: update_hook,
-    emit: option.unwrap(emit, fn(_, _, _) { Nil }),
+    dispatch_client_hook_event: dispatch_client_hook_event,
     cuid_channel: cuid_channel,
     providers: dict.new(),
   )
@@ -290,13 +289,13 @@ pub fn get_client_hook(
   #(ctx, hook)
 }
 
-pub fn emit_event(
+pub fn dispatch_client_hook_event(
   ctx: Context,
   id: Unique(HookId),
-  name: String,
-  payload: Option(String),
+  kind: String,
+  payload: Option(Dynamic),
 ) {
-  ctx.emit(id, name, payload)
+  ctx.dispatch_client_hook_event(id, kind, payload)
 }
 
 pub fn provider(key: String, value: v, element: Element) -> Element {

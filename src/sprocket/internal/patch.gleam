@@ -421,99 +421,63 @@ fn zip_all(a: List(a), b: List(b)) -> List(#(Option(a), Option(b))) {
   }
 }
 
-pub fn op_code(op: Patch, debug: Bool) -> String {
-  case debug {
-    True ->
-      case op {
-        NoOp -> {
-          "NoOp"
-        }
-        Update(..) -> {
-          "Update"
-        }
-        Replace(..) -> {
-          "Replace"
-        }
-        Insert(..) -> {
-          "Insert"
-        }
-        Remove -> {
-          "Remove"
-        }
-        Change(..) -> {
-          "Change"
-        }
-        Move(..) -> {
-          "Move"
-        }
-      }
-    False ->
-      case op {
-        NoOp -> {
-          "0"
-        }
-        Update(..) -> {
-          "1"
-        }
-        Replace(..) -> {
-          "2"
-        }
-        Insert(..) -> {
-          "3"
-        }
-        Remove -> {
-          "4"
-        }
-        Change(..) -> {
-          "5"
-        }
-        Move(..) -> {
-          "6"
-        }
-      }
+pub fn op_code(op: Patch) -> String {
+  case op {
+    NoOp -> {
+      "0"
+    }
+    Update(..) -> {
+      "1"
+    }
+    Replace(..) -> {
+      "2"
+    }
+    Insert(..) -> {
+      "3"
+    }
+    Remove -> {
+      "4"
+    }
+    Change(..) -> {
+      "5"
+    }
+    Move(..) -> {
+      "6"
+    }
   }
 }
 
-pub fn patch_to_json(patch: Patch, debug: Bool) -> Json {
+pub fn patch_to_json(patch: Patch) -> Json {
   use render_json <- renderer(json_renderer())
 
   case patch {
     NoOp -> {
-      json.preprocessed_array([json.string(op_code(patch, debug))])
+      json.preprocessed_array([json.string(op_code(patch))])
     }
     Update(attrs, children) -> {
       json.preprocessed_array([
-        json.string(op_code(patch, debug)),
+        json.string(op_code(patch)),
         json.nullable(attrs, of: attrs_to_json),
-        json.nullable(children, of: children_to_json(_, debug)),
+        json.nullable(children, of: children_to_json(_)),
       ])
     }
     Replace(el) -> {
-      json.preprocessed_array([
-        json.string(op_code(patch, debug)),
-        render_json(el),
-      ])
+      json.preprocessed_array([json.string(op_code(patch)), render_json(el)])
     }
     Insert(el) -> {
-      json.preprocessed_array([
-        json.string(op_code(patch, debug)),
-        render_json(el),
-      ])
+      json.preprocessed_array([json.string(op_code(patch)), render_json(el)])
     }
     Remove -> {
-      json.preprocessed_array([json.string(op_code(patch, debug))])
+      json.preprocessed_array([json.string(op_code(patch))])
     }
     Change(text) -> {
-      json.preprocessed_array([
-        json.string(op_code(patch, debug)),
-        json.string(text),
-      ])
+      json.preprocessed_array([json.string(op_code(patch)), json.string(text)])
     }
     Move(index, move_patch) -> {
       json.preprocessed_array([
-        json.string(op_code(patch, debug)),
+        json.string(op_code(patch)),
         json.int(index),
-        patch_to_json(move_patch, debug),
+        patch_to_json(move_patch),
       ])
     }
   }
@@ -542,13 +506,13 @@ fn attrs_to_json(attrs: List(ReconciledAttribute)) -> Json {
   |> json.object()
 }
 
-fn children_to_json(children: List(#(Int, Patch)), debug: Bool) -> Json {
+fn children_to_json(children: List(#(Int, Patch))) -> Json {
   children
-  |> list.map(map_key_to_str(_, debug))
+  |> list.map(map_key_to_str(_))
   |> json.object()
 }
 
-fn map_key_to_str(c: #(Int, Patch), debug: Bool) -> #(String, Json) {
+fn map_key_to_str(c: #(Int, Patch)) -> #(String, Json) {
   let #(index, patch) = c
-  #(int.to_string(index), patch_to_json(patch, debug))
+  #(int.to_string(index), patch_to_json(patch))
 }

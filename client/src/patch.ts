@@ -10,29 +10,7 @@ enum OpCode {
   Move = 6,
 }
 
-function getOperation(patch: Patch, debug: boolean): Operation {
-  if (debug) {
-    switch (patch[0]) {
-      case "NoOp":
-        return [OpCode.NoOp];
-      case "Update":
-        return [OpCode.Update, patch[1], patch[2]];
-      case "Replace":
-        return [OpCode.Replace, patch[1]];
-      case "Insert":
-        return [OpCode.Insert, patch[1]];
-      case "Remove":
-        return [OpCode.Remove];
-      case "Change":
-        return [OpCode.Change, patch[1]];
-      case "Move":
-        return [OpCode.Move, patch[1], patch[2]];
-      default:
-        throw new Error("Unknown op code: " + patch[0]);
-    }
-  }
-
-  // in regular production mode op codes are compressed and sent as integer strings to save bytes
+function getOperation(patch: Patch): Operation {
   switch (patch[0]) {
     case "0":
       return [OpCode.NoOp];
@@ -57,7 +35,7 @@ type Attributes = Record<string, string> | null;
 type Children = Record<string, Patch> | null;
 type Element = Record<string, any>;
 
-export type ProdPatch =
+export type Patch =
   | ["0"]
   | ["1", Attributes, Children]
   | ["2", Element]
@@ -65,17 +43,6 @@ export type ProdPatch =
   | ["4"]
   | ["5", string]
   | ["6", number, Patch];
-
-export type DebugPatch =
-  | ["NoOp"]
-  | ["Update", Attributes, Children]
-  | ["Replace", Element]
-  | ["Insert", Element]
-  | ["Remove"]
-  | ["Change", string]
-  | ["Move", number, Patch];
-
-export type Patch = ProdPatch | DebugPatch;
 
 export type Operation =
   | [OpCode.NoOp]
@@ -89,11 +56,11 @@ export type Operation =
 export function applyPatch(
   original: Record<string, any>,
   patch: Patch,
-  opts: Record<string, any>,
+  opts?: Record<string, any>,
   parent?: Record<string, any>,
   currentKey?: string
 ): Record<string, any> | string | null {
-  const operation = getOperation(patch, !!opts.debug);
+  const operation = getOperation(patch);
   switch (operation[0]) {
     case OpCode.NoOp:
       return original;
@@ -113,7 +80,7 @@ export function applyPatch(
         updated = Object.keys(childrenPatchMap)
           .filter((key) => isInteger(key))
           .reduce((updated, key) => {
-            const childOperation = getOperation(patch, !!opts.debug);
+            const childOperation = getOperation(patch);
 
             let newEl = applyPatch(
               updated[key],

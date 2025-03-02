@@ -10,9 +10,9 @@ import ids/cuid
 import sprocket/context.{
   type ClientHookId, type ComponentHooks, type Context, type EffectCleanup,
   type EffectResult, type Element, type ElementId, type Hook,
-  type HookDependencies, type HookId, type Updater, Callback, Changed, Client,
-  ClientHookId, Context, Effect, EffectResult, EventHandler, Memo, Reducer,
-  Unchanged, Updater, compare_deps,
+  type HookDependencies, type HookId, Callback, Changed, Client, ClientHookId,
+  Context, Effect, EffectResult, EventHandler, Memo, Reducer, Unchanged,
+  compare_deps,
 }
 import sprocket/internal/constants.{call_timeout}
 import sprocket/internal/exceptions.{throw_on_unexpected_hook_result}
@@ -35,21 +35,26 @@ import sprocket/internal/utils/unsafe_coerce
 pub type Runtime =
   Subject(Message)
 
-pub type EventEmitter =
-  fn(String, String, String, Option(String)) -> Result(Nil, Nil)
-
-pub type RenderedUpdate {
+pub type Event {
   FullUpdate(ReconciledElement)
   PatchUpdate(patch: Patch)
+  ClientHookEvent(
+    element_id: String,
+    hook: String,
+    kind: String,
+    payload: Option(Dynamic),
+  )
 }
+
+pub type EventDispatcher =
+  fn(Event) -> Result(Nil, Nil)
 
 pub opaque type State {
   State(
     ctx: Context,
-    updater: Updater(RenderedUpdate),
     reconciled: Option(ReconciledElement),
     cuid_channel: Subject(cuid.Message),
-    emitter: Option(EventEmitter),
+    dispatch: EventDispatcher,
   )
 }
 
@@ -65,18 +70,17 @@ pub opaque type Message {
     kind: String,
     payload: Dynamic,
   )
-  ProcessClientHook(
+  ProcessClientHookEvent(
     element_id: Unique(ElementId),
     hook_name: String,
     event: String,
     payload: Option(Dynamic),
-    reply_emitter: fn(String, Option(String)) -> Nil,
   )
   UpdateHookState(Unique(HookId), fn(Hook) -> Hook)
-  EmitClientHookEvent(
+  DispatchClientHookEvent(
     hook_id: Unique(HookId),
     event: String,
-    payload: Option(String),
+    payload: Option(Dynamic),
   )
   ReconcileImmediate(reply_with: Subject(ReconciledElement))
   RenderUpdate
@@ -155,7 +159,7 @@ fn handle_message(message: Message, state: State) -> actor.Next(Message, State) 
       }
     }
 
-    ProcessClientHook(element_id, hook_name, kind, payload, reply_emitter) -> {
+    ProcessClientHookEvent(element_id, hook_name, kind, payload) -> {
       use reconciled <- require(optional: state.reconciled, or_else: fn() {
         logger.error(
           "Runtime must be reconciled before processing client hooks",
@@ -176,10 +180,15 @@ fn handle_message(message: Message, state: State) -> actor.Next(Message, State) 
             }
           })
           |> option.map(fn(hook) {
-            let assert Client(_id, _name, handle_event) = hook
+            let assert Client(hook_id, _name, handle_event) = hook
 
-            option.map(handle_event, fn(handle_event) {
-              handle_event(kind, payload, reply_emitter)
+            let reply_dispatcher = fn(kind, payload) {
+              state.ctx.dispatch_client_hook_event(hook_id, kind, payload)
+            }
+
+            handle_event
+            |> option.map(fn(handle_event) {
+              handle_event(kind, payload, reply_dispatcher)
             })
           })
         })
@@ -210,7 +219,7 @@ fn handle_message(message: Message, state: State) -> actor.Next(Message, State) 
       actor.continue(State(..state, reconciled: updated))
     }
 
-    EmitClientHookEvent(hook_id, kind, payload) -> {
+    DispatchClientHookEvent(hook_id, kind, payload) -> {
       let _ =
         list.find(state.ctx.client_hooks, fn(h) {
           let ClientHookId(_element_id, _name, client_hook_id) = h
@@ -219,10 +228,12 @@ fn handle_message(message: Message, state: State) -> actor.Next(Message, State) 
         |> result.map(fn(h) {
           let ClientHookId(element_id, hook_name, _client_hook_id) = h
 
-          state.emitter
-          |> option.map(fn(emitter) {
-            emitter(unique.to_string(element_id), hook_name, kind, payload)
-          })
+          state.dispatch(ClientHookEvent(
+            unique.to_string(element_id),
+            hook_name,
+            kind,
+            payload,
+          ))
         })
 
       actor.continue(state)
@@ -230,10 +241,9 @@ fn handle_message(message: Message, state: State) -> actor.Next(Message, State) 
 
     ReconcileImmediate(reply_with) -> {
       let prev_reconciled = state.reconciled
-      let view = state.ctx.view
+      let el = state.ctx.el
 
-      let #(ctx, reconciled) =
-        do_reconciliation(state.ctx, view, prev_reconciled)
+      let #(ctx, reconciled) = do_reconciliation(state.ctx, el, prev_reconciled)
 
       actor.send(reply_with, reconciled)
 
@@ -242,18 +252,17 @@ fn handle_message(message: Message, state: State) -> actor.Next(Message, State) 
 
     RenderUpdate -> {
       let prev_reconciled = state.reconciled
-      let updater = state.updater
-      let view = state.ctx.view
+      let dispatch = state.dispatch
+      let el = state.ctx.el
 
-      let #(ctx, reconciled) =
-        do_reconciliation(state.ctx, view, prev_reconciled)
+      let #(ctx, reconciled) = do_reconciliation(state.ctx, el, prev_reconciled)
 
       case prev_reconciled {
         Some(prev_reconciled) -> {
           let update = patch.create(prev_reconciled, reconciled)
 
           // send the rendered patch update using updater
-          case updater.send(PatchUpdate(update)) {
+          case dispatch(PatchUpdate(update)) {
             Ok(_) -> Nil
             Error(_) -> {
               logger.error("Failed to send update patch!")
@@ -263,11 +272,11 @@ fn handle_message(message: Message, state: State) -> actor.Next(Message, State) 
         }
 
         None -> {
-          // this is the first render, so we send the full reconciled view instead of a patch
-          case updater.send(FullUpdate(reconciled)) {
+          // this is the first render, so we send the full reconciled element instead of a patch
+          case dispatch(FullUpdate(reconciled)) {
             Ok(_) -> Nil
             Error(_) -> {
-              logger.error("Failed to send full reconciled view!")
+              logger.error("Failed to send full reconciled update!")
               Nil
             }
           }
@@ -281,9 +290,8 @@ fn handle_message(message: Message, state: State) -> actor.Next(Message, State) 
 
 /// Start a new runtime actor
 pub fn start(
-  view: Element,
-  updater: Updater(RenderedUpdate),
-  emitter: Option(EventEmitter),
+  el: Element,
+  dispatch: EventDispatcher,
 ) -> Result(Runtime, StartError) {
   let init = fn() {
     let self = process.new_subject()
@@ -305,25 +313,24 @@ pub fn start(
         error
       })
 
-    let emit = fn(id, name, payload) {
+    let dispatch_client_hook_event = fn(id, kind, payload) {
       logger.debug("actor.send EmitClientHookEvent")
 
-      actor.send(self, EmitClientHookEvent(id, name, payload))
+      actor.send(self, DispatchClientHookEvent(id, kind, payload))
     }
 
     let state =
       State(
         ctx: context.new(
-          view,
+          el,
           cuid_channel,
-          Some(emit),
+          dispatch_client_hook_event,
           render_update,
           update_hook,
         ),
-        updater: updater,
         reconciled: None,
         cuid_channel: cuid_channel,
-        emitter: emitter,
+        dispatch: dispatch,
       )
 
     let selector = process.selecting(process.new_selector(), self, identity)
@@ -386,25 +393,22 @@ pub fn process_event_immediate(
   }
 }
 
-/// Get the client hook for a given id
-pub fn process_client_hook(
+pub fn process_client_hook_event(
   actor,
   element_id: String,
   hook_name: String,
   event: String,
   payload: Option(Dynamic),
-  reply_emitter: fn(String, Option(String)) -> Nil,
 ) {
-  logger.debug("actor.send ProcessClientHook")
+  logger.debug("actor.send ProcessClientHookEvent")
 
   actor.send(
     actor,
-    ProcessClientHook(
+    ProcessClientHookEvent(
       unique.from_string(element_id),
       hook_name,
       event,
       payload,
-      reply_emitter,
     ),
   )
 }
@@ -415,14 +419,14 @@ pub fn render_update(actor) {
   actor.send(actor, RenderUpdate)
 }
 
-/// Reconcile the view - should only be used for testing purposes
+/// Reconcile the element - should only be used for testing purposes
 pub fn reconcile_immediate(actor) -> ReconciledElement {
   logger.debug("process.try_call Reconcile")
 
   case process.try_call(actor, ReconcileImmediate(_), call_timeout) {
     Ok(reconciled) -> reconciled
     Error(err) -> {
-      logger.error_meta("Error reconciling view from runtime actor", err)
+      logger.error_meta("Error reconciling element from runtime actor", err)
 
       panic
     }
@@ -431,14 +435,14 @@ pub fn reconcile_immediate(actor) -> ReconciledElement {
 
 fn do_reconciliation(
   ctx: Context,
-  view: Element,
+  el: Element,
   prev: Option(ReconciledElement),
 ) -> #(Context, ReconciledElement) {
   timer.timed_operation("runtime.reconcile", fn() {
     let ReconciledResult(ctx, reconciled) =
       ctx
       |> context.prepare_for_reconciliation
-      |> recursive.reconcile(view, None, prev)
+      |> recursive.reconcile(el, None, prev)
 
     option.map(prev, fn(prev) {
       run_cleanup_for_disposed_hooks(prev, reconciled)

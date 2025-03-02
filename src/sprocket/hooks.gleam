@@ -1,12 +1,12 @@
 import gleam/dict
-import gleam/dynamic
+import gleam/dynamic.{type Dynamic}
 import gleam/option.{type Option, None, Some}
 import gleam/result
 import sprocket/context.{
-  type Attribute, type ClientDispatcher, type ClientEventHandler, type Context,
-  type EffectCleanup, type Element, type HookDependencies, type HookId, Callback,
-  CallbackResult, Changed, Client, ClientHook, Context, Effect, Unchanged,
-  compare_deps,
+  type Attribute, type ClientHookDispatcher, type ClientHookEventHandler,
+  type Context, type EffectCleanup, type Element, type HookDependencies,
+  type HookId, Callback, CallbackResult, Changed, Client, ClientHook, Context,
+  Effect, Unchanged, compare_deps,
 }
 import sprocket/internal/exceptions.{throw_on_unexpected_hook_result}
 import sprocket/internal/logger
@@ -86,8 +86,9 @@ pub fn client_hook(id: Unique(HookId), name: String) -> Attribute {
 pub fn client(
   ctx: Context,
   name: String,
-  handle_event: Option(ClientEventHandler),
-  cb: fn(Context, fn() -> Attribute, ClientDispatcher) -> #(Context, Element),
+  handle_event: Option(ClientHookEventHandler),
+  cb: fn(Context, fn() -> Attribute, ClientHookDispatcher) ->
+    #(Context, Element),
 ) -> #(Context, Element) {
   // define the client hook initializer
   let init = fn() { Client(unique.cuid(ctx.cuid_channel), name, handle_event) }
@@ -102,8 +103,8 @@ pub fn client(
   let bind_hook_attr = fn() { ClientHook(id, name) }
 
   // callback to dispatch an event to the client
-  let dispatch_event = fn(name: String, payload: Option(String)) {
-    context.emit_event(ctx, id, name, payload)
+  let dispatch_event = fn(kind: String, payload: Option(Dynamic)) {
+    context.dispatch_client_hook_event(ctx, id, kind, payload)
   }
 
   cb(ctx, bind_hook_attr, dispatch_event)
@@ -206,7 +207,7 @@ pub fn reducer(
   update: UpdateFn(model, msg),
   cb: fn(Context, model, fn(msg) -> Nil) -> #(Context, Element),
 ) -> #(Context, Element) {
-  let Context(render_update: render_update, ..) = ctx
+  let Context(schedule_reconciliation: schedule_reconciliation, ..) = ctx
 
   // Creates an actor process for a reducer that handles two types of messages:
   //  1. GetState msg, which simply returns the state of the reducer
@@ -214,7 +215,7 @@ pub fn reducer(
   let reducer_init = fn() {
     // Start the actor process
     let assert Ok(reducer_actor) =
-      reducer.start(initial, update, fn(_) { render_update() })
+      reducer.start(initial, update, fn(_) { schedule_reconciliation() })
       |> result.map_error(fn(error) {
         logger.error("hooks.reducer: failed to start reducer actor")
         error
@@ -250,7 +251,11 @@ pub fn state(
   initial: a,
   cb: fn(Context, a, fn(a) -> Nil) -> #(Context, Element),
 ) -> #(Context, Element) {
-  let Context(render_update: render_update, update_hook: update_hook, ..) = ctx
+  let Context(
+    schedule_reconciliation: schedule_reconciliation,
+    update_hook: update_hook,
+    ..,
+  ) = ctx
 
   let init_state = fn() {
     context.State(unique.cuid(ctx.cuid_channel), dynamic.from(initial))
@@ -273,7 +278,7 @@ pub fn state(
       }
     })
 
-    render_update()
+    schedule_reconciliation()
   }
 
   cb(ctx, unsafe_coerce(value), setter)

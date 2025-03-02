@@ -1834,7 +1834,7 @@ pub fn patch_to_json_test() {
     )
 
   patch.create(first, second)
-  |> patch.patch_to_json(True)
+  |> patch.patch_to_json()
   |> json.to_string
   |> should.equal(
     "[
@@ -1973,7 +1973,7 @@ pub fn patch_to_json_replace_list_with_component_test() {
     )
 
   patch.create(first, second)
-  |> patch.patch_to_json(True)
+  |> patch.patch_to_json()
   |> json.to_string
   |> should.equal(
     "[
@@ -2020,57 +2020,31 @@ fn normalize_json_str(json: String) {
 }
 
 pub fn op_code_test() {
-  op_code(NoOp, False)
+  op_code(NoOp)
   |> should.equal("0")
 
-  op_code(Update(None, None), False)
+  op_code(Update(None, None))
   |> should.equal("1")
 
   op_code(
     Replace(ReconciledElement(unique.from_string("a"), "div", None, [], [])),
-    False,
   )
   |> should.equal("2")
 
   op_code(
     Insert(ReconciledElement(unique.from_string("b"), "div", None, [], [])),
-    False,
   )
   |> should.equal("3")
 
-  op_code(Remove, False)
+  op_code(Remove)
   |> should.equal("4")
 
-  op_code(Change(""), False)
+  op_code(Change(""))
   |> should.equal("5")
 
-  op_code(Move(0, NoOp), False)
+  op_code(Move(0, NoOp))
   |> should.equal("6")
 
-  op_code(NoOp, False)
+  op_code(NoOp)
   |> should.equal("0")
-
-  op_code(Update(None, None), True)
-  |> should.equal("Update")
-
-  op_code(
-    Replace(ReconciledElement(unique.from_string("c"), "div", None, [], [])),
-    True,
-  )
-  |> should.equal("Replace")
-
-  op_code(
-    Insert(ReconciledElement(unique.from_string("d"), "div", None, [], [])),
-    True,
-  )
-  |> should.equal("Insert")
-
-  op_code(Remove, True)
-  |> should.equal("Remove")
-
-  op_code(Change(""), True)
-  |> should.equal("Change")
-
-  op_code(Move(0, NoOp), True)
-  |> should.equal("Move")
 }

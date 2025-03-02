@@ -5,7 +5,7 @@ import gleam/erlang
 import gleam/list
 import gleam/option.{None, Some}
 import gleam/regexp
-import sprocket/context.{Updater}
+import sprocket/context.{type Element}
 import sprocket/html/events
 import sprocket/internal/reconcile.{
   type ReconciledElement, ReconciledAttribute, ReconciledElement,
@@ -17,8 +17,8 @@ import sprocket/render.{renderer}
 import sprocket/renderers/html.{html_renderer}
 import sprocket/runtime.{type Runtime}
 
-pub fn connect(view) {
-  let assert Ok(spkt) = runtime.start(view, Updater(fn(_) { Ok(Nil) }), None)
+pub fn connect(el: Element) {
+  let assert Ok(spkt) = runtime.start(el, fn(_) { Ok(Nil) })
 
   spkt
 }

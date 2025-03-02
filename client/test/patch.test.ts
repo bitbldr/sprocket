@@ -27,7 +27,7 @@ test("applyPatch updates attributes", () => {
     },
   ];
 
-  const dom = applyPatch(original, patch, { debug: false });
+  const dom = applyPatch(original, patch);
 
   expect(dom).toEqual({
     tag: "div",
@@ -84,7 +84,7 @@ test("applyPatch replaces element", () => {
     },
   ];
 
-  const dom = applyPatch(original, patch, { debug: false });
+  const dom = applyPatch(original, patch);
 
   expect(dom).toEqual({
     tag: "div",
@@ -150,7 +150,7 @@ test("applyPatch removes element in children", () => {
     },
   ];
 
-  const dom = applyPatch(original, patch, { debug: false });
+  const dom = applyPatch(original, patch);
 
   expect(dom).toEqual({
     tag: "div",
@@ -204,16 +204,16 @@ test("applyPatch removes middle element in children", () => {
   };
 
   const patch: Patch = [
-    "Update",
+    "1",
     null,
     {
-      "2": ["Move", 3, ["NoOp"]],
-      "3": ["Move", 4, ["NoOp"]],
-      "4": ["Remove"],
+      "2": ["6", 3, ["0"]],
+      "3": ["6", 4, ["0"]],
+      "4": ["4"],
     },
   ];
 
-  const dom = applyPatch(original, patch, { debug: true });
+  const dom = applyPatch(original, patch);
 
   expect(dom).toEqual({
     tag: "ul",
@@ -330,44 +330,44 @@ test("applyPatch with root component", () => {
   };
 
   const patch: Patch = [
-    "Update",
+    "1",
     null,
     {
       "0": [
-        "Update",
+        "1",
         null,
         {
           "1": [
-            "Update",
+            "1",
             null,
             {
               "0": [
-                "Update",
+                "1",
                 null,
                 {
                   "1": [
-                    "Update",
+                    "1",
                     null,
                     {
-                      "1": ["Change", "1687304621"],
+                      "1": ["5", "1687304621"],
                     },
                   ],
                 },
               ],
               "1": [
-                "Update",
+                "1",
                 null,
                 {
                   "1": [
-                    "Update",
+                    "1",
                     null,
                     {
                       "0": [
-                        "Update",
+                        "1",
                         null,
                         {
                           "0": [
-                            "Update",
+                            "1",
                             {
                               class: "p-1 px-2 border rounded-l bg-gray-100",
                               "spkt-event":
@@ -376,7 +376,7 @@ test("applyPatch with root component", () => {
                             null,
                           ],
                           "2": [
-                            "Update",
+                            "1",
                             {
                               class: "p-1 px-2 border rounded-r bg-gray-100",
                               "spkt-event":
@@ -397,7 +397,7 @@ test("applyPatch with root component", () => {
     },
   ] as any;
 
-  const dom = applyPatch(original, patch, { debug: true });
+  const dom = applyPatch(original, patch);
 
   expect(dom).toEqual({
     type: "component",
