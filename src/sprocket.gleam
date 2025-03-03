@@ -1,6 +1,4 @@
-import gleam/dict.{type Dict}
 import gleam/dynamic.{type Dynamic}
-import gleam/dynamic/decode
 import gleam/json.{type Json}
 import gleam/option.{type Option, None, Some}
 import gleam/result
@@ -14,17 +12,14 @@ import sprocket/internal/reconcilers/recursive.{reconcile}
 import sprocket/render.{type Renderer, renderer} as _
 import sprocket/renderers/json.{json_renderer} as _
 import sprocket/runtime.{
-  type EventDispatcher, type Runtime, FullUpdate, InboundClientHookEvent,
-  OutboundClientHookEvent, PatchUpdate,
+  type ClientMessage, type EventDispatcher, type Runtime, type RuntimeMessage,
+  FullUpdate, OutboundClientHookEvent, PatchUpdate,
 }
 
+// Re-export library types and functions for convenience
 pub type StatefulComponent(p) =
   context.StatefulComponent(p)
 
-pub type RuntimeMessage =
-  runtime.RuntimeMessage
-
-// Re-export component function for convenience
 pub const component = component.component
 
 pub type Sprocket {
@@ -52,16 +47,7 @@ pub fn start(
   }
 }
 
-pub type Message {
-  JoinMessage(
-    id: Option(String),
-    csrf_token: String,
-    initial_props: Option(Dict(String, String)),
-  )
-  ClientMessage(msg: runtime.ClientMessage)
-}
-
-pub fn handle_client_message(spkt: Sprocket, msg: runtime.ClientMessage) -> Nil {
+pub fn handle_client_message(spkt: Sprocket, msg: ClientMessage) -> Nil {
   runtime.handle_client_message(spkt.runtime, msg)
 }
 
@@ -105,77 +91,6 @@ pub fn humanize_error(error: SprocketError) -> String {
   case error {
     RuntimeStartError -> "Failed to start runtime"
   }
-}
-
-pub fn decode_message(msg: String) {
-  let decoder = {
-    use tag <- decode.field("type", decode.string)
-
-    case tag {
-      "join" -> join_message_decoder()
-      _ -> client_message_decoder()
-    }
-  }
-
-  json.parse(msg, decoder)
-}
-
-fn join_message_decoder() {
-  use id <- decode.optional_field("id", None, decode.optional(decode.string))
-  use csrf_token <- decode.field("csrf", decode.string)
-  use initial_props <- decode.optional_field(
-    "initialProps",
-    None,
-    decode.optional(decode.dict(decode.string, decode.string)),
-  )
-
-  decode.success(JoinMessage(id, csrf_token, initial_props))
-}
-
-fn client_message_decoder() {
-  let runtime_inbound_client_hook_event_decoder = {
-    use msg <- decode.then(inbound_client_hook_event_decoder())
-
-    decode.success(ClientMessage(msg))
-  }
-
-  let runtime_client_event_decoder = {
-    use msg <- decode.then(client_event_decoder())
-
-    decode.success(ClientMessage(msg))
-  }
-
-  use tag <- decode.field("type", decode.string)
-
-  case tag {
-    "hook:event" -> runtime_inbound_client_hook_event_decoder
-    _ -> runtime_client_event_decoder
-  }
-}
-
-fn inbound_client_hook_event_decoder() {
-  use element_id <- decode.field("id", decode.string)
-  use hook <- decode.field("hook", decode.string)
-  use kind <- decode.field("kind", decode.string)
-  use payload <- decode.optional_field(
-    "payload",
-    None,
-    decode.optional(decode.dynamic),
-  )
-
-  decode.success(InboundClientHookEvent(element_id, hook, kind, payload))
-}
-
-fn client_event_decoder() {
-  use element_id <- decode.field("id", decode.string)
-  use kind <- decode.field("kind", decode.string)
-  use payload <- decode.optional_field(
-    "payload",
-    dynamic.from(Nil),
-    decode.dynamic,
-  )
-
-  decode.success(runtime.ClientEvent(element_id, kind, payload))
 }
 
 pub fn runtime_message_to_json(event: RuntimeMessage) -> Json {

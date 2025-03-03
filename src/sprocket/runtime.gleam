@@ -1,5 +1,6 @@
 import gleam/dict.{type Dict}
 import gleam/dynamic.{type Dynamic}
+import gleam/dynamic/decode
 import gleam/erlang/process.{type Subject}
 import gleam/function.{identity}
 import gleam/list
@@ -765,4 +766,29 @@ fn process_next_hook(
     }
     Error(_) -> acc
   }
+}
+
+pub fn inbound_client_hook_event_decoder() {
+  use element_id <- decode.field("id", decode.string)
+  use hook <- decode.field("hook", decode.string)
+  use kind <- decode.field("kind", decode.string)
+  use payload <- decode.optional_field(
+    "payload",
+    None,
+    decode.optional(decode.dynamic),
+  )
+
+  decode.success(InboundClientHookEvent(element_id, hook, kind, payload))
+}
+
+pub fn client_event_decoder() {
+  use element_id <- decode.field("id", decode.string)
+  use kind <- decode.field("kind", decode.string)
+  use payload <- decode.optional_field(
+    "payload",
+    dynamic.from(Nil),
+    decode.dynamic,
+  )
+
+  decode.success(ClientEvent(element_id, kind, payload))
 }
