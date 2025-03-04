@@ -50,6 +50,10 @@ pub fn text(text: String) -> Element {
   Text(text)
 }
 
+pub fn none() -> Element {
+  Fragment([])
+}
+
 pub fn keyed(key: String, element: Element) {
   Keyed(key, element)
 }
@@ -58,8 +62,8 @@ pub fn ignore(element: Element) {
   IgnoreUpdate(element)
 }
 
-pub fn ignore_while(expr: Bool, element: Element) {
-  case expr {
+pub fn ignore_while(predicate: Bool, element: Element) {
+  case predicate {
     True -> IgnoreUpdate(element)
     False -> element
   }
