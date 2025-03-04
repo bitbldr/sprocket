@@ -1,3 +1,4 @@
+import gleam/bool
 import gleam/dict.{type Dict}
 import gleam/dynamic.{type Dynamic}
 import gleam/erlang/process.{type Subject}
@@ -274,6 +275,9 @@ fn handle_message(message: Message, state: State) -> actor.Next(Message, State) 
       case prev_reconciled {
         Some(prev_reconciled) -> {
           let update = patch.create(prev_reconciled, reconciled)
+
+          // only continue if the patch is not empty
+          use <- bool.guard(update == patch.NoOp, Nil)
 
           // send the rendered patch update using updater
           case dispatch(PatchUpdate(update)) {

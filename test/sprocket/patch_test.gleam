@@ -1838,15 +1838,15 @@ pub fn patch_to_json_test() {
   |> json.to_string
   |> should.equal(
     "[
-      \"Update\",
+      \"1\",
       null,
       {\"0\":
         [
-          \"Update\",
+          \"1\",
           null,
           {
               \"1\": [
-                  \"Replace\",
+                  \"2\",
                   {
                       \"type\": \"element\",
                       \"id\": \"d\",
@@ -1859,7 +1859,7 @@ pub fn patch_to_json_test() {
                   }
               ],
               \"2\": [
-                  \"Insert\",
+                  \"3\",
                   {
                       \"type\": \"element\",
                       \"id\": \"e\",
@@ -1872,10 +1872,10 @@ pub fn patch_to_json_test() {
                   }
               ],
               \"3\": [
-                  \"Move\",
+                  \"6\",
                   1,
                   [
-                      \"NoOp\"
+                      \"0\"
                   ]
               ]
           }
@@ -1977,15 +1977,15 @@ pub fn patch_to_json_replace_list_with_component_test() {
   |> json.to_string
   |> should.equal(
     "[
-      \"Update\",
+      \"1\",
       null,
       {\"0\":
         [
-          \"Update\",
+          \"1\",
           null,
           {
               \"1\": [
-                  \"Replace\",
+                  \"2\",
                   {
                       \"type\": \"component\",
                       \"key\": \"fc2\",
@@ -2000,10 +2000,10 @@ pub fn patch_to_json_replace_list_with_component_test() {
                   }
               ],
               \"2\": [
-                  \"Remove\"
+                  \"4\"
               ],
               \"3\": [
-                  \"Remove\"
+                  \"4\"
               ]
           }
         ]
