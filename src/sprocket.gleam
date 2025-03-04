@@ -96,11 +96,11 @@ pub fn humanize_error(error: SprocketError) -> String {
 }
 
 pub fn client_message_decoder() {
-  use tag <- decode.field("type", decode.string)
+  use message_type <- decode.then(decode.at([0], decode.string))
 
-  case tag {
-    "hook:event" -> inbound_client_hook_event_decoder()
-    _ -> client_event_decoder()
+  case message_type {
+    "hook:event" -> decode.at([1], inbound_client_hook_event_decoder())
+    _ -> decode.at([1], client_event_decoder())
   }
 }
 
