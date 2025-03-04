@@ -1,4 +1,5 @@
 import gleam/dynamic.{type Dynamic}
+import gleam/dynamic/decode
 import gleam/json.{type Json}
 import gleam/option.{type Option, None, Some}
 import gleam/result
@@ -13,7 +14,8 @@ import sprocket/render.{type Renderer, renderer} as _
 import sprocket/renderers/json.{json_renderer} as _
 import sprocket/runtime.{
   type ClientMessage, type EventDispatcher, type Runtime, type RuntimeMessage,
-  FullUpdate, OutboundClientHookEvent, PatchUpdate,
+  ClientEvent, FullUpdate, InboundClientHookEvent, OutboundClientHookEvent,
+  PatchUpdate,
 }
 
 // Re-export library types and functions for convenience
@@ -91,6 +93,40 @@ pub fn humanize_error(error: SprocketError) -> String {
   case error {
     RuntimeStartError -> "Failed to start runtime"
   }
+}
+
+pub fn client_message_decoder() {
+  use tag <- decode.field("type", decode.string)
+
+  case tag {
+    "hook:event" -> inbound_client_hook_event_decoder()
+    _ -> client_event_decoder()
+  }
+}
+
+fn inbound_client_hook_event_decoder() {
+  use element_id <- decode.field("id", decode.string)
+  use hook <- decode.field("hook", decode.string)
+  use kind <- decode.field("kind", decode.string)
+  use payload <- decode.optional_field(
+    "payload",
+    None,
+    decode.optional(decode.dynamic),
+  )
+
+  decode.success(InboundClientHookEvent(element_id, hook, kind, payload))
+}
+
+fn client_event_decoder() {
+  use element_id <- decode.field("id", decode.string)
+  use kind <- decode.field("kind", decode.string)
+  use payload <- decode.optional_field(
+    "payload",
+    dynamic.from(Nil),
+    decode.dynamic,
+  )
+
+  decode.success(ClientEvent(element_id, kind, payload))
 }
 
 pub fn runtime_message_to_json(event: RuntimeMessage) -> Json {
