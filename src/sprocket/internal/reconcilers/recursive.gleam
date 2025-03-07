@@ -28,7 +28,7 @@ pub fn recursive_reconciler() -> Reconciler {
   )
 }
 
-// Reconciles the given element into a ReconciledElement tree against the previous rendered element.
+// Reconciles the given element into a ReconciledElement tree against the previous reconciled element.
 // Returns the updated ctx and a stateful ReconciledElement tree.
 pub fn reconcile(
   ctx: Context,
@@ -36,15 +36,13 @@ pub fn reconcile(
   key: Option(String),
   prev: Option(ReconciledElement),
 ) -> ReconciledResult {
-  // TODO: detect infinite render loop - render_count > SOME_THRESHOLD then panic "Possible infinite rerender loop"
-
   case el {
     Element(tag, attrs, children) ->
       element(ctx, tag, key, attrs, children, prev)
     Component(fc, props) -> component(ctx, fc, key, props, prev)
     Fragment(children) -> fragment(ctx, key, children, prev)
     Debug(id, meta, el) -> {
-      // unwrap debug element, print details and continue with rendering
+      // unwrap debug element, print details and continue with reconciliation
       logger.debug_meta("[DEBUG ELEMENT]", #(id, meta))
 
       let reconciled = reconcile(ctx, el, key, prev)
@@ -57,15 +55,15 @@ pub fn reconcile(
     IgnoreUpdate(el) -> {
       case prev {
         Some(prev) -> {
-          // since we're ignoring all updates, no need to rerender children
-          // just return the previous rendered element as ignored
+          // since we're ignoring all updates, no need to reconcile children
+          // just return the previous reconciled element as ignored
           ReconciledResult(ctx, ReconciledIgnoreUpdate(prev))
         }
         _ -> {
-          // always render the element on first render, ignore on subsequent renders.
-          let ReconciledResult(ctx, rendered) = reconcile(ctx, el, key, prev)
+          // always return the element on first reconcile, ignore on subsequent reconciliations.
+          let ReconciledResult(ctx, reconciled) = reconcile(ctx, el, key, prev)
 
-          ReconciledResult(ctx, ReconciledIgnoreUpdate(rendered))
+          ReconciledResult(ctx, ReconciledIgnoreUpdate(reconciled))
         }
       }
     }
@@ -113,15 +111,15 @@ fn element(
   // We want to keep the same id for the same element across reconciliations
   let element_id = prev_or_new_id(ctx, tag, key, prev)
 
-  let #(ctx, rendered_attrs) =
+  let #(ctx, reconciled_attrs) =
     list.fold(attrs, #(ctx, []), fn(acc, current) {
-      let #(ctx, rendered_attrs) = acc
+      let #(ctx, reconciled_attrs) = acc
 
       case current {
         Attribute(name, value) -> {
           case dynamic.string(value) {
             Ok(value) -> {
-              #(ctx, [ReconciledAttribute(name, value), ..rendered_attrs])
+              #(ctx, [ReconciledAttribute(name, value), ..reconciled_attrs])
             }
             Error(_) -> {
               logger.error(
@@ -138,13 +136,13 @@ fn element(
               EventHandler(element_id, kind, handler),
             )
 
-          #(ctx, [ReconciledEventHandler(element_id, kind), ..rendered_attrs])
+          #(ctx, [ReconciledEventHandler(element_id, kind), ..reconciled_attrs])
         }
         ClientHook(id, name) -> {
           let ctx =
             context.push_client_hook(ctx, ClientHookId(element_id, name, id))
 
-          #(ctx, [ReconciledClientHook(name), ..rendered_attrs])
+          #(ctx, [ReconciledClientHook(name), ..reconciled_attrs])
         }
       }
     })
@@ -152,14 +150,14 @@ fn element(
   let #(ctx, children) =
     children
     |> list.index_fold(#(ctx, []), fn(acc, child, i) {
-      let #(ctx, rendered) = acc
+      let #(ctx, reconciled_children) = acc
 
       let prev_child = find_prev_child(prev, child, i)
 
-      let ReconciledResult(ctx, rendered_child) =
+      let ReconciledResult(ctx, reconciled_child) =
         reconcile(ctx, child, None, prev_child)
 
-      #(ctx, [rendered_child, ..rendered])
+      #(ctx, [reconciled_child, ..reconciled_children])
     })
 
   ReconciledResult(
@@ -168,7 +166,7 @@ fn element(
       element_id,
       tag,
       key,
-      list.reverse(rendered_attrs),
+      list.reverse(reconciled_attrs),
       list.reverse(children),
     ),
   )
@@ -183,14 +181,14 @@ fn fragment(
   let #(ctx, children) =
     children
     |> list.index_fold(#(ctx, []), fn(acc, child, i) {
-      let #(ctx, rendered) = acc
+      let #(ctx, reconciled) = acc
 
       let prev_child = find_prev_child(prev, child, i)
 
-      let ReconciledResult(ctx, rendered_child) =
+      let ReconciledResult(ctx, reconciled_child) =
         reconcile(ctx, child, None, prev_child)
 
-      #(ctx, [rendered_child, ..rendered])
+      #(ctx, [reconciled_child, ..reconciled])
     })
 
   ReconciledResult(ctx, ReconciledFragment(key, list.reverse(children)))
@@ -203,13 +201,13 @@ fn component(
   props: Dynamic,
   prev: Option(ReconciledElement),
 ) -> ReconciledResult {
-  // Prepare ctx wip (work in progress) for component render
+  // Prepare ctx wip (work in progress) for component reconciliation
   let ctx = case prev {
     None ->
-      // There is no previous rendered element, so this is the first render
+      // There is no previous element, so this is the first reconciliation
       Context(..ctx, wip: ComponentWip(ordered_map.new(), 0, True))
     Some(ReconciledComponent(_, _, _, hooks, _)) ->
-      // There is a previous rendered element, so use the previously rendered hooks
+      // There is a previous element, so reuse the previous hooks
       Context(..ctx, wip: ComponentWip(hooks, 0, False))
     Some(_) -> {
       // This should never happen
@@ -229,9 +227,12 @@ fn component(
     _ -> None
   }
 
-  let ReconciledResult(ctx, rendered_el) = reconcile(ctx, el, None, prev_el)
+  let ReconciledResult(ctx, reconciled_el) = reconcile(ctx, el, None, prev_el)
 
-  ReconciledResult(ctx, ReconciledComponent(fc, key, props, hooks, rendered_el))
+  ReconciledResult(
+    ctx,
+    ReconciledComponent(fc, key, props, hooks, reconciled_el),
+  )
 }
 
 fn get_key(el: Element) -> Option(String) {
@@ -273,8 +274,8 @@ fn find_by_key(children, key) {
   // find a child by given key
   list.find(children, fn(child) {
     case child {
-      ReconciledComponent(_, Some(child_key), _, _, _) -> child_key == key
       ReconciledElement(_, _, Some(child_key), _, _) -> child_key == key
+      ReconciledComponent(_, Some(child_key), _, _, _) -> child_key == key
       ReconciledFragment(Some(child_key), _) -> child_key == key
       _ -> False
     }
