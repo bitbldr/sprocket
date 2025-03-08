@@ -1,5 +1,6 @@
 import gleam/dict
 import gleam/dynamic.{type Dynamic}
+import gleam/dynamic/decode
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import sprocket/context.{
@@ -117,7 +118,7 @@ fn element(
 
       case current {
         Attribute(name, value) -> {
-          case dynamic.string(value) {
+          case decode.run(value, decode.string) {
             Ok(value) -> {
               #(ctx, [ReconciledAttribute(name, value), ..reconciled_attrs])
             }

@@ -1,4 +1,5 @@
 import gleam/dynamic.{type Dynamic}
+import gleam/dynamic/decode
 import gleam/json
 import gleam/list
 import gleam/option.{type Option, None, Some}
@@ -18,7 +19,7 @@ pub fn raw(tag: String, attrs: List(Attribute), html: String) {
     |> list.fold([], fn(acc, attr) {
       case attr {
         Attribute(name, value) ->
-          case dynamic.string(value) {
+          case decode.run(value, decode.string) {
             Ok(value) -> [#(name, json.string(value)), ..acc]
             Error(_) -> {
               logger.warn("Attribute value is not a string: " <> name)

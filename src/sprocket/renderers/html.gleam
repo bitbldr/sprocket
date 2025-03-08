@@ -1,7 +1,9 @@
-import gleam/dynamic.{type Dynamic, field}
+import gleam/dynamic.{type Dynamic}
+import gleam/dynamic/decode
 import gleam/json
 import gleam/list
 import gleam/option.{type Option, None, Some}
+import gleam/result
 import gleam/string
 import gleam/string_tree.{type StringTree}
 import sprocket/context.{type ElementId}
@@ -150,10 +152,20 @@ type RawHtml {
 }
 
 fn decode_raw(data: Dynamic) {
-  data
-  |> dynamic.decode2(
-    RawHtml,
-    field("tag", dynamic.string),
-    field("innerHtml", dynamic.string),
-  )
+  let decoder = {
+    use tag <- decode.field("tag", decode.string)
+    use inner_html <- decode.field("innerHtml", decode.string)
+
+    decode.success(RawHtml(tag, inner_html))
+  }
+
+  decode.run(data, decoder)
+  |> result.map_error(map_decode_errors_to_dynamic_decode_errors)
+}
+
+fn map_decode_errors_to_dynamic_decode_errors(
+  errors: List(decode.DecodeError),
+) -> List(dynamic.DecodeError) {
+  errors
+  |> list.map(fn(e) { dynamic.DecodeError(e.expected, e.found, e.path) })
 }

@@ -1,5 +1,6 @@
 import gleam/dict.{type Dict}
-import gleam/dynamic.{type DecodeError, type Dynamic}
+import gleam/dynamic.{type Dynamic}
+import gleam/dynamic/decode.{type DecodeError}
 import sprocket/context.{type Attribute, Attribute, Event}
 
 // Events
@@ -144,14 +145,12 @@ pub fn on_wheel(cb: EventCallback) -> Attribute {
 /// 
 /// Decode the value from an event `event.target.value`.
 pub fn decode_target_value(event: Dynamic) -> Result(String, List(DecodeError)) {
-  event
-  |> dynamic.field("target", dynamic.field("value", dynamic.string))
+  decode.run(event, decode.at(["target", "value"], decode.string))
 }
 
 // Decode the checked state from an event `event.target.checked`.
 pub fn decode_target_checked(event: Dynamic) -> Result(Bool, List(DecodeError)) {
-  event
-  |> dynamic.field("target", dynamic.field("checked", dynamic.bool))
+  decode.run(event, decode.at(["target", "checked"], decode.bool))
 }
 
 pub type MouseEvent {
@@ -169,15 +168,24 @@ pub type MouseEvent {
 pub fn decode_mouse_event(
   event: Dynamic,
 ) -> Result(MouseEvent, List(DecodeError)) {
-  dynamic.decode6(
-    MouseEvent,
-    dynamic.field("clientX", dynamic.int),
-    dynamic.field("clientY", dynamic.int),
-    dynamic.field("ctrlKey", dynamic.bool),
-    dynamic.field("shiftKey", dynamic.bool),
-    dynamic.field("altKey", dynamic.bool),
-    dynamic.field("metaKey", dynamic.bool),
-  )(event)
+  event
+  |> decode.run({
+    use x <- decode.field("clientX", decode.int)
+    use y <- decode.field("clientY", decode.int)
+    use ctrl_key <- decode.field("ctrlKey", decode.bool)
+    use shift_key <- decode.field("shiftKey", decode.bool)
+    use alt_key <- decode.field("altKey", decode.bool)
+    use meta_key <- decode.field("metaKey", decode.bool)
+
+    decode.success(MouseEvent(
+      x:,
+      y:,
+      ctrl_key:,
+      shift_key:,
+      alt_key:,
+      meta_key:,
+    ))
+  })
 }
 
 pub type KeyEvent {
@@ -193,25 +201,47 @@ pub type KeyEvent {
 
 // Decode a key event that includes the key `key`, the code `code`, and modifier keys.
 pub fn decode_key_event(event: Dynamic) -> Result(KeyEvent, List(DecodeError)) {
-  dynamic.decode6(
-    KeyEvent,
-    dynamic.field("key", dynamic.string),
-    dynamic.field("code", dynamic.string),
-    dynamic.field("ctrlKey", dynamic.bool),
-    dynamic.field("shiftKey", dynamic.bool),
-    dynamic.field("altKey", dynamic.bool),
-    dynamic.field("metaKey", dynamic.bool),
-  )(event)
+  event
+  |> decode.run({
+    use key <- decode.field("key", decode.string)
+    use code <- decode.field("code", decode.string)
+    use ctrl_key <- decode.field("ctrlKey", decode.bool)
+    use shift_key <- decode.field("shiftKey", decode.bool)
+    use alt_key <- decode.field("altKey", decode.bool)
+    use meta_key <- decode.field("metaKey", decode.bool)
+
+    decode.success(KeyEvent(
+      key:,
+      code:,
+      ctrl_key:,
+      shift_key:,
+      alt_key:,
+      meta_key:,
+    ))
+  })
 }
 
 /// Decode the form data from a form submit event.
 pub fn decode_form_data(
   event: Dynamic,
 ) -> Result(Dict(String, String), List(DecodeError)) {
-  dynamic.field("formData", dynamic.dict(dynamic.string, dynamic.string))(event)
+  event
+  |> decode.run({
+    use form_data <- decode.field(
+      "formData",
+      decode.dict(decode.string, decode.string),
+    )
+
+    decode.success(form_data)
+  })
 }
 
 /// Decode the key from a key press event.
 pub fn decode_keypress(event: Dynamic) -> Result(String, List(DecodeError)) {
-  event |> dynamic.field("key", dynamic.string)
+  event
+  |> decode.run({
+    use key <- decode.field("key", decode.string)
+
+    decode.success(key)
+  })
 }

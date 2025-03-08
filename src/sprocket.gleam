@@ -1,7 +1,8 @@
+import gleam/dict
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
 import gleam/json.{type Json}
-import gleam/option.{type Option, None, Some}
+import gleam/option.{None, Some}
 import gleam/result
 import ids/cuid
 import sprocket/component
@@ -143,6 +144,7 @@ pub fn runtime_message_to_json(event: RuntimeMessage) -> Json {
       let payload_json =
         payload
         |> option.map(payload_to_json)
+        |> option.map(option.from_result)
         |> option.flatten()
 
       json.preprocessed_array([
@@ -167,22 +169,21 @@ pub fn runtime_message_to_json(event: RuntimeMessage) -> Json {
   }
 }
 
-fn payload_to_json(payload: Dynamic) -> Option(Json) {
-  case dynamic.classify(payload) {
-    "String" ->
-      payload
-      |> dynamic.string()
-      |> result.map(json.string)
-      |> option.from_result()
-    "Int" ->
-      payload |> dynamic.int() |> result.map(json.int) |> option.from_result()
-    "Float" ->
-      payload
-      |> dynamic.float()
-      |> result.map(json.float)
-      |> option.from_result()
-    "Boolean" ->
-      payload |> dynamic.bool() |> result.map(json.bool) |> option.from_result()
-    _ -> None
-  }
+fn payload_to_json(payload: Dynamic) -> Result(Json, List(decode.DecodeError)) {
+  decode.run(payload, payload_decoder())
+}
+
+fn payload_decoder() {
+  decode.one_of(decode.string |> decode.map(json.string), or: [
+    decode.int |> decode.map(json.int),
+    decode.float |> decode.map(json.float),
+    decode.bool |> decode.map(json.bool),
+    decode.list(payload_decoder()) |> decode.map(json.preprocessed_array),
+    decode.dict(decode.string, payload_decoder())
+      |> decode.map(fn(d) {
+        d
+        |> dict.to_list()
+        |> json.object
+      }),
+  ])
 }
