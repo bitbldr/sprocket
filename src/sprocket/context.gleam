@@ -297,7 +297,3 @@ pub fn dispatch_client_hook_event(
 ) {
   ctx.dispatch_client_hook_event(id, kind, payload)
 }
-
-pub fn provider(key: String, value: v, element: Element) -> Element {
-  Provider(key, dynamic.from(value), element)
-}

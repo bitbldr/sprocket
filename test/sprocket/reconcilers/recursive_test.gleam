@@ -4,7 +4,7 @@ import gleeunit/should
 import ids/cuid
 import sprocket/component.{component, render}
 import sprocket/context.{type Context, type Element, Attribute}
-import sprocket/hooks.{provider}
+import sprocket/hooks.{consumer, provider}
 import sprocket/html/attributes.{class, classes}
 import sprocket/html/elements.{a, div, fragment, raw, text}
 import sprocket/html/events
@@ -186,10 +186,22 @@ type TitleContext {
   TitleContext(title: String)
 }
 
+type ProviderComponentProps {
+  ProviderComponentProps(child: Element)
+}
+
+fn test_provider_component(ctx: Context, props: ProviderComponentProps) {
+  let ProviderComponentProps(child: child) = props
+
+  use ctx <- provider(ctx, "title", TitleContext(title: "A provided title"))
+
+  render(ctx, child)
+}
+
 fn test_component_with_context_title(ctx: Context, props: TestProps) {
   let TestProps(href: _href, is_active: is_active, ..) = props
 
-  use ctx, title <- provider(ctx, "title")
+  use ctx, title <- consumer(ctx, "title")
 
   let title = case title {
     Some(TitleContext(title: title)) -> title
@@ -221,15 +233,16 @@ pub fn renders_component_with_context_provider_test() {
   let rendered =
     render_el(
       div([class("first div")], [
-        context.provider(
-          "title",
-          TitleContext(title: "A different title"),
-          div([class("second div")], [
-            component(
-              test_component_with_context_title,
-              TestProps(title: "Home", href: "/", is_active: True),
-            ),
-          ]),
+        component(
+          test_provider_component,
+          ProviderComponentProps(
+            div([class("second div")], [
+              component(
+                test_component_with_context_title,
+                TestProps(title: "Home", href: "/", is_active: True),
+              ),
+            ]),
+          ),
         ),
       ]),
     )
@@ -240,33 +253,39 @@ pub fn renders_component_with_context_provider_test() {
     key: None,
     attrs: [ReconciledAttribute("class", "first div")],
     children: [
-      ReconciledElement(
-        id: _,
-        tag: "div",
-        key: None,
-        attrs: [ReconciledAttribute("class", "second div")],
-        children: [
-          ReconciledComponent(
-            _fc,
-            _key,
-            _props,
-            _hooks,
-            ReconciledElement(
-              id: _,
-              tag: "a",
-              key: None,
-              attrs: [
-                ReconciledAttribute(
-                  "class",
-                  "block p-2 text-blue-500 hover:text-blue-700 font-bold",
-                ),
-                ReconciledAttribute("href", "#"),
-                ReconciledEventHandler(_, "click"),
-              ],
-              children: [ReconciledText("A different title")],
+      ReconciledComponent(
+        _fc,
+        _key,
+        _props,
+        _hooks,
+        ReconciledElement(
+          id: _,
+          tag: "div",
+          key: None,
+          attrs: [ReconciledAttribute("class", "second div")],
+          children: [
+            ReconciledComponent(
+              _fc,
+              _key,
+              _props,
+              _hooks,
+              ReconciledElement(
+                id: _,
+                tag: "a",
+                key: None,
+                attrs: [
+                  ReconciledAttribute(
+                    "class",
+                    "block p-2 text-blue-500 hover:text-blue-700 font-bold",
+                  ),
+                  ReconciledAttribute("href", "#"),
+                  ReconciledEventHandler(_, "click"),
+                ],
+                children: [ReconciledText("A provided title")],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     ],
   ) = rendered

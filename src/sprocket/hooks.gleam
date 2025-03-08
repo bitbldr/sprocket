@@ -176,12 +176,34 @@ pub fn memo(
 
 /// Provider Hook
 /// ------------
-/// Creates a provider hook that allows a component to access data from a parent or ancestor component.
-/// The provider hook will return the current value provided from an ancestor with the given key. The
-/// ancestor provides the value by using the `provider` element from the `sprocket/context` module.
+/// Creates a provider hook that allows a component to provide data from an ancestor to a descendant component.
+/// The provider hook will simply return the updated context. The value can be accessed by a descendant component
+/// using the `consumer` hook.
 /// 
-/// This hook is conceptually the same as the `useContext` hook in React.
+/// This hook is conceptually similar to the `useContext` hook in React.
 pub fn provider(
+  ctx: Context,
+  key: String,
+  value: a,
+  cb: fn(Context) -> #(Context, Element),
+) -> #(Context, Element) {
+  let ctx =
+    Context(
+      ..ctx,
+      providers: dict.insert(ctx.providers, key, dynamic.from(value)),
+    )
+
+  cb(ctx)
+}
+
+/// Consumer Hook
+/// ------------
+/// Creates a consumer hook that allows a component to access data from a parent or ancestor component.
+/// The consumer hook will return the current value provided from an ancestor with the given key. The
+/// ancestor provides the value by using the `provider` hook.
+/// 
+/// This hook is conceptually similar to the `useContext` hook in React.
+pub fn consumer(
   ctx: Context,
   key: String,
   cb: fn(Context, Option(a)) -> #(Context, Element),
@@ -209,9 +231,7 @@ pub fn reducer(
 ) -> #(Context, Element) {
   let Context(schedule_reconciliation: schedule_reconciliation, ..) = ctx
 
-  // Creates an actor process for a reducer that handles two types of messages:
-  //  1. GetState msg, which simply returns the state of the reducer
-  //  2. ReducerDispatch msg, which will update the reducer state when a dispatch is triggered
+  // Creates a reducer actor process that handles state management and updates
   let reducer_init = fn() {
     // Start the actor process
     let assert Ok(reducer_actor) =
