@@ -2,7 +2,7 @@ import gleam/dynamic
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/string_tree
-import sprocket/context.{type Attribute, Attribute}
+import sprocket/internal/context.{type Attribute, Attribute}
 
 pub fn attribute(name: String, value: any) -> Attribute {
   Attribute(name, dynamic.from(value))

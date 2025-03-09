@@ -5,7 +5,7 @@ import gleam/json.{type Json}
 import gleam/option.{None, Some}
 import gleam/result
 import ids/cuid
-import sprocket/context.{type Element}
+import sprocket/internal/context.{type Element}
 import sprocket/internal/logger
 import sprocket/internal/patch
 import sprocket/internal/reconcile.{type ReconciledResult, ReconciledResult}

@@ -2,7 +2,7 @@ import gleam/int
 import gleam/json.{type Json}
 import gleam/list
 import gleam/option.{type Option, None, Some}
-import sprocket/context.{type ElementId}
+import sprocket/internal/context.{type ElementId}
 import sprocket/internal/reconcile.{
   type ReconciledAttribute, type ReconciledElement, ReconciledAttribute,
   ReconciledClientHook, ReconciledComponent, ReconciledCustom, ReconciledElement,

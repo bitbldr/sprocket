@@ -2,7 +2,7 @@ import gleam/dict
 import gleam/dynamic.{type Dynamic}
 import gleam/option.{type Option, None, Some}
 import gleam/result
-import sprocket/context.{
+import sprocket/internal/context.{
   type Attribute, type ClientHookDispatcher, type ClientHookEventHandler,
   type Context, type EffectCleanup, type Element, type HookDependencies,
   type HookDependency, Callback, CallbackResult, Changed, Client, ClientHook,
@@ -183,7 +183,7 @@ pub fn memo(
 /// provider, the hook will return `None`.
 /// 
 /// The ancestor provides the value by using a custom provider that is unique to the provider hook. This
-/// custom provider is created using `provider` function in the `sprocket/context` module.
+/// custom provider is created using `provider` function in the `sprocket/internal/context` module.
 /// 
 /// This hook is conceptually similar to the `useContext` hook in React.
 pub fn provider(

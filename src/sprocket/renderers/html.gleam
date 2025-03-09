@@ -6,8 +6,8 @@ import gleam/option.{type Option, None, Some}
 import gleam/result
 import gleam/string
 import gleam/string_tree.{type StringTree}
-import sprocket/context.{type ElementId}
 import sprocket/internal/constants
+import sprocket/internal/context.{type ElementId}
 import sprocket/internal/reconcile.{
   type ReconciledAttribute, type ReconciledElement, ReconciledAttribute,
   ReconciledComponent, ReconciledCustom, ReconciledElement, ReconciledFragment,

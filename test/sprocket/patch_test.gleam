@@ -3,7 +3,7 @@ import gleam/json
 import gleam/option.{None, Some}
 import gleam/string
 import gleeunit/should
-import sprocket/context.{Element}
+import sprocket/internal/context.{Element}
 import sprocket/internal/patch.{
   Change, Insert, Move, NoOp, Remove, Replace, Update, op_code,
 }

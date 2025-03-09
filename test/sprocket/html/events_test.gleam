@@ -3,11 +3,11 @@ import gleam/int
 import gleam/option.{None, Some}
 import gleam/string
 import sprocket/component.{component}
-import sprocket/context.{type Context}
 import sprocket/hooks.{state}
 import sprocket/html/attributes.{id, input_type, name, value}
 import sprocket/html/elements.{button, div, form, fragment, input, text}
 import sprocket/html/events
+import sprocket/internal/context.{type Context}
 import sprocket/test_helpers.{
   BlurEvent, ById, ClickEvent, FocusEvent, FormChangeEvent, FormSubmitEvent,
   InputEvent, assert_regex, connect, find_element, key_down, mouse_move,

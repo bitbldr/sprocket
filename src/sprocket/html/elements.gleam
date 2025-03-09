@@ -3,7 +3,7 @@ import gleam/dynamic/decode
 import gleam/json
 import gleam/list
 import gleam/option.{type Option, None, Some}
-import sprocket/context.{
+import sprocket/internal/context.{
   type Attribute, type Element, Attribute, Custom, Debug, Element, Fragment,
   IgnoreUpdate, Keyed, Text,
 }

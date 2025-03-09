@@ -1,5 +1,5 @@
-import sprocket/context.{type Attribute, type Element}
 import sprocket/html/elements.{el}
+import sprocket/internal/context.{type Attribute, type Element}
 
 /// The [SVG `<a>` element](https://developer.mozilla.org/en-US/docs/Web/SVG/Element/a)
 pub fn a(attrs: List(Attribute), children: List(Element)) {

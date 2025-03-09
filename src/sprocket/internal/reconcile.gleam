@@ -1,6 +1,6 @@
 import gleam/dynamic.{type Dynamic}
 import gleam/option.{type Option}
-import sprocket/context.{
+import sprocket/internal/context.{
   type ComponentHooks, type Context, type DynamicStatefulComponent, type Element,
   type ElementId, Context,
 }

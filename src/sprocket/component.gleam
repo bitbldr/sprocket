@@ -1,10 +1,13 @@
 import gleam/dynamic
-import sprocket/context.{type Element, Component, Provider}
+import sprocket/internal/context.{Component, Provider}
 import sprocket/internal/utils/unsafe_coerce.{unsafe_coerce}
 
 /// Context used by stateful components.
 pub type Context =
   context.Context
+
+pub type Element =
+  context.Element
 
 /// A StatefulComponent is a component that has an associated state, lifecycle and takes props as
 /// input.

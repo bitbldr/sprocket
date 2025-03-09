@@ -8,14 +8,14 @@ import gleam/option.{type Option, None, Some}
 import gleam/otp/actor.{type StartError, Spec}
 import gleam/result
 import ids/cuid
-import sprocket/context.{
+import sprocket/internal/constants.{call_timeout}
+import sprocket/internal/context.{
   type ClientHookId, type ComponentHooks, type Context, type EffectCleanup,
   type EffectResult, type Element, type ElementId, type Hook,
   type HookDependencies, type HookId, Callback, Changed, Client, ClientHookId,
   Context, Effect, EffectResult, EventHandler, Memo, Reducer, Unchanged,
   compare_deps,
 }
-import sprocket/internal/constants.{call_timeout}
 import sprocket/internal/exceptions.{throw_on_unexpected_hook_result}
 import sprocket/internal/logger
 import sprocket/internal/patch.{type Patch}

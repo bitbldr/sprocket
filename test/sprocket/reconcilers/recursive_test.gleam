@@ -3,11 +3,11 @@ import gleam/option.{None, Some}
 import gleeunit/should
 import ids/cuid
 import sprocket/component.{component, render}
-import sprocket/context.{type Context, type Element, Attribute}
 import sprocket/hooks.{provider}
 import sprocket/html/attributes.{class, classes}
 import sprocket/html/elements.{a, div, fragment, raw, text}
 import sprocket/html/events
+import sprocket/internal/context.{type Context, type Element, Attribute}
 import sprocket/internal/reconcile.{
   type ReconciledElement, ReconciledAttribute, ReconciledComponent,
   ReconciledCustom, ReconciledElement, ReconciledEventHandler,

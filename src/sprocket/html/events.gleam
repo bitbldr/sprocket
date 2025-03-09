@@ -1,7 +1,7 @@
 import gleam/dict.{type Dict}
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode.{type DecodeError}
-import sprocket/context.{type Attribute, Attribute, Event}
+import sprocket/internal/context.{type Attribute, Attribute, Event}
 
 // Events
 

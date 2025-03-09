@@ -6,8 +6,8 @@ import gleam/list
 import gleam/option.{None, Some}
 import gleam/regexp
 import sprocket.{type Sprocket}
-import sprocket/context.{type Element}
 import sprocket/html/events
+import sprocket/internal/context.{type Element}
 import sprocket/internal/reconcile.{
   type ReconciledElement, ReconciledAttribute, ReconciledElement,
   ReconciledEventHandler,

@@ -3,7 +3,7 @@ import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
 import gleam/list
 import gleam/option.{type Option, None, Some}
-import sprocket/context.{
+import sprocket/internal/context.{
   type Attribute, type Context, type DynamicStatefulComponent, type Element,
   Attribute, ClientHook, ClientHookId, Component, ComponentWip, Context, Custom,
   Debug, Element, Event, EventHandler, Fragment, IgnoreUpdate, Keyed, Provider,

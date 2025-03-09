@@ -1,6 +1,6 @@
 import gleam/dynamic
 import gleeunit/should
-import sprocket/context.{Changed, Unchanged, compare_deps}
+import sprocket/internal/context.{Changed, Unchanged, compare_deps}
 
 // gleeunit test functions end in `_test`
 pub fn compare_empty_deps_test() {
