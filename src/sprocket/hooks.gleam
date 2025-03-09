@@ -176,34 +176,16 @@ pub fn memo(
 
 /// Provider Hook
 /// ------------
-/// Creates a provider hook that allows a component to provide data from an ancestor to a descendant component.
-/// The provider hook will simply return the updated context. The value can be accessed by a descendant component
-/// using the `consumer` hook.
+/// Creates a provider hook that allows a component to access data from a parent or ancestor component.
+/// The provider hook will return an optional containing the current value provided from an ancestor using
+/// a given provider function. If the provider hook is called from a context that does not have a matching
+/// provider, the hook will return `None`.
+/// 
+/// The ancestor provides the value by using a custom provider that is unique to the provider hook. This
+/// custom provider is created using `provider` function in the `sprocket/context` module.
 /// 
 /// This hook is conceptually similar to the `useContext` hook in React.
 pub fn provider(
-  ctx: Context,
-  key: String,
-  value: a,
-  cb: fn(Context) -> #(Context, Element),
-) -> #(Context, Element) {
-  let ctx =
-    Context(
-      ..ctx,
-      providers: dict.insert(ctx.providers, key, dynamic.from(value)),
-    )
-
-  cb(ctx)
-}
-
-/// Consumer Hook
-/// ------------
-/// Creates a consumer hook that allows a component to access data from a parent or ancestor component.
-/// The consumer hook will return the current value provided from an ancestor with the given key. The
-/// ancestor provides the value by using the `provider` hook.
-/// 
-/// This hook is conceptually similar to the `useContext` hook in React.
-pub fn consumer(
   ctx: Context,
   key: String,
   cb: fn(Context, Option(a)) -> #(Context, Element),
