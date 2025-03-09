@@ -197,7 +197,7 @@ fn fragment(
 
 fn component(
   ctx: Context,
-  fc: DynamicStatefulComponent,
+  component_fn: DynamicStatefulComponent,
   key: Option(String),
   props: Dynamic,
   prev: Option(ReconciledElement),
@@ -218,7 +218,7 @@ fn component(
   }
 
   // render the component
-  let #(ctx, el) = fc(ctx, props)
+  let #(ctx, el) = component_fn(ctx, props)
 
   // capture hook results
   let hooks = ctx.wip.hooks
@@ -232,7 +232,7 @@ fn component(
 
   ReconciledResult(
     ctx,
-    ReconciledComponent(fc, key, props, hooks, reconciled_el),
+    ReconciledComponent(component_fn, key, props, hooks, reconciled_el),
   )
 }
 

@@ -313,7 +313,7 @@ pub fn start(
 ) -> Result(Runtime, StartError) {
   let init = fn() {
     let self = process.new_subject()
-    let render_update = fn() {
+    let trigger_reconciliation = fn() {
       logger.debug("actor.send RenderUpdate")
 
       actor.send(self, RenderUpdate)
@@ -343,7 +343,7 @@ pub fn start(
           el,
           cuid_channel,
           dispatch_client_hook_event,
-          render_update,
+          trigger_reconciliation,
           update_hook,
         ),
         reconciled: None,

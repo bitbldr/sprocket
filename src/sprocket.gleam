@@ -72,7 +72,7 @@ pub fn render(el: Element, r: Renderer(a)) -> a {
     })
 
   let dispatch_client_hook_event = fn(_id, _kind, _payload) { Nil }
-  let schedule_update = fn() { Nil }
+  let trigger_reconciliation = fn() { Nil }
   let update_hook = fn(_index, _updater) { Nil }
 
   let ctx =
@@ -80,7 +80,7 @@ pub fn render(el: Element, r: Renderer(a)) -> a {
       el,
       cuid_channel,
       dispatch_client_hook_event,
-      schedule_update,
+      trigger_reconciliation,
       update_hook,
     )
 
@@ -174,6 +174,10 @@ fn payload_to_json(payload: Dynamic) -> Result(Json, List(decode.DecodeError)) {
 }
 
 fn payload_decoder() {
+  // This is a recursive decoder that can decode any JSON payload. This call
+  // is required to prevent a infinite loop in the recursive decoder.
+  use <- decode.recursive
+
   decode.one_of(decode.string |> decode.map(json.string), or: [
     decode.int |> decode.map(json.int),
     decode.float |> decode.map(json.float),

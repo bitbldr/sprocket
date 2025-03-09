@@ -162,7 +162,7 @@ pub type Context {
     wip: ComponentWip,
     handlers: List(EventHandler),
     client_hooks: List(ClientHookId),
-    schedule_reconciliation: fn() -> Nil,
+    trigger_reconciliation: fn() -> Nil,
     update_hook: fn(Unique(HookId), fn(Hook) -> Hook) -> Nil,
     dispatch_client_hook_event: ClientHookEventDispatcher,
     cuid_channel: Subject(cuid.Message),
@@ -174,7 +174,7 @@ pub fn new(
   el: Element,
   cuid_channel: Subject(cuid.Message),
   dispatch_client_hook_event: ClientHookEventDispatcher,
-  schedule_reconciliation: fn() -> Nil,
+  trigger_reconciliation: fn() -> Nil,
   update_hook: fn(Unique(HookId), fn(Hook) -> Hook) -> Nil,
 ) -> Context {
   Context(
@@ -182,7 +182,7 @@ pub fn new(
     wip: ComponentWip(hooks: ordered_map.new(), index: 0, is_first_render: True),
     handlers: [],
     client_hooks: [],
-    schedule_reconciliation: schedule_reconciliation,
+    trigger_reconciliation: trigger_reconciliation,
     update_hook: update_hook,
     dispatch_client_hook_event: dispatch_client_hook_event,
     cuid_channel: cuid_channel,

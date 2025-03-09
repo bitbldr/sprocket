@@ -229,13 +229,13 @@ pub fn reducer(
   update: UpdateFn(model, msg),
   cb: fn(Context, model, fn(msg) -> Nil) -> #(Context, Element),
 ) -> #(Context, Element) {
-  let Context(schedule_reconciliation: schedule_reconciliation, ..) = ctx
+  let Context(trigger_reconciliation: trigger_reconciliation, ..) = ctx
 
   // Creates a reducer actor process that handles state management and updates
   let reducer_init = fn() {
     // Start the actor process
     let assert Ok(reducer_actor) =
-      reducer.start(initial, update, fn(_) { schedule_reconciliation() })
+      reducer.start(initial, update, fn(_) { trigger_reconciliation() })
       |> result.map_error(fn(error) {
         logger.error("hooks.reducer: failed to start reducer actor")
         error
@@ -272,7 +272,7 @@ pub fn state(
   cb: fn(Context, a, fn(a) -> Nil) -> #(Context, Element),
 ) -> #(Context, Element) {
   let Context(
-    schedule_reconciliation: schedule_reconciliation,
+    trigger_reconciliation: trigger_reconciliation,
     update_hook: update_hook,
     ..,
   ) = ctx
@@ -298,7 +298,7 @@ pub fn state(
       }
     })
 
-    schedule_reconciliation()
+    trigger_reconciliation()
   }
 
   cb(ctx, unsafe_coerce(value), setter)
