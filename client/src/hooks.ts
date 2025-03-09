@@ -16,7 +16,7 @@ export interface HookIdentifier {
   name: string;
 }
 
-type Emit = {
+type HookMessage = {
   id: ElementId;
   hook: HookName;
   kind: string;
@@ -25,7 +25,7 @@ type Emit = {
 
 export type ClientHookProvider = {
   hook: (elementHooks: HookIdentifier[]) => Module;
-  handle_emit: (emit: Emit) => void;
+  handle_message: (msg: HookMessage) => void;
 };
 
 export const initClientHookProvider = (
@@ -125,9 +125,9 @@ export const initClientHookProvider = (
         });
       },
     }),
-    handle_emit: (emit) => {
+    handle_message: (msg) => {
       // find handler by elementId
-      const { id: elementId, hook: name, kind: eventKind, payload } = emit;
+      const { id: elementId, hook: name, kind: eventKind, payload } = msg;
 
       const handlers =
         clientHookMap[elementId] &&

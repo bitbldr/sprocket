@@ -100,7 +100,7 @@ pub fn client_message_decoder() {
   use message_type <- decode.then(decode.at([0], decode.string))
 
   case message_type {
-    "hook:event" -> decode.at([1], inbound_client_hook_event_decoder())
+    "hook" -> decode.at([1], inbound_client_hook_event_decoder())
     _ -> decode.at([1], client_event_decoder())
   }
 }
@@ -148,7 +148,7 @@ pub fn runtime_message_to_json(event: RuntimeMessage) -> Json {
         |> option.flatten()
 
       json.preprocessed_array([
-        json.string("hook:emit"),
+        json.string("hook"),
         case payload_json {
           Some(payload_json) ->
             json.object([

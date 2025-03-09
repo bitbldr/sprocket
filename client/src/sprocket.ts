@@ -55,7 +55,7 @@ export function connect(
   );
 
   const sendHookMsg = (id: string, hook: string, kind: string, payload: any) =>
-    socket.send(JSON.stringify(["hook:event", { id, hook, kind, payload }]));
+    socket.send(JSON.stringify(["hook", { id, hook, kind, payload }]));
 
   const clientHookProvider = initClientHookProvider(opts.hooks, sendHookMsg);
 
@@ -130,8 +130,8 @@ export function connect(
 
           break;
 
-        case "hook:emit":
-          clientHookProvider.handle_emit(parsed[1]);
+        case "hook":
+          clientHookProvider.handle_message(parsed[1]);
 
           break;
 
