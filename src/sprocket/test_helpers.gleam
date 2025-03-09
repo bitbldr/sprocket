@@ -5,6 +5,7 @@ import gleam/erlang
 import gleam/list
 import gleam/option.{None, Some}
 import gleam/regexp
+import sprocket.{type Sprocket}
 import sprocket/context.{type Element}
 import sprocket/html/events
 import sprocket/internal/reconcile.{
@@ -15,34 +16,38 @@ import sprocket/internal/reconcilers/recursive
 import sprocket/internal/utils/unique
 import sprocket/render.{renderer}
 import sprocket/renderers/html.{html_renderer}
-import sprocket/runtime.{type Runtime}
+import sprocket/runtime
 
 pub fn connect(el: Element) {
-  let assert Ok(spkt) = runtime.start(el, fn(_) { Ok(Nil) })
+  let assert Ok(spkt) = sprocket.start(el, fn(_) { Ok(Nil) })
 
   spkt
 }
 
-pub fn render_html(spkt) {
+/// Renders the current state of the sprocket runtime as HTML
+pub fn render_html(spkt: Sprocket) {
   use render_html <- renderer(html_renderer())
 
   let html =
-    runtime.reconcile_immediate(spkt)
+    runtime.reconcile_immediate(spkt.runtime)
     |> render_html()
 
   #(spkt, html)
 }
 
+/// Renders a reconciled element as HTML
 pub fn render_el_html(el: ReconciledElement) {
   use render_html <- renderer(html_renderer())
 
   render_html(el)
 }
 
+/// Creates a mouse move event
 pub fn mouse_move(x: Int, y: Int) -> Event {
   MouseMoveEvent(events.MouseEvent(x, y, False, False, False, False))
 }
 
+/// Creates a keydown event
 pub fn key_down(key: String, code: String) -> Event {
   KeyDownEvent(events.KeyEvent(key, code, False, False, False, False))
 }
@@ -58,8 +63,9 @@ pub type Event {
   KeyDownEvent(e: events.KeyEvent)
 }
 
-pub fn render_event(spkt: Runtime, event: Event, html_id: String) {
-  case runtime.get_reconciled(spkt) {
+/// Renders an event to the given sprocket runtime
+pub fn render_event(spkt: Sprocket, event: Event, html_id: String) {
+  case runtime.get_reconciled(spkt.runtime) {
     Some(reconciled) -> {
       let found =
         recursive.find(reconciled, fn(el: ReconciledElement) {
@@ -147,7 +153,7 @@ pub fn render_event(spkt: Runtime, event: Event, html_id: String) {
             Ok(ReconciledEventHandler(element_id, kind)) -> {
               case
                 runtime.process_client_message_immediate(
-                  spkt,
+                  spkt.runtime,
                   unique.to_string(element_id),
                   kind,
                   event_payload,
@@ -183,10 +189,10 @@ pub type FindElementBy {
 }
 
 pub fn find_element(
-  spkt: Runtime,
+  spkt: Sprocket,
   one_that is_desired: FindElementBy,
 ) -> Result(ReconciledElement, Nil) {
-  case runtime.get_reconciled(spkt) {
+  case runtime.get_reconciled(spkt.runtime) {
     Some(reconciled) -> {
       recursive.find(reconciled, check_predicate(_, is_desired))
     }
@@ -215,7 +221,7 @@ pub fn assert_regex(maybe_el: Result(ReconciledElement, Nil), regex: String) {
   }
 }
 
-pub fn has_element(spkt: Runtime, one_that is_desired: FindElementBy) -> Bool {
+pub fn has_element(spkt: Sprocket, one_that is_desired: FindElementBy) -> Bool {
   case find_element(spkt, is_desired) {
     Ok(_) -> True
     _ -> False

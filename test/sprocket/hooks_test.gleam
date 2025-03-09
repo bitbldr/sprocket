@@ -3,9 +3,8 @@ import gleam/int
 import gleam/option.{None}
 import gleam/string
 import gleeunit/should
-import sprocket/component.{component}
-import sprocket/context.{type Context, dep}
-import sprocket/hooks.{type Cmd, effect, reducer, state}
+import sprocket/component.{type Context, component}
+import sprocket/hooks.{type Cmd, dep, effect, reducer, state}
 import sprocket/html/attributes.{id}
 import sprocket/html/elements.{button, fragment, text}
 import sprocket/html/events.{on_click}

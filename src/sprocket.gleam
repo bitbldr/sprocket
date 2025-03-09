@@ -18,10 +18,6 @@ import sprocket/runtime.{
   PatchUpdate,
 }
 
-// Re-export library types and functions for convenience
-pub type StatefulComponent(p) =
-  context.StatefulComponent(p)
-
 pub type Sprocket {
   Sprocket(runtime: Runtime)
 }
@@ -30,6 +26,7 @@ pub type SprocketError {
   RuntimeStartError
 }
 
+/// Starts a new Sprocket runtime with the given element and event dispatcher.
 pub fn start(
   el: Element,
   dispatch: EventDispatcher,
@@ -47,15 +44,17 @@ pub fn start(
   }
 }
 
+/// Handles a client message by passing it to the runtime.
 pub fn handle_client_message(spkt: Sprocket, msg: ClientMessage) -> Nil {
   runtime.handle_client_message(spkt.runtime, msg)
 }
 
+/// Shuts down the given Sprocket runtime.
 pub fn shutdown(spkt: Sprocket) {
   runtime.stop(spkt.runtime)
 }
 
-// Renders the given element as a stateless element using a given renderer.
+/// Renders the given element as a stateless element using a given renderer.
 pub fn render(el: Element, r: Renderer(a)) -> a {
   use render <- renderer(r)
 
@@ -87,12 +86,14 @@ pub fn render(el: Element, r: Renderer(a)) -> a {
   render(reconciled)
 }
 
+/// Returns a human-readable error message for the given SprocketError.
 pub fn humanize_error(error: SprocketError) -> String {
   case error {
     RuntimeStartError -> "Failed to start runtime"
   }
 }
 
+/// Decoder for client messages.
 pub fn client_message_decoder() {
   use message_type <- decode.then(decode.at([0], decode.string))
 
@@ -102,6 +103,7 @@ pub fn client_message_decoder() {
   }
 }
 
+/// Decoder for inbound client hook events.
 fn inbound_client_hook_event_decoder() {
   use element_id <- decode.field("id", decode.string)
   use hook <- decode.field("hook", decode.string)
@@ -127,7 +129,8 @@ fn client_event_decoder() {
   decode.success(ClientEvent(element_id, kind, payload))
 }
 
-pub fn runtime_message_to_json(event: RuntimeMessage) -> Json {
+/// Encodes a runtime message as JSON.
+pub fn encode_runtime_message(event: RuntimeMessage) -> Json {
   case event {
     FullUpdate(update) -> {
       use render_json <- renderer(json_renderer())
@@ -140,7 +143,7 @@ pub fn runtime_message_to_json(event: RuntimeMessage) -> Json {
     OutboundClientHookEvent(id, hook, kind, payload) -> {
       let payload_json =
         payload
-        |> option.map(payload_to_json)
+        |> option.map(encode_payload)
         |> option.map(option.from_result)
         |> option.flatten()
 
@@ -166,7 +169,7 @@ pub fn runtime_message_to_json(event: RuntimeMessage) -> Json {
   }
 }
 
-fn payload_to_json(payload: Dynamic) -> Result(Json, List(decode.DecodeError)) {
+fn encode_payload(payload: Dynamic) -> Result(Json, List(decode.DecodeError)) {
   decode.run(payload, payload_decoder())
 }
 

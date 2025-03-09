@@ -192,7 +192,7 @@ fn title_context_provider(
   title_context: TitleContext,
   element: Element,
 ) -> Element {
-  context.provider(title_context_provider_key, title_context, element)
+  component.provider(title_context_provider_key, title_context, element)
 }
 
 fn test_component_with_context_title(ctx: Context, props: TestProps) {

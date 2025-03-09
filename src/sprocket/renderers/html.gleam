@@ -16,6 +16,7 @@ import sprocket/internal/reconcile.{
 import sprocket/internal/utils/unique.{type Unique}
 import sprocket/render.{type Renderer, Renderer}
 
+/// Returns an HTML renderer used to render reconciled elements.
 pub fn html_renderer() -> Renderer(String) {
   Renderer(render: fn(el: ReconciledElement) {
     render(el)

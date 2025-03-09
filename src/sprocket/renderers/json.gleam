@@ -12,6 +12,7 @@ import sprocket/internal/reconcile.{
 import sprocket/internal/utils/unique.{type Unique}
 import sprocket/render.{type Renderer, Renderer}
 
+/// Returns a JSON renderer used to render reconciled elements.
 pub fn json_renderer() -> Renderer(Json) {
   Renderer(render: fn(el: ReconciledElement) { render(el) })
 }

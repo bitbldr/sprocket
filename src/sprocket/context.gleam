@@ -57,8 +57,11 @@ pub type ClientHookEventDispatcher =
 pub type ComponentHooks =
   OrderedMap(Int, Hook)
 
+pub type HookDependency =
+  Dynamic
+
 pub type HookDependencies =
-  List(Dynamic)
+  List(HookDependency)
 
 pub type EffectCleanup =
   Option(fn() -> Nil)
@@ -120,11 +123,6 @@ pub fn has_id(hook: Hook, hook_id: Unique(HookId)) -> Bool {
 pub type Compared(a) {
   Changed(changed: a)
   Unchanged
-}
-
-// helper function to create a dependency from a value
-pub fn dep(dependency: a) -> Dynamic {
-  dynamic.from(dependency)
 }
 
 pub fn compare_deps(
@@ -296,8 +294,4 @@ pub fn dispatch_client_hook_event(
   payload: Option(Dynamic),
 ) {
   ctx.dispatch_client_hook_event(id, kind, payload)
-}
-
-pub fn provider(key: String, value: a, element: Element) -> Element {
-  Provider(key, dynamic.from(value), element)
 }

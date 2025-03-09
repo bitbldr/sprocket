@@ -5,8 +5,8 @@ import gleam/result
 import sprocket/context.{
   type Attribute, type ClientHookDispatcher, type ClientHookEventHandler,
   type Context, type EffectCleanup, type Element, type HookDependencies,
-  type HookId, Callback, CallbackResult, Changed, Client, ClientHook, Context,
-  Effect, Unchanged, compare_deps,
+  type HookDependency, type HookId, Callback, CallbackResult, Changed, Client,
+  ClientHook, Context, Effect, Unchanged, compare_deps,
 }
 import sprocket/internal/exceptions.{throw_on_unexpected_hook_result}
 import sprocket/internal/logger
@@ -14,6 +14,7 @@ import sprocket/internal/reducer.{type UpdateFn}
 import sprocket/internal/utils/unique.{type Unique}
 import sprocket/internal/utils/unsafe_coerce.{unsafe_coerce}
 
+/// Command type used in reducer hooks
 pub type Cmd(msg) =
   reducer.Cmd(msg)
 
@@ -73,11 +74,6 @@ fn maybe_trigger_update(
   }
 }
 
-/// Client hook attribute that can be used to reference a client hook by its id.
-pub fn client_hook(id: Unique(HookId), name: String) -> Attribute {
-  ClientHook(id, name)
-}
-
 /// Client Hook
 /// -----------
 /// Creates a client hook that can be used to facilitate communication with a client
@@ -108,6 +104,11 @@ pub fn client(
   }
 
   cb(ctx, bind_hook_attr, dispatch_event)
+}
+
+/// Creates a hook dependency from some value
+pub fn dep(dependency: a) -> HookDependency {
+  dynamic.from(dependency)
 }
 
 /// Effect Hook
