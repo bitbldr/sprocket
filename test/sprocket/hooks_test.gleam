@@ -8,7 +8,9 @@ import sprocket/hooks.{type Cmd, dep, effect, reducer, state}
 import sprocket/html/attributes.{id}
 import sprocket/html/elements.{button, fragment, text}
 import sprocket/html/events.{on_click}
-import sprocket/test_helpers.{ClickEvent, connect, render_event, render_html}
+import sprocket/test_helpers.{
+  ClickEvent, connect, render_event, render_html, wait_until,
+}
 import sprocket/test_helpers/tally_counter
 
 type Model {
@@ -131,10 +133,7 @@ pub fn effect_should_run_on_every_update_test() {
 
   let spkt = connect(view)
 
-  let #(spkt, _rendered) = render_html(spkt)
-
-  tally_counter.get_count(tally)
-  |> should.equal(1)
+  wait_until(fn() { tally_counter.get_count(tally) == 1 }, 1000)
 
   let #(spkt, _rendered) = render_html(spkt)
 
@@ -150,6 +149,11 @@ pub fn effect_should_run_on_every_update_test() {
 
   tally_counter.get_count(tally)
   |> should.equal(4)
+
+  let #(_spkt, _rendered) = render_html(spkt)
+
+  tally_counter.get_count(tally)
+  |> should.equal(5)
 }
 
 fn inc_reset_on_button_click_counter(ctx: Context, _props) {

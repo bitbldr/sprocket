@@ -5,13 +5,13 @@ import gleam/result
 import sprocket/context.{
   type Attribute, type ClientHookDispatcher, type ClientHookEventHandler,
   type Context, type EffectCleanup, type Element, type HookDependencies,
-  type HookDependency, type HookId, Callback, CallbackResult, Changed, Client,
-  ClientHook, Context, Effect, Unchanged, compare_deps,
+  type HookDependency, Callback, CallbackResult, Changed, Client, ClientHook,
+  Context, Effect, Unchanged, compare_deps,
 }
 import sprocket/internal/exceptions.{throw_on_unexpected_hook_result}
 import sprocket/internal/logger
 import sprocket/internal/reducer.{type UpdateFn}
-import sprocket/internal/utils/unique.{type Unique}
+import sprocket/internal/utils/unique
 import sprocket/internal/utils/unsafe_coerce.{unsafe_coerce}
 
 /// Command type used in reducer hooks
