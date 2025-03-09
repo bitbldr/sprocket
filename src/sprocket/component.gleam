@@ -6,6 +6,7 @@ import sprocket/internal/utils/unsafe_coerce.{unsafe_coerce}
 pub type Context =
   context.Context
 
+/// Element that can be rendered
 pub type Element =
   context.Element
 
@@ -34,6 +35,6 @@ pub fn provider(key: String, value: a, element: Element) -> Element {
 }
 
 /// Renders an element with the given context.
-pub fn render(ctx, element) -> #(Context, Element) {
+pub fn render(ctx: Context, element: Element) -> #(Context, Element) {
   #(ctx, element)
 }
