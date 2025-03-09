@@ -5,7 +5,6 @@ import gleam/json.{type Json}
 import gleam/option.{None, Some}
 import gleam/result
 import ids/cuid
-import sprocket/component
 import sprocket/context.{type Element}
 import sprocket/internal/logger
 import sprocket/internal/patch
@@ -22,8 +21,6 @@ import sprocket/runtime.{
 // Re-export library types and functions for convenience
 pub type StatefulComponent(p) =
   context.StatefulComponent(p)
-
-pub const component = component.component
 
 pub type Sprocket {
   Sprocket(runtime: Runtime)
