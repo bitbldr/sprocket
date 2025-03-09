@@ -41,5 +41,5 @@ pub fn increment(actor) {
 }
 
 pub fn get_count(actor) -> Int {
-  process.call(actor, GetCount(_), 1000)
+  process.call(actor, GetCount, 1000)
 }

@@ -458,7 +458,7 @@ pub fn patch_to_json(patch: Patch) -> Json {
       json.preprocessed_array([
         json.string(op_code(patch)),
         json.nullable(attrs, of: attrs_to_json),
-        json.nullable(children, of: children_to_json(_)),
+        json.nullable(children, of: children_to_json),
       ])
     }
     Replace(el) -> {
@@ -508,7 +508,7 @@ fn attrs_to_json(attrs: List(ReconciledAttribute)) -> Json {
 
 fn children_to_json(children: List(#(Int, Patch))) -> Json {
   children
-  |> list.map(map_key_to_str(_))
+  |> list.map(map_key_to_str)
   |> json.object()
 }
 

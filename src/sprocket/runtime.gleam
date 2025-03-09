@@ -370,7 +370,7 @@ pub fn stop(actor) {
 pub fn get_reconciled(actor) {
   logger.debug("process.try_call GetReconciled")
 
-  case process.try_call(actor, GetReconciled(_), call_timeout) {
+  case process.try_call(actor, GetReconciled, call_timeout) {
     Ok(rendered) -> rendered
     Error(err) -> {
       logger.error_meta("Error getting rendered view from runtime actor", err)
@@ -446,7 +446,7 @@ pub fn render_update(actor) {
 pub fn reconcile_immediate(actor) -> ReconciledElement {
   logger.debug("process.try_call Reconcile")
 
-  case process.try_call(actor, ReconcileImmediate(_), call_timeout) {
+  case process.try_call(actor, ReconcileImmediate, call_timeout) {
     Ok(reconciled) -> reconciled
     Error(err) -> {
       logger.error_meta("Error reconciling element from runtime actor", err)

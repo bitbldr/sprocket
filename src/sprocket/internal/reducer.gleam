@@ -142,7 +142,7 @@ pub fn shutdown(subject) {
 
 /// Gets the current state of the reducer actor.
 pub fn get_state(subject) -> model {
-  process.call(subject, GetState(_), call_timeout)
+  process.call(subject, GetState, call_timeout)
 }
 
 /// Dispatches a message to the reducer actor.
