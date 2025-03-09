@@ -1,4 +1,5 @@
 # Sprocket
+
 A framework for building real-time server UI components and live views in [Gleam ✨](https://gleam.run/)
 
 [![Package Version](https://img.shields.io/hexpm/v/sprocket)](https://hex.pm/packages/sprocket)
@@ -20,7 +21,7 @@ when state changes. Contextual hooks are used to manage state and effects, e.g.
 Typed component interfaces snap together and are used to create higher-level views. Data flow is
 "uni-directional" in that **State** always flows down into components as props and **Events**
 bubble up through event handler functions (which are also passed in as props, e.g.
-`on_some_event("Something happened")`). 
+`on_some_event("Something happened")`).
 
 ## Key Features
 
@@ -34,6 +35,7 @@ bubble up through event handler functions (which are also passed in as props, e.
 ## Example
 
 ### Clock Component
+
 ```gleam
 pub type ClockProps {
   ClockProps(label: Option(String), time_unit: Option(erlang.TimeUnit))
@@ -83,6 +85,7 @@ pub fn clock(ctx: Context, props) {
 ```
 
 ### Parent view
+
 ```gleam
 pub type ExampleViewProps {
   ExampleViewProps
@@ -116,23 +119,25 @@ pub fn example_view(ctx: Context, _props: ExampleViewProps) {
 To get started with Sprocket, follow the instructions below:
 
 1. Clone the Sprocket starter repository:
+
 ```sh
 git clone https://github.com/bitbldr/sprocket_starter.git
 ```
 
 1. Install the required dependencies:
+
 ```sh
 gleam deps download
 yarn
 ```
 
 1. Start the development server:
+
 ```sh
 yarn run watch
 ```
 
 1. Open your web browser and visit [http://localhost:3000](http://localhost:3000) to see the starter app.
-
 
 ## Installation
 
@@ -146,23 +151,9 @@ For getting started with Sprocket, refer to the [Official Docs](https://sprocket
 Here you will find detailed examples and tutorials. These docs are
 build with sprocket, which also make them an excellent reference implementation [github.com/bitbldr/sprocket_docs](https://github.com/bitbldr/sprocket_docs).
 
-
 ## API Documentation
 
 API documentation can be found at <https://hexdocs.pm/sprocket>.
-
-
-## Roadmap
-
-Sprocket is still in its early stages and has a roadmap for future development. Here are some of the planned improvements:
-
-- [x] Build out full set of base HTML functions for components
-- [x] Expand the available hooks to enable more flexible component behavior
-- [x] Add documentation to modules and simplify API
-- [x] Add support for additional event types to handle various user interactions
-- [ ] Improve unit test coverage to ensure code quality and reliability
-- [ ] Add support for web-based client components
-- [ ] Investigate extending to support more than just web views, such as native desktop, iOS, and Android applications.
 
 ## Contributing
 
