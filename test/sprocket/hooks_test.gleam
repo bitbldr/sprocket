@@ -4,7 +4,7 @@ import gleam/option.{None}
 import gleam/string
 import gleeunit/should
 import sprocket/component.{type Context, component}
-import sprocket/hooks.{type Cmd, dep, effect, reducer, state}
+import sprocket/hooks.{type Dispatcher, dep, effect, reducer, state}
 import sprocket/html/attributes.{id}
 import sprocket/html/elements.{button, fragment, text}
 import sprocket/html/events.{on_click}
@@ -28,41 +28,51 @@ fn mock_random() -> Int {
   42
 }
 
-fn generate_random() -> Cmd(Msg) {
-  fn(dispatch) {
-    let random_number = mock_random()
-    dispatch(SetCount(random_number))
-  }
+fn generate_random(dispatch) {
+  process.start(
+    fn() {
+      let random_number = mock_random()
+      dispatch(SetCount(random_number))
+    },
+    False,
+  )
 }
 
-fn count_down_from(value) -> Cmd(Msg) {
-  fn(dispatch) {
-    case value > 0 {
-      True -> dispatch(CountDown(value - 1))
-      False -> Nil
-    }
-  }
+fn count_down_from(dispatch, value) {
+  process.start(
+    fn() {
+      case value > 0 {
+        True -> dispatch(CountDown(value - 1))
+        False -> Nil
+      }
+    },
+    False,
+  )
 }
 
-fn update(model: Model, msg: Msg) -> #(Model, List(Cmd(Msg))) {
+fn update(model: Model, msg: Msg, dispatch: Dispatcher(Msg)) -> Model {
   case msg {
     SetCount(count) -> {
-      #(Model(count: count), [])
+      Model(count: count)
     }
     ResetCount -> {
-      #(Model(count: 0), [])
+      Model(count: 0)
     }
     GenerateRandom -> {
-      #(model, [generate_random()])
+      generate_random(dispatch)
+
+      model
     }
     CountDown(value) -> {
-      #(Model(count: value), [count_down_from(value)])
+      count_down_from(dispatch, value)
+
+      Model(count: value)
     }
   }
 }
 
-fn initial() -> #(Model, List(Cmd(Msg))) {
-  #(Model(0), [])
+fn init(_dispatch: Dispatcher(Msg)) -> Model {
+  Model(0)
 }
 
 fn inc_initial_render_counter(ctx: Context, _props) {
@@ -240,7 +250,7 @@ pub fn effect_should_run_with_empty_deps_and_handle_events_test() {
 
 fn inc_random_reset_counter(ctx: Context, _props) {
   // Define a reducer to handle events and update the state
-  use ctx, Model(count: count), dispatch <- reducer(ctx, initial(), update)
+  use ctx, Model(count: count), dispatch <- reducer(ctx, init, update)
 
   // Define event handlers
   let increment = fn(_) { dispatch(SetCount(count + 1)) }
@@ -321,7 +331,7 @@ fn count_down(ctx: Context, _props) {
   // Define a reducer to handle events and update the state
   use ctx, Model(count: count), dispatch <- reducer(
     ctx,
-    #(Model(42), []),
+    fn(_) { Model(42) },
     update,
   )
 
@@ -366,7 +376,11 @@ fn component_with_initial_cmds(ctx: Context, _props) {
   // Define a reducer to handle events and update the state
   use ctx, Model(count: count), dispatch <- reducer(
     ctx,
-    #(Model(0), [generate_random()]),
+    fn(dispatch) {
+      generate_random(dispatch)
+
+      Model(0)
+    },
     update,
   )
 

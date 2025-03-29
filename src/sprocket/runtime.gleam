@@ -24,14 +24,12 @@ import sprocket/internal/reconcile.{
   ReconciledFragment, ReconciledResult,
 }
 import sprocket/internal/reconcilers/recursive
-import sprocket/internal/reducer
 import sprocket/internal/utils/common.{require}
 import sprocket/internal/utils/ordered_map.{
   type KeyedItem, type OrderedMapIter, KeyedItem,
 }
 import sprocket/internal/utils/timer
 import sprocket/internal/utils/unique.{type Unique}
-import sprocket/internal/utils/unsafe_coerce
 
 pub type Runtime =
   Subject(Message)
@@ -588,14 +586,6 @@ fn run_effects(rendered: ReconciledElement) -> ReconciledElement {
         let result = run_effect(effect_fn, deps, prev)
 
         Effect(id, effect_fn, deps, Some(result))
-      }
-
-      Reducer(id, reducer_actor, cleanup) -> {
-        reducer_actor
-        |> unsafe_coerce.unsafe_coerce()
-        |> reducer.process_commands()
-
-        Reducer(id, reducer_actor, cleanup)
       }
 
       other -> other

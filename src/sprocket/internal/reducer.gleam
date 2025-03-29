@@ -1,7 +1,6 @@
 import gleam/dynamic.{type Dynamic}
 import gleam/erlang/process.{type Subject}
 import gleam/function.{identity}
-import gleam/list
 import gleam/otp/actor
 import gleam/result
 import sprocket/internal/constants.{call_timeout}
@@ -14,40 +13,42 @@ pub type ReducerActor {
 pub type Dispatcher(msg) =
   fn(msg) -> Nil
 
-pub type Cmd(msg) =
-  fn(Dispatcher(msg)) -> Nil
+pub type Notifier(model) =
+  fn(model) -> Nil
 
-pub type UpdateFn(model, msg) =
-  fn(model, msg) -> #(model, List(Cmd(msg)))
+pub type Initializer(model, msg) =
+  fn(Dispatcher(msg)) -> model
+
+pub type Updater(model, msg) =
+  fn(model, msg, Dispatcher(msg)) -> model
 
 pub type ReducerMessage(model, msg) {
   Shutdown
-  GetState(reply_with: Subject(model))
+  GetModel(reply_with: Subject(model))
   ReducerDispatch(msg: msg)
-  PushCommands(cmds: List(Cmd(msg)))
-  ProcessCommands
 }
 
 pub opaque type State(model, msg) {
   State(
     self: Subject(ReducerMessage(model, msg)),
     model: model,
-    update: UpdateFn(model, msg),
-    notify: fn(model) -> Nil,
-    pending_commands: List(Cmd(msg)),
+    update: Updater(model, msg),
+    notify: Notifier(model),
   )
 }
 
 pub fn init(
-  initial: model,
-  update: UpdateFn(model, msg),
-  notify: fn(model) -> Nil,
+  initialize: Initializer(model, msg),
+  update: Updater(model, msg),
+  notify: Notifier(model),
 ) -> fn() -> actor.InitResult(State(model, msg), ReducerMessage(model, msg)) {
   fn() {
     let self = process.new_subject()
     let selector = process.selecting(process.new_selector(), self, identity)
 
-    actor.Ready(State(self, initial, update, notify, []), selector)
+    let dispach = fn(msg) { process.send(self, ReducerDispatch(msg)) }
+
+    actor.Ready(State(self, initialize(dispach), update, notify), selector)
   }
 }
 
@@ -58,7 +59,7 @@ pub fn handle_message(
   case message {
     Shutdown -> actor.Stop(process.Normal)
 
-    GetState(reply_with) -> {
+    GetModel(reply_with) -> {
       let State(model:, ..) = state
 
       process.send(reply_with, model)
@@ -67,70 +68,51 @@ pub fn handle_message(
     }
 
     ReducerDispatch(msg) -> {
-      let State(self:, model:, update:, notify:, ..) = state
+      let State(self:, model:, update:, notify:) = state
 
-      // This is the main logic for updating the reducer's state. The reducer function will
-      // return the updated model and a list of zero or more commands to execute. The commands
-      // are functions that will be called with the dispatcher function which may trigger
-      // additional messages to the reducer.
-      let #(updated_model, cmds) = update(model, msg)
+      let dispach = fn(msg) { process.send(self, ReducerDispatch(msg)) }
 
-      process.send(self, PushCommands(cmds))
+      // This is the main logic for updating the reducer's state. The update function will
+      // return the updated model. A dispatcher function is passed to update, which can
+      // be used to dispatch messages to the reducer actor. This is useful for dispatching
+      // continuations or from async operations.
+      let updated_model = update(model, msg, dispach)
 
-      // Notiify the parent component that the state has been updated. In the case
+      // Notify the subscriber if the model has changed. In the case
       // of a view component, this will trigger a re-render. The re-render will call
       // this actor to get the latest state, which will always be processed after this
       // current message, ensuring that the state returned by get_state represents the
       // latest model.
-      notify(model)
+      case model != updated_model {
+        True -> notify(updated_model)
+        _ -> Nil
+      }
 
       actor.continue(State(..state, model: updated_model))
-    }
-
-    PushCommands(cmds) -> {
-      let State(pending_commands:, ..) = state
-
-      let pending_commands = list.append(pending_commands, cmds)
-
-      actor.continue(State(..state, pending_commands:))
-    }
-
-    ProcessCommands -> {
-      let State(self:, pending_commands:, ..) = state
-
-      pending_commands
-      |> list.each(fn(cmd) {
-        process.start(fn() { cmd(dispatch(self, _)) }, False)
-      })
-
-      actor.continue(State(..state, pending_commands: []))
     }
   }
 }
 
-/// Starts a new reducer actor with the given initial state and commands, update function, and
+/// Starts a new reducer actor with the initial state from the initializer, update function, and
 /// notify callback.
 /// 
-/// A reducer actor is a a wrapper around an OTP actor that manages a single piece of state and a
-/// set of commands that can be executed to update that state. The update function is called with the
-/// current state and a message, and returns the new state and a list of commands to execute. The
-/// notify function is called whenever the state is updated.
+/// A reducer actor is a a wrapper around an OTP actor that manages a single piece of state. The
+//update function is called with the current state, a message and a dispatcher function. The dispatcher
+
+/// function can be used to dispatch messages to the reducer actor. The update function is expected to
+/// return the new state. The notify function is called whenever the state is updated.
 pub fn start(
-  initial: #(model, List(Cmd(msg))),
-  update: UpdateFn(model, msg),
+  initialize: Initializer(model, msg),
+  update: Updater(model, msg),
   notify: fn(model) -> Nil,
 ) {
-  let #(model, cmds) = initial
-
   use self <- result.map(
     actor.start_spec(actor.Spec(
-      init(model, update, notify),
+      init(initialize, update, notify),
       call_timeout,
       handle_message,
     )),
   )
-
-  process.send(self, PushCommands(cmds))
 
   self
 }
@@ -140,9 +122,9 @@ pub fn shutdown(subject) {
   process.send(subject, Shutdown)
 }
 
-/// Gets the current state of the reducer actor.
-pub fn get_state(subject) -> model {
-  process.call(subject, GetState, call_timeout)
+/// Returns the current model of the reducer actor.
+pub fn get_model(subject) -> model {
+  process.call(subject, GetModel, call_timeout)
 }
 
 /// Dispatches a message to the reducer actor.
@@ -152,9 +134,4 @@ pub fn dispatch(subject: Subject(ReducerMessage(model, msg)), msg: msg) -> Nil {
   // because we also use a process.call to the same reducer actor to get the current state, we should
   // be guaranteed to have this message processed before that call during the next render cycle.
   actor.send(subject, ReducerDispatch(msg))
-}
-
-/// Processes any pending commands in the reducer actor.
-pub fn process_commands(subject) -> Nil {
-  process.send(subject, ProcessCommands)
 }
