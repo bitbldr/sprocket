@@ -1,11 +1,10 @@
 import gleam/int
 import gleam/string
-import sprocket/component.{component}
+import sprocket.{type Context, component, render}
 import sprocket/hooks.{state}
 import sprocket/html/attributes.{id}
 import sprocket/html/elements.{button, fragment, text}
 import sprocket/html/events.{on_click}
-import sprocket/internal/context.{type Context}
 import sprocket/test_helpers.{ClickEvent, connect, render_event, render_html}
 
 type TestCounterProps {
@@ -22,7 +21,7 @@ fn inc_reset_on_button_click_using_state(ctx: Context, _props) {
 
   let current_count = int.to_string(count)
 
-  component.render(
+  render(
     ctx,
     fragment([
       text("current count is: "),

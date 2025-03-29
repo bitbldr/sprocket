@@ -311,6 +311,7 @@ pub fn start(
 ) -> Result(Runtime, StartError) {
   let init = fn() {
     let self = process.new_subject()
+
     let trigger_reconciliation = fn() {
       logger.debug("actor.send RenderUpdate")
 
@@ -350,6 +351,9 @@ pub fn start(
       )
 
     let selector = process.selecting(process.new_selector(), self, identity)
+
+    // schedule the initial render
+    let _ = render_update(self)
 
     actor.Ready(state, selector)
   }

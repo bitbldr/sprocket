@@ -2,8 +2,8 @@ import gleam/dynamic
 import gleam/option.{None, Some}
 import gleeunit/should
 import ids/cuid
-import sprocket/component.{component, render}
-import sprocket/hooks.{provider}
+import sprocket.{component, provider, render}
+import sprocket/hooks
 import sprocket/html/attributes.{class, classes}
 import sprocket/html/elements.{a, div, fragment, raw, text}
 import sprocket/html/events
@@ -192,13 +192,13 @@ fn title_context_provider(
   title_context: TitleContext,
   element: Element,
 ) -> Element {
-  component.provider(title_context_provider_key, title_context, element)
+  provider(title_context_provider_key, title_context, element)
 }
 
 fn test_component_with_context_title(ctx: Context, props: TestProps) {
   let TestProps(href: _href, is_active: is_active, ..) = props
 
-  use ctx, title <- provider(ctx, title_context_provider_key)
+  use ctx, title <- hooks.provider(ctx, title_context_provider_key)
 
   let title = case title {
     Some(TitleContext(title: title)) -> title

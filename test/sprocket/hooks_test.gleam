@@ -3,7 +3,7 @@ import gleam/int
 import gleam/option.{None}
 import gleam/string
 import gleeunit/should
-import sprocket/component.{type Context, component}
+import sprocket.{type Context, component, render}
 import sprocket/hooks.{type Dispatcher, dep, effect, reducer, state}
 import sprocket/html/attributes.{id}
 import sprocket/html/elements.{button, fragment, text}
@@ -91,10 +91,7 @@ fn inc_initial_render_counter(ctx: Context, _props) {
 
   let current_count = int.to_string(count)
 
-  component.render(
-    ctx,
-    fragment([text("current count is: "), text(current_count)]),
-  )
+  render(ctx, fragment([text("current count is: "), text(current_count)]))
 }
 
 pub fn effect_should_only_run_on_initial_render_test() {
@@ -132,7 +129,7 @@ fn inc_on_every_update_counter(ctx: Context, props: IncEverySetCounterProps) {
     [dep(ctx)],
   )
 
-  component.render(ctx, text(""))
+  render(ctx, text(""))
 }
 
 pub fn effect_should_run_on_every_update_test() {
@@ -186,7 +183,7 @@ fn inc_reset_on_button_click_counter(ctx: Context, _props) {
 
   let current_count = int.to_string(count)
 
-  component.render(
+  render(
     ctx,
     fragment([
       text("current count is: "),
@@ -259,7 +256,7 @@ fn inc_random_reset_counter(ctx: Context, _props) {
 
   let current_count = int.to_string(count)
 
-  component.render(
+  render(
     ctx,
     fragment([
       text("current count is: "),
@@ -340,7 +337,7 @@ fn count_down(ctx: Context, _props) {
 
   let current_count = int.to_string(count)
 
-  component.render(
+  render(
     ctx,
     fragment([
       text("current count is: "),
@@ -389,7 +386,7 @@ fn component_with_initial_cmds(ctx: Context, _props) {
 
   let current_count = int.to_string(count)
 
-  component.render(
+  render(
     ctx,
     fragment([
       text("current count is: "),

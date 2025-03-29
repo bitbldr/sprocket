@@ -9,6 +9,7 @@ import sprocket/internal/exceptions.{throw_on_unexpected_deps_mismatch}
 import sprocket/internal/logger
 import sprocket/internal/utils/ordered_map.{type OrderedMap}
 import sprocket/internal/utils/unique.{type Unique}
+import sprocket/internal/utils/unsafe_coerce.{unsafe_coerce}
 
 pub type ElementId
 
@@ -46,6 +47,20 @@ pub type Element {
   Provider(key: String, value: Dynamic, element: Element)
   Text(text: String)
   Custom(kind: String, data: String)
+}
+
+/// Creates a new stateful component element from a given component function and props.
+pub fn component(c: StatefulComponent(p), props: p) -> Element {
+  let component =
+    c
+    |> dynamic.from()
+    |> unsafe_coerce()
+
+  let props =
+    props
+    |> dynamic.from()
+
+  Component(component, props)
 }
 
 pub type Updater(r) =
