@@ -14,6 +14,15 @@ import sprocket/internal/reducer
 import sprocket/internal/utils/unique
 import sprocket/internal/utils/unsafe_coerce.{unsafe_coerce}
 
+pub type Dispatcher(msg) =
+  reducer.Dispatcher(msg)
+
+pub type Initializer(model, msg) =
+  reducer.Initializer(model, msg)
+
+pub type Updater(model, msg) =
+  reducer.Updater(model, msg)
+
 /// Callback Hook
 /// -------------
 /// Creates a callback hook that will return a cached version of a given callback
@@ -195,15 +204,6 @@ pub fn provider(
 
   cb(ctx, value)
 }
-
-pub type Dispatcher(msg) =
-  reducer.Dispatcher(msg)
-
-pub type Initializer(model, msg) =
-  reducer.Initializer(model, msg)
-
-pub type Updater(model, msg) =
-  reducer.Updater(model, msg)
 
 /// Reducer Hook
 /// ------------
