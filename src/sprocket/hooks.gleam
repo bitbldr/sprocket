@@ -10,7 +10,7 @@ import sprocket/internal/context.{
 }
 import sprocket/internal/exceptions.{throw_on_unexpected_hook_result}
 import sprocket/internal/logger
-import sprocket/internal/reducer.{type Initializer, type Updater}
+import sprocket/internal/reducer
 import sprocket/internal/utils/unique
 import sprocket/internal/utils/unsafe_coerce.{unsafe_coerce}
 
@@ -198,6 +198,12 @@ pub fn provider(
 
 pub type Dispatcher(msg) =
   reducer.Dispatcher(msg)
+
+pub type Initializer(model, msg) =
+  reducer.Initializer(model, msg)
+
+pub type Updater(model, msg) =
+  reducer.Updater(model, msg)
 
 /// Reducer Hook
 /// ------------
