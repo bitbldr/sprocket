@@ -20,7 +20,7 @@ pub fn renderer(
 }
 
 /// Renders the given element as a stateless element using a given renderer.
-pub fn render(el: Element, r: Renderer(a)) -> a {
+pub fn render_element(el: Element, r: Renderer(a)) -> a {
   use render <- renderer(r)
 
   // Internally this function uses the reconciler with an empty previous element
