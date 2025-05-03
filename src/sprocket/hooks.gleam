@@ -6,17 +6,22 @@ import sprocket/internal/context.{
   type Attribute, type ClientHookDispatcher, type ClientHookEventHandler,
   type Context, type EffectCleanup, type Element, type HookDependencies,
   type HookDependency, Callback, CallbackResult, Changed, Client, ClientHook,
-  Context, Effect, Unchanged, compare_deps,
+  Context, Effect, Provider, Unchanged, compare_deps,
 }
 import sprocket/internal/exceptions.{throw_on_unexpected_hook_result}
 import sprocket/internal/logger
-import sprocket/internal/reducer.{type UpdateFn}
+import sprocket/internal/reducer
 import sprocket/internal/utils/unique
 import sprocket/internal/utils/unsafe_coerce.{unsafe_coerce}
 
-/// Command type used in reducer hooks
-pub type Cmd(msg) =
-  reducer.Cmd(msg)
+pub type Dispatcher(msg) =
+  reducer.Dispatcher(msg)
+
+pub type Initializer(model, msg) =
+  reducer.Initializer(model, msg)
+
+pub type Updater(model, msg) =
+  reducer.Updater(model, msg)
 
 /// Callback Hook
 /// -------------
@@ -200,6 +205,11 @@ pub fn provider(
   cb(ctx, value)
 }
 
+/// Creates a new provider element with the given key and value.
+pub fn provide(key: String, value: a, element: Element) -> Element {
+  Provider(key, dynamic.from(value), element)
+}
+
 /// Reducer Hook
 /// ------------
 /// Creates a reducer hook that can be used to manage state. The reducer hook will
@@ -208,8 +218,8 @@ pub fn provider(
 /// in a re-render of the component.
 pub fn reducer(
   ctx: Context,
-  initial: #(model, List(Cmd(msg))),
-  update: UpdateFn(model, msg),
+  initialize: Initializer(model, msg),
+  update: Updater(model, msg),
   cb: fn(Context, model, fn(msg) -> Nil) -> #(Context, Element),
 ) -> #(Context, Element) {
   let Context(trigger_reconciliation: trigger_reconciliation, ..) = ctx
@@ -218,7 +228,7 @@ pub fn reducer(
   let reducer_init = fn() {
     // Start the actor process
     let assert Ok(reducer_actor) =
-      reducer.start(initial, update, fn(_) { trigger_reconciliation() })
+      reducer.start(initialize, update, fn(_) { trigger_reconciliation() })
       |> result.map_error(fn(error) {
         logger.error("hooks.reducer: failed to start reducer actor")
         error
@@ -238,10 +248,10 @@ pub fn reducer(
   // store the actors as dynamic and coerce them back when updating
   let reducer_actor = unsafe_coerce(dyn_reducer_actor)
 
-  // get the current state of the reducer
-  let state = reducer.get_state(reducer_actor)
+  // get the current model of the reducer
+  let model = reducer.get_model(reducer_actor)
 
-  cb(ctx, state, reducer.dispatch(reducer_actor, _))
+  cb(ctx, model, reducer.dispatch(reducer_actor, _))
 }
 
 /// State Hook

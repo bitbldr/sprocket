@@ -2,7 +2,7 @@ import gleam/dict
 import gleam/int
 import gleam/option.{None, Some}
 import gleam/string
-import sprocket/component.{component}
+import sprocket.{component, render}
 import sprocket/hooks.{state}
 import sprocket/html/attributes.{id, input_type, name, value}
 import sprocket/html/elements.{button, div, form, fragment, input, text}
@@ -23,7 +23,7 @@ fn button_component(ctx: Context, _props) {
 
   let current_count = int.to_string(count)
 
-  component.render(
+  render(
     ctx,
     fragment([
       text("current count is: " <> current_count),
@@ -82,7 +82,7 @@ fn input_component(ctx: Context, _props) {
     }
   }
 
-  component.render(
+  render(
     ctx,
     fragment([
       input([
@@ -150,7 +150,7 @@ fn mouse_component(ctx: Context, _props) {
     }
   }
 
-  component.render(
+  render(
     ctx,
     fragment([
       text(
@@ -220,7 +220,7 @@ pub fn form_component(ctx: Context, _props) {
     }
   }
 
-  component.render(
+  render(
     ctx,
     fragment([
       div([id("prompt")], case submitted {
@@ -307,7 +307,7 @@ fn blur_focus_component(ctx: Context, _props) {
   let set_blurred = fn(_) { set_focus(Blurred) }
   let set_focused = fn(_) { set_focus(Focused) }
 
-  component.render(
+  render(
     ctx,
     fragment([
       case focus {
@@ -362,7 +362,7 @@ fn keypress_component(ctx: Context, _props) {
     }
   }
 
-  component.render(
+  render(
     ctx,
     fragment([
       case key {

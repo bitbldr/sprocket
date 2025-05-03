@@ -1,7 +1,33 @@
 import gleam/dict.{type Dict}
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode.{type DecodeError}
-import sprocket/internal/context.{type Attribute, Attribute, Event}
+import sprocket/hooks.{type Dispatcher}
+import sprocket/internal/context.{
+  type Attribute, type Context, type Element, Attribute, Event,
+}
+
+type EventMsg(msg) =
+  fn(Dynamic) -> msg
+
+type EventDispatcher(msg) =
+  fn(EventMsg(msg)) -> fn(Dynamic) -> Nil
+
+/// Creates a helper function that allows us to directly dispatch a message from an
+/// event handler without needing to create a separate function for each event.
+/// 
+/// Example:
+///   ```gleam
+///     use dispatch_event <- event_dispatcher(dispatch)
+///     ...
+///
+///     button([events.on_click(dispatch_event(UserClickedButton))], [])
+///   ```
+pub fn event_dispatcher(
+  dispatch: Dispatcher(msg),
+  cb: fn(EventDispatcher(msg)) -> #(Context, Element),
+) -> #(Context, Element) {
+  cb(fn(msg) { fn(e) { dispatch(msg(e)) } })
+}
 
 // Events
 

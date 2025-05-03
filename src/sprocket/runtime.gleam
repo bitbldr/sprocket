@@ -24,14 +24,12 @@ import sprocket/internal/reconcile.{
   ReconciledFragment, ReconciledResult,
 }
 import sprocket/internal/reconcilers/recursive
-import sprocket/internal/reducer
 import sprocket/internal/utils/common.{require}
 import sprocket/internal/utils/ordered_map.{
   type KeyedItem, type OrderedMapIter, KeyedItem,
 }
 import sprocket/internal/utils/timer
 import sprocket/internal/utils/unique.{type Unique}
-import sprocket/internal/utils/unsafe_coerce
 
 pub type Runtime =
   Subject(Message)
@@ -53,7 +51,7 @@ pub type ClientMessage {
     element_id: String,
     hook: String,
     kind: String,
-    payload: Option(Dynamic),
+    payload: Dynamic,
   )
 }
 
@@ -89,7 +87,7 @@ pub opaque type Message {
     element_id: Unique(ElementId),
     hook_name: String,
     event: String,
-    payload: Option(Dynamic),
+    payload: Dynamic,
   )
   UpdateHookState(Unique(HookId), fn(Hook) -> Hook)
   DispatchClientHookEvent(
@@ -313,6 +311,7 @@ pub fn start(
 ) -> Result(Runtime, StartError) {
   let init = fn() {
     let self = process.new_subject()
+
     let trigger_reconciliation = fn() {
       logger.debug("actor.send RenderUpdate")
 
@@ -352,6 +351,9 @@ pub fn start(
       )
 
     let selector = process.selecting(process.new_selector(), self, identity)
+
+    // schedule the initial render
+    let _ = render_update(self)
 
     actor.Ready(state, selector)
   }
@@ -588,14 +590,6 @@ fn run_effects(rendered: ReconciledElement) -> ReconciledElement {
         let result = run_effect(effect_fn, deps, prev)
 
         Effect(id, effect_fn, deps, Some(result))
-      }
-
-      Reducer(id, reducer_actor, cleanup) -> {
-        reducer_actor
-        |> unsafe_coerce.unsafe_coerce()
-        |> reducer.process_commands()
-
-        Reducer(id, reducer_actor, cleanup)
       }
 
       other -> other
