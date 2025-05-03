@@ -28,8 +28,8 @@ fn inbound_client_hook_event_decoder() {
   use kind <- decode.field("kind", decode.string)
   use payload <- decode.optional_field(
     "payload",
-    None,
-    decode.optional(decode.dynamic),
+    dynamic.from(Nil),
+    decode.dynamic,
   )
 
   decode.success(InboundClientHookEvent(element_id, hook, kind, payload))

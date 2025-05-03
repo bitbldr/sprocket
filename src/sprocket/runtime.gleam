@@ -51,7 +51,7 @@ pub type ClientMessage {
     element_id: String,
     hook: String,
     kind: String,
-    payload: Option(Dynamic),
+    payload: Dynamic,
   )
 }
 
@@ -87,7 +87,7 @@ pub opaque type Message {
     element_id: Unique(ElementId),
     hook_name: String,
     event: String,
-    payload: Option(Dynamic),
+    payload: Dynamic,
   )
   UpdateHookState(Unique(HookId), fn(Hook) -> Hook)
   DispatchClientHookEvent(

@@ -97,7 +97,7 @@ pub type ClientHookDispatcher =
   fn(String, Option(Dynamic)) -> Nil
 
 pub type ClientHookEventHandler =
-  fn(String, Option(Dynamic), ClientHookDispatcher) -> Nil
+  fn(String, Dynamic, ClientHookDispatcher) -> Nil
 
 pub type HookId
 
