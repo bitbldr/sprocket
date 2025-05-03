@@ -6,7 +6,7 @@ import sprocket/internal/context.{
   type Attribute, type ClientHookDispatcher, type ClientHookEventHandler,
   type Context, type EffectCleanup, type Element, type HookDependencies,
   type HookDependency, Callback, CallbackResult, Changed, Client, ClientHook,
-  Context, Effect, Unchanged, compare_deps,
+  Context, Effect, Provider, Unchanged, compare_deps,
 }
 import sprocket/internal/exceptions.{throw_on_unexpected_hook_result}
 import sprocket/internal/logger
@@ -203,6 +203,11 @@ pub fn provider(
     |> option.map(fn(v) { unsafe_coerce(v) })
 
   cb(ctx, value)
+}
+
+/// Creates a new provider element with the given key and value.
+pub fn provide(key: String, value: a, element: Element) -> Element {
+  Provider(key, dynamic.from(value), element)
 }
 
 /// Reducer Hook

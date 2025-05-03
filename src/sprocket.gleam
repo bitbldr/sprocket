@@ -18,11 +18,6 @@ pub fn component(c: StatefulComponent(p), props: p) -> Element {
   context.component(c, props)
 }
 
-/// Creates a new provider element with the given key and value.
-pub fn provide(key: String, value: a, element: Element) -> Element {
-  Provider(key, dynamic.from(value), element)
-}
-
 /// Renders an element with the given context.
 pub fn render(ctx: Context, element: Element) -> #(Context, Element) {
   #(ctx, element)
