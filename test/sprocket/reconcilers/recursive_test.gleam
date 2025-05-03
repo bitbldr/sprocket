@@ -2,7 +2,7 @@ import gleam/dynamic
 import gleam/option.{None, Some}
 import gleeunit/should
 import ids/cuid
-import sprocket.{component, provider, render}
+import sprocket.{component, provide, render}
 import sprocket/hooks
 import sprocket/html/attributes.{class, classes}
 import sprocket/html/elements.{a, div, fragment, raw, text}
@@ -188,11 +188,11 @@ type TitleContext {
 
 const title_context_provider_key = "title"
 
-fn title_context_provider(
+fn provide_title_context(
   title_context: TitleContext,
   element: Element,
 ) -> Element {
-  provider(title_context_provider_key, title_context, element)
+  provide(title_context_provider_key, title_context, element)
 }
 
 fn test_component_with_context_title(ctx: Context, props: TestProps) {
@@ -230,7 +230,7 @@ pub fn renders_component_with_context_provider_test() {
   let rendered =
     render_el(
       div([class("first div")], [
-        title_context_provider(
+        provide_title_context(
           TitleContext(title: "A different title"),
           div([class("second div")], [
             component(

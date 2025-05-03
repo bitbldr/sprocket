@@ -19,7 +19,7 @@ pub fn component(c: StatefulComponent(p), props: p) -> Element {
 }
 
 /// Creates a new provider element with the given key and value.
-pub fn provider(key: String, value: a, element: Element) -> Element {
+pub fn provide(key: String, value: a, element: Element) -> Element {
   Provider(key, dynamic.from(value), element)
 }
 
