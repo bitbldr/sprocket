@@ -3,9 +3,7 @@ import gleam/result
 import ids/cuid
 import sprocket/internal/context.{type Element}
 import sprocket/internal/logger
-import sprocket/internal/reconcile.{
-  type ReconciledElement, type ReconciledResult, ReconciledResult,
-}
+import sprocket/internal/reconcile.{type ReconciledElement, ReconciledResult}
 import sprocket/internal/reconcilers/recursive.{reconcile}
 
 pub type Renderer(result) {

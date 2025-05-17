@@ -2,7 +2,7 @@ import gleam/dynamic.{type Dynamic}
 import gleam/option.{type Option}
 import sprocket/internal/context.{
   type ComponentHooks, type Context, type DynamicStatefulComponent, type Element,
-  type ElementId, Context,
+  type ElementId,
 }
 import sprocket/internal/utils/unique.{type Unique}
 

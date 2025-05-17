@@ -3,7 +3,7 @@ import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode.{type DecodeError}
 import sprocket/hooks.{type Dispatcher}
 import sprocket/internal/context.{
-  type Attribute, type Context, type Element, Attribute, Event,
+  type Attribute, type Context, type Element, Event,
 }
 
 type EventMsg(msg) =
