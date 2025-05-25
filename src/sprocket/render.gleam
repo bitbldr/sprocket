@@ -1,10 +1,10 @@
 import gleam/option.{None}
 import gleam/result
-import ids/cuid
 import sprocket/internal/context.{type Element}
 import sprocket/internal/logger
 import sprocket/internal/reconcile.{type ReconciledElement, ReconciledResult}
 import sprocket/internal/reconcilers/recursive.{reconcile}
+import sprocket/internal/utils/cuid
 
 pub type Renderer(result) {
   Renderer(render: fn(ReconciledElement) -> result)

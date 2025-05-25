@@ -4,9 +4,10 @@ import gleam/erlang/process.{type Subject}
 import gleam/int
 import gleam/list
 import gleam/option.{type Option}
-import ids/cuid
 import sprocket/internal/exceptions.{throw_on_unexpected_deps_mismatch}
 import sprocket/internal/logger
+import sprocket/internal/utils/common.{dynamic_from}
+import sprocket/internal/utils/cuid
 import sprocket/internal/utils/ordered_map.{type OrderedMap}
 import sprocket/internal/utils/unique.{type Unique}
 import sprocket/internal/utils/unsafe_coerce.{unsafe_coerce}
@@ -53,12 +54,12 @@ pub type Element {
 pub fn component(c: StatefulComponent(p), props: p) -> Element {
   let component =
     c
-    |> dynamic.from()
+    |> dynamic_from()
     |> unsafe_coerce()
 
   let props =
     props
-    |> dynamic.from()
+    |> dynamic_from()
 
   Component(component, props)
 }

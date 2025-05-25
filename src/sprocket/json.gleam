@@ -4,6 +4,7 @@ import gleam/dynamic/decode
 import gleam/json.{type Json}
 import gleam/option.{None, Some}
 import sprocket/internal/patch
+import sprocket/internal/utils/common.{dynamic_from}
 import sprocket/render.{renderer} as _
 import sprocket/renderers/json.{json_renderer} as _
 import sprocket/runtime.{
@@ -28,7 +29,7 @@ fn inbound_client_hook_event_decoder() {
   use kind <- decode.field("kind", decode.string)
   use payload <- decode.optional_field(
     "payload",
-    dynamic.from(Nil),
+    dynamic_from(Nil),
     decode.dynamic,
   )
 
@@ -40,7 +41,7 @@ fn client_event_decoder() {
   use kind <- decode.field("kind", decode.string)
   use payload <- decode.optional_field(
     "payload",
-    dynamic.from(Nil),
+    dynamic_from(Nil),
     decode.dynamic,
   )
 

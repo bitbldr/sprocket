@@ -1,9 +1,7 @@
-import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
 import gleam/json
 import gleam/list
 import gleam/option.{type Option, None, Some}
-import gleam/result
 import gleam/string
 import gleam/string_tree.{type StringTree}
 import sprocket/internal/constants
@@ -134,7 +132,7 @@ fn text(t: String) -> StringTree {
 fn custom(kind: String, data: String) -> StringTree {
   case kind {
     "raw" -> {
-      case json.decode(data, decode_raw) {
+      case json.parse(data, raw_decoder()) {
         Ok(RawHtml(tag, raw_html)) ->
           el(
             tag,
@@ -152,21 +150,9 @@ type RawHtml {
   RawHtml(tag: String, raw_html: String)
 }
 
-fn decode_raw(data: Dynamic) {
-  let decoder = {
-    use tag <- decode.field("tag", decode.string)
-    use inner_html <- decode.field("innerHtml", decode.string)
+fn raw_decoder() {
+  use tag <- decode.field("tag", decode.string)
+  use inner_html <- decode.field("innerHtml", decode.string)
 
-    decode.success(RawHtml(tag, inner_html))
-  }
-
-  decode.run(data, decoder)
-  |> result.map_error(map_decode_errors_to_dynamic_decode_errors)
-}
-
-fn map_decode_errors_to_dynamic_decode_errors(
-  errors: List(decode.DecodeError),
-) -> List(dynamic.DecodeError) {
-  errors
-  |> list.map(fn(e) { dynamic.DecodeError(e.expected, e.found, e.path) })
+  decode.success(RawHtml(tag, inner_html))
 }

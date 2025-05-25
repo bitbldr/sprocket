@@ -1,15 +1,8 @@
 import gleam/erlang/process.{type Subject}
-import ids/cuid
-import ids/uuid
+import sprocket/internal/utils/cuid
 
 pub opaque type Unique(kind) {
   Unique(id: String)
-}
-
-pub fn uuid() -> Unique(kind) {
-  let assert Ok(id) = uuid.generate_v4()
-
-  Unique(id: id)
 }
 
 pub fn cuid(channel: Subject(cuid.Message)) -> Unique(kind) {

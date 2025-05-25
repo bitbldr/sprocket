@@ -11,6 +11,7 @@ import sprocket/internal/context.{
 import sprocket/internal/exceptions.{throw_on_unexpected_hook_result}
 import sprocket/internal/logger
 import sprocket/internal/reducer
+import sprocket/internal/utils/common.{dynamic_from}
 import sprocket/internal/utils/unique
 import sprocket/internal/utils/unsafe_coerce.{unsafe_coerce}
 
@@ -113,7 +114,7 @@ pub fn client(
 
 /// Creates a hook dependency from some value
 pub fn dep(dependency: a) -> HookDependency {
-  dynamic.from(dependency)
+  dynamic_from(dependency)
 }
 
 /// Effect Hook
@@ -158,7 +159,7 @@ pub fn memo(
 ) -> #(Context, Element) {
   let assert #(ctx, context.Memo(id, current_memoized, prev), index) =
     context.fetch_or_init_hook(ctx, fn() {
-      context.Memo(unique.cuid(ctx.cuid_channel), dynamic.from(memo_fn()), None)
+      context.Memo(unique.cuid(ctx.cuid_channel), dynamic_from(memo_fn()), None)
     })
 
   let #(memoized, deps) =
@@ -167,7 +168,7 @@ pub fn memo(
       prev
         |> option.then(fn(prev) { prev.deps }),
       current_memoized,
-      fn() { dynamic.from(memo_fn()) },
+      fn() { dynamic_from(memo_fn()) },
     )
 
   let ctx =
@@ -207,7 +208,7 @@ pub fn provider(
 
 /// Creates a new provider element with the given key and value.
 pub fn provide(key: String, value: a, element: Element) -> Element {
-  Provider(key, dynamic.from(value), element)
+  Provider(key, dynamic_from(value), element)
 }
 
 /// Reducer Hook
@@ -236,7 +237,7 @@ pub fn reducer(
 
     context.Reducer(
       unique.cuid(ctx.cuid_channel),
-      dynamic.from(reducer_actor),
+      dynamic_from(reducer_actor),
       fn() { reducer.shutdown(reducer_actor) },
     )
   }
@@ -271,7 +272,7 @@ pub fn state(
   ) = ctx
 
   let init_state = fn() {
-    context.State(unique.cuid(ctx.cuid_channel), dynamic.from(initial))
+    context.State(unique.cuid(ctx.cuid_channel), dynamic_from(initial))
   }
 
   let assert #(ctx, context.State(hook_id, value), _index) =
@@ -282,7 +283,7 @@ pub fn state(
     update_hook(hook_id, fn(hook) {
       case hook {
         context.State(id, _) if id == hook_id ->
-          context.State(id, dynamic.from(value))
+          context.State(id, dynamic_from(value))
         _ -> {
           // this should never happen and could be an indication that a hook is being
           // used incorrectly

@@ -1,6 +1,5 @@
 import gleam/dynamic.{type Dynamic}
 import gleam/erlang/process.{type Subject}
-import gleam/function.{identity}
 import gleam/otp/actor
 import gleam/result
 import sprocket/internal/constants.{call_timeout}
@@ -9,6 +8,9 @@ pub type ReducerActor {
   Initialized(start: fn() -> Dynamic)
   Running(reducer: Dynamic, cleanup: fn() -> Nil)
 }
+
+pub type ReducerStarted(model, msg) =
+  actor.Started(ReducerSubject(model, msg))
 
 pub type Dispatcher(msg) =
   fn(msg) -> Nil
@@ -21,6 +23,9 @@ pub type Initializer(model, msg) =
 
 pub type Updater(model, msg) =
   fn(model, msg, Dispatcher(msg)) -> model
+
+type ReducerSubject(model, msg) =
+  Subject(ReducerMessage(model, msg))
 
 pub type ReducerMessage(model, msg) {
   Shutdown
@@ -37,27 +42,12 @@ pub opaque type State(model, msg) {
   )
 }
 
-pub fn init(
-  initialize: Initializer(model, msg),
-  update: Updater(model, msg),
-  notify: Notifier(model),
-) -> fn() -> actor.InitResult(State(model, msg), ReducerMessage(model, msg)) {
-  fn() {
-    let self = process.new_subject()
-    let selector = process.selecting(process.new_selector(), self, identity)
-
-    let dispach = fn(msg) { process.send(self, ReducerDispatch(msg)) }
-
-    actor.Ready(State(self, initialize(dispach), update, notify), selector)
-  }
-}
-
 pub fn handle_message(
+  state: State(model, msg),
   message: ReducerMessage(model, msg),
-  state,
-) -> actor.Next(ReducerMessage(model, msg), State(model, msg)) {
+) -> actor.Next(State(model, msg), ReducerMessage(model, msg)) {
   case message {
-    Shutdown -> actor.Stop(process.Normal)
+    Shutdown -> actor.stop()
 
     GetModel(reply_with) -> {
       let State(model:, ..) = state
@@ -105,16 +95,25 @@ pub fn start(
   initialize: Initializer(model, msg),
   update: Updater(model, msg),
   notify: fn(model) -> Nil,
-) {
-  use self <- result.map(
-    actor.start_spec(actor.Spec(
-      init(initialize, update, notify),
-      call_timeout,
-      handle_message,
-    )),
-  )
+) -> Result(ReducerSubject(model, msg), actor.StartError) {
+  actor.new_with_initialiser(call_timeout, fn(self: ReducerSubject(model, msg)) {
+    let dispatch = fn(msg) { process.send(self, ReducerDispatch(msg)) }
 
-  self
+    let model =
+      State(
+        self: self,
+        model: initialize(dispatch),
+        update: update,
+        notify: notify,
+      )
+
+    actor.initialised(model)
+    |> actor.returning(self)
+    |> Ok
+  })
+  |> actor.on_message(handle_message)
+  |> actor.start()
+  |> result.map(fn(started) { started.data })
 }
 
 /// Shuts down the reducer actor.
@@ -124,7 +123,7 @@ pub fn shutdown(subject) {
 
 /// Returns the current model of the reducer actor.
 pub fn get_model(subject) -> model {
-  process.call(subject, GetModel, call_timeout)
+  process.call(subject, call_timeout, GetModel)
 }
 
 /// Dispatches a message to the reducer actor.

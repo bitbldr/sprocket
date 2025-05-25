@@ -11,10 +11,10 @@ pub opaque type Message {
   GetCount(reply_with: Subject(Int))
 }
 
-fn handle_message(message: Message, state: State) -> actor.Next(Message, State) {
+fn handle_message(state: State, message: Message) -> actor.Next(State, Message) {
   case message {
     Shutdown -> {
-      actor.Stop(process.Normal)
+      actor.stop()
     }
 
     Increment -> {
@@ -29,7 +29,12 @@ fn handle_message(message: Message, state: State) -> actor.Next(Message, State) 
 }
 
 pub fn start() {
-  actor.start(State(count: 0), handle_message)
+  let assert Ok(actor.Started(data: actor, ..)) =
+    actor.new(State(count: 0))
+    |> actor.on_message(handle_message)
+    |> actor.start()
+
+  actor
 }
 
 pub fn stop(actor) {
@@ -41,5 +46,5 @@ pub fn increment(actor) {
 }
 
 pub fn get_count(actor) -> Int {
-  process.call(actor, GetCount, 1000)
+  process.call(actor, 1000, GetCount)
 }

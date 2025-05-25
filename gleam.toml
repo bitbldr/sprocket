@@ -24,11 +24,10 @@ internal_modules = [
 gleam = ">= 1.4.0"
 
 [dependencies]
-gleam_json = ">= 2.3.0 and < 3.0.0"
-gleam_erlang = ">= 0.32.0 and < 1.0.0"
-gleam_otp = ">= 0.14.1 and < 1.0.0"
-gleam_stdlib = ">= 0.55.0 and < 1.0.0"
-ids = ">= 0.13.0 and < 1.0.0"
+gleam_stdlib = ">= 0.60.0 and < 1.0.0"
+gleam_json = ">= 3.0.0 and < 4.0.0"
+gleam_erlang = ">= 1.0.0-rc1 and < 2.0.0"
+gleam_otp = ">= 1.0.0-rc1 and < 2.0.0"
 gleam_regexp = ">= 1.0.0 and < 2.0.0"
 
 [dev-dependencies]
