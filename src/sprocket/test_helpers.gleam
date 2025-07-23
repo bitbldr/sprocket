@@ -1,7 +1,5 @@
 import gleam/bool.{guard}
 import gleam/dict.{type Dict}
-import gleam/dynamic
-import gleam/erlang
 import gleam/list
 import gleam/option.{None, Some}
 import gleam/regexp
@@ -12,6 +10,8 @@ import sprocket/internal/reconcile.{
   ReconciledEventHandler,
 }
 import sprocket/internal/reconcilers/recursive
+import sprocket/internal/utils/common.{dynamic_from}
+import sprocket/internal/utils/time
 import sprocket/internal/utils/unique
 import sprocket/render.{renderer}
 import sprocket/renderers/html.{html_renderer}
@@ -92,10 +92,10 @@ pub fn render_event(spkt: Runtime, event: Event, html_id: String) {
       case found {
         Ok(ReconciledElement(id, _tag, _key, attrs, _children)) -> {
           let #(event_kind, event_payload) = case event {
-            ClickEvent -> #("click", dynamic.from(Nil))
+            ClickEvent -> #("click", dynamic_from(Nil))
             InputEvent(value) -> #(
               "input",
-              dynamic.from(
+              dynamic_from(
                 dict.from_list([
                   #("target", dict.from_list([#("value", value)])),
                 ]),
@@ -103,36 +103,36 @@ pub fn render_event(spkt: Runtime, event: Event, html_id: String) {
             )
             MouseMoveEvent(e) -> #(
               "mousemove",
-              dynamic.from(
+              dynamic_from(
                 dict.new()
-                |> dict.insert("clientX", dynamic.from(e.x))
-                |> dict.insert("clientY", dynamic.from(e.y))
-                |> dict.insert("ctrlKey", dynamic.from(e.ctrl_key))
-                |> dict.insert("shiftKey", dynamic.from(e.shift_key))
-                |> dict.insert("altKey", dynamic.from(e.alt_key))
-                |> dict.insert("metaKey", dynamic.from(e.meta_key)),
+                |> dict.insert("clientX", dynamic_from(e.x))
+                |> dict.insert("clientY", dynamic_from(e.y))
+                |> dict.insert("ctrlKey", dynamic_from(e.ctrl_key))
+                |> dict.insert("shiftKey", dynamic_from(e.shift_key))
+                |> dict.insert("altKey", dynamic_from(e.alt_key))
+                |> dict.insert("metaKey", dynamic_from(e.meta_key)),
               ),
             )
             FormChangeEvent(data) -> #(
               "change",
-              dynamic.from(dict.from_list([#("formData", data)])),
+              dynamic_from(dict.from_list([#("formData", data)])),
             )
             FormSubmitEvent(data) -> #(
               "submit",
-              dynamic.from(dict.from_list([#("formData", data)])),
+              dynamic_from(dict.from_list([#("formData", data)])),
             )
-            BlurEvent -> #("blur", dynamic.from(Nil))
-            FocusEvent -> #("focus", dynamic.from(Nil))
+            BlurEvent -> #("blur", dynamic_from(Nil))
+            FocusEvent -> #("focus", dynamic_from(Nil))
             KeyDownEvent(e) -> #(
               "keydown",
-              dynamic.from(
+              dynamic_from(
                 dict.new()
-                |> dict.insert("key", dynamic.from(e.key))
-                |> dict.insert("code", dynamic.from(e.code))
-                |> dict.insert("ctrlKey", dynamic.from(False))
-                |> dict.insert("shiftKey", dynamic.from(False))
-                |> dict.insert("altKey", dynamic.from(False))
-                |> dict.insert("metaKey", dynamic.from(False)),
+                |> dict.insert("key", dynamic_from(e.key))
+                |> dict.insert("code", dynamic_from(e.code))
+                |> dict.insert("ctrlKey", dynamic_from(False))
+                |> dict.insert("shiftKey", dynamic_from(False))
+                |> dict.insert("altKey", dynamic_from(False))
+                |> dict.insert("metaKey", dynamic_from(False)),
               ),
             )
           }
@@ -247,7 +247,7 @@ pub fn wait_while(predicate: fn() -> Bool, timeout: Int) -> Bool {
     wait_helper(
       fn() { !predicate() },
       timeout,
-      erlang.system_time(erlang.Millisecond),
+      time.system_time(time.Millisecond),
     )
   {
     True -> True
@@ -256,7 +256,7 @@ pub fn wait_while(predicate: fn() -> Bool, timeout: Int) -> Bool {
 }
 
 pub fn wait_until(predicate: fn() -> Bool, timeout: Int) -> Bool {
-  case wait_helper(predicate, timeout, erlang.system_time(erlang.Millisecond)) {
+  case wait_helper(predicate, timeout, time.system_time(time.Millisecond)) {
     True -> True
     False -> panic as "Timeout waiting for condition"
   }
@@ -264,7 +264,7 @@ pub fn wait_until(predicate: fn() -> Bool, timeout: Int) -> Bool {
 
 fn wait_helper(predicate: fn() -> Bool, timeout: Int, started_at: Int) -> Bool {
   use <- guard(
-    when: erlang.system_time(erlang.Millisecond) - started_at > timeout,
+    when: time.system_time(time.Millisecond) - started_at > timeout,
     return: False,
   )
   use <- guard(when: predicate(), return: True)

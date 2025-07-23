@@ -1,7 +1,5 @@
-import gleam/dynamic
 import gleam/option.{None, Some}
 import gleeunit/should
-import ids/cuid
 import sprocket.{component, render}
 import sprocket/hooks.{provide}
 import sprocket/html/attributes.{class, classes}
@@ -14,6 +12,8 @@ import sprocket/internal/reconcile.{
   ReconciledFragment, ReconciledResult, ReconciledText,
 }
 import sprocket/internal/reconcilers/recursive.{reconcile}
+import sprocket/internal/utils/common.{dynamic_from}
+import sprocket/internal/utils/cuid
 import sprocket/internal/utils/unsafe_coerce.{unsafe_coerce}
 
 // Renders the given element as a stateless element to html.
@@ -99,7 +99,7 @@ pub fn basic_render_test() {
 
   props
   |> should.equal(
-    dynamic.from(TestProps(title: "Home", href: "/", is_active: True)),
+    dynamic_from(TestProps(title: "Home", href: "/", is_active: True)),
   )
 }
 
@@ -289,7 +289,7 @@ fn test_component_with_custom_element(ctx: Context, _props) {
     ctx,
     raw(
       "div",
-      [Attribute("some", dynamic.from("attribute"))],
+      [Attribute("some", dynamic_from("attribute"))],
       "An unescaped <b>raw <em>html</em></b> <span style=\"color: blue\">string</span></b>",
     ),
   )

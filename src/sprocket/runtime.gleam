@@ -2,12 +2,10 @@ import gleam/bool
 import gleam/dict.{type Dict}
 import gleam/dynamic.{type Dynamic}
 import gleam/erlang/process.{type Subject}
-import gleam/function.{identity}
 import gleam/list
 import gleam/option.{type Option, None, Some}
-import gleam/otp/actor.{type StartError, Spec}
+import gleam/otp/actor.{type StartError}
 import gleam/result
-import ids/cuid
 import sprocket/internal/constants.{call_timeout}
 import sprocket/internal/context.{
   type ComponentHooks, type Context, type EffectCleanup, type EffectResult,
@@ -24,6 +22,7 @@ import sprocket/internal/reconcile.{
 }
 import sprocket/internal/reconcilers/recursive
 import sprocket/internal/utils/common.{require}
+import sprocket/internal/utils/cuid
 import sprocket/internal/utils/ordered_map.{
   type KeyedItem, type OrderedMapIter, KeyedItem,
 }
@@ -98,7 +97,7 @@ pub opaque type Message {
   RenderUpdate
 }
 
-fn handle_message(message: Message, state: State) -> actor.Next(Message, State) {
+fn handle_message(state: State, message: Message) -> actor.Next(State, Message) {
   case message {
     Shutdown -> {
       case state.reconciled {
@@ -109,7 +108,7 @@ fn handle_message(message: Message, state: State) -> actor.Next(Message, State) 
         _ -> Nil
       }
 
-      actor.Stop(process.Normal)
+      actor.stop()
     }
 
     GetReconciled(reply_with) -> {
@@ -308,9 +307,7 @@ pub fn start(
   el: Element,
   dispatch: EventDispatcher,
 ) -> Result(Runtime, StartError) {
-  let init = fn() {
-    let self = process.new_subject()
-
+  actor.new_with_initialiser(call_timeout, fn(self: Runtime) {
     let trigger_reconciliation = fn() {
       logger.debug("actor.send RenderUpdate")
 
@@ -335,7 +332,7 @@ pub fn start(
       actor.send(self, DispatchClientHookEvent(id, kind, payload))
     }
 
-    let state =
+    let model =
       State(
         ctx: context.new(
           el,
@@ -349,15 +346,25 @@ pub fn start(
         dispatch: dispatch,
       )
 
-    let selector = process.selecting(process.new_selector(), self, identity)
-
     // schedule the initial render
     let _ = render_update(self)
 
-    actor.Ready(state, selector)
-  }
+    actor.initialised(model)
+    |> actor.returning(self)
+    |> Ok
+  })
+  |> actor.on_message(handle_message)
+  |> actor.start()
+  |> result.map(fn(started) {
+    let actor = started.data
 
-  actor.start_spec(Spec(init, call_timeout, handle_message))
+    logger.debug("runtime.start: runtime actor started")
+    actor
+  })
+  |> result.map_error(fn(error) {
+    logger.error("runtime.start: error starting runtime actor")
+    error
+  })
 }
 
 /// Stop a runtime actor
@@ -369,23 +376,16 @@ pub fn stop(actor) {
 
 /// Get the previously reconciled state from the actor. This is useful for testing.
 pub fn get_reconciled(actor) {
-  logger.debug("process.try_call GetReconciled")
+  logger.debug("process.call GetReconciled")
 
-  case process.try_call(actor, GetReconciled, call_timeout) {
-    Ok(rendered) -> rendered
-    Error(err) -> {
-      logger.error_meta("Error getting rendered view from runtime actor", err)
-
-      panic
-    }
-  }
+  process.call(actor, call_timeout, GetReconciled)
 }
 
 /// Process a client message
 pub fn handle_client_message(actor, msg: ClientMessage) {
   case msg {
     ClientEvent(element_id, kind, payload) -> {
-      logger.debug("process.try_call ProcessClientMessage")
+      logger.debug("process.call ProcessClientMessage")
 
       actor.send(
         actor,
@@ -414,27 +414,14 @@ pub fn process_client_message_immediate(
   kind: String,
   payload: Dynamic,
 ) -> Result(Nil, Nil) {
-  logger.debug("process.try_call ProcessClientMessageImmediate")
+  logger.debug("process.call ProcessClientMessageImmediate")
 
-  case
-    process.try_call(
-      actor,
-      ProcessClientMessageImmediate(
-        _,
-        unique.from_string(element_id),
-        kind,
-        payload,
-      ),
-      call_timeout,
-    )
-  {
-    Ok(result) -> result
-    Error(err) -> {
-      logger.error_meta("Error processing event from runtime actor", err)
-
-      Error(Nil)
-    }
-  }
+  process.call(actor, call_timeout, ProcessClientMessageImmediate(
+    _,
+    unique.from_string(element_id),
+    kind,
+    payload,
+  ))
 }
 
 pub fn render_update(actor) {
@@ -447,14 +434,7 @@ pub fn render_update(actor) {
 pub fn reconcile_immediate(actor) -> ReconciledElement {
   logger.debug("process.try_call Reconcile")
 
-  case process.try_call(actor, ReconcileImmediate, call_timeout) {
-    Ok(reconciled) -> reconciled
-    Error(err) -> {
-      logger.error_meta("Error reconciling element from runtime actor", err)
-
-      panic
-    }
-  }
+  process.call(actor, call_timeout, ReconcileImmediate)
 }
 
 fn do_reconciliation(

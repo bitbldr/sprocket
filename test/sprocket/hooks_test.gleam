@@ -29,25 +29,19 @@ fn mock_random() -> Int {
 }
 
 fn generate_random(dispatch) {
-  process.start(
-    fn() {
-      let random_number = mock_random()
-      dispatch(SetCount(random_number))
-    },
-    False,
-  )
+  process.spawn(fn() {
+    let random_number = mock_random()
+    dispatch(SetCount(random_number))
+  })
 }
 
 fn count_down_from(dispatch, value) {
-  process.start(
-    fn() {
-      case value > 0 {
-        True -> dispatch(CountDown(value - 1))
-        False -> Nil
-      }
-    },
-    False,
-  )
+  process.spawn(fn() {
+    case value > 0 {
+      True -> dispatch(CountDown(value - 1))
+      False -> Nil
+    }
+  })
 }
 
 fn update(model: Model, msg: Msg, dispatch: Dispatcher(Msg)) -> Model {
@@ -133,7 +127,7 @@ fn inc_on_every_update_counter(ctx: Context, props: IncEverySetCounterProps) {
 }
 
 pub fn effect_should_run_on_every_update_test() {
-  let assert Ok(tally) = tally_counter.start()
+  let tally = tally_counter.start()
 
   let view =
     component(inc_on_every_update_counter, IncEverySetCounterProps(tally))

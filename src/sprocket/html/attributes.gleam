@@ -1,11 +1,11 @@
-import gleam/dynamic
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/string_tree
 import sprocket/internal/context.{type Attribute, Attribute}
+import sprocket/internal/utils/common.{dynamic_from}
 
 pub fn attribute(name: String, value: any) -> Attribute {
-  Attribute(name, dynamic.from(value))
+  Attribute(name, dynamic_from(value))
 }
 
 pub fn media(value: String) -> Attribute {

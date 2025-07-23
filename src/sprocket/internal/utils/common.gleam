@@ -1,3 +1,4 @@
+import gleam/dynamic.{type Dynamic}
 import gleam/option.{type Option, None, Some}
 
 pub fn require(
@@ -10,3 +11,7 @@ pub fn require(
     None -> bail()
   }
 }
+
+@external(erlang, "gleam_stdlib", "identity")
+@external(javascript, "../gleam_stdlib.mjs", "identity")
+pub fn dynamic_from(a: anything) -> Dynamic

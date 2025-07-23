@@ -1,4 +1,3 @@
-import gleam/dynamic
 import gleam/json
 import gleam/option.{None, Some}
 import gleam/string
@@ -10,6 +9,7 @@ import sprocket/internal/patch.{
 import sprocket/internal/reconcile.{
   ReconciledAttribute, ReconciledComponent, ReconciledElement, ReconciledText,
 }
+import sprocket/internal/utils/common.{dynamic_from}
 import sprocket/internal/utils/ordered_map
 import sprocket/internal/utils/unique
 
@@ -18,7 +18,7 @@ const empty_element = Element(tag: "div", attrs: [], children: [])
 // gleeunit test functions end in `_test`
 pub fn text_change_test() {
   let fc = fn(ctx, _) { #(ctx, empty_element) }
-  let props = dynamic.from([])
+  let props = dynamic_from([])
 
   let first =
     ReconciledComponent(
@@ -105,7 +105,7 @@ pub fn text_change_test() {
 
 pub fn first_fc_without_children_test() {
   let fc = fn(ctx, _) { #(ctx, empty_element) }
-  let props = dynamic.from([])
+  let props = dynamic_from([])
 
   let first =
     ReconciledComponent(
@@ -186,7 +186,7 @@ pub fn first_fc_without_children_test() {
 
 pub fn add_child_test() {
   let fc = fn(ctx, _) { #(ctx, empty_element) }
-  let props = dynamic.from([])
+  let props = dynamic_from([])
 
   let first =
     ReconciledComponent(
@@ -316,7 +316,7 @@ pub fn add_child_test() {
 
 pub fn add_move_child_with_keys_test() {
   let fc = fn(ctx, _) { #(ctx, empty_element) }
-  let props = dynamic.from([])
+  let props = dynamic_from([])
 
   let first =
     ReconciledComponent(
@@ -435,7 +435,7 @@ pub fn add_move_child_with_keys_test() {
 
 pub fn add_move_update_child_with_keys_test() {
   let fc = fn(ctx, _) { #(ctx, empty_element) }
-  let props = dynamic.from([])
+  let props = dynamic_from([])
 
   let first =
     ReconciledComponent(
@@ -572,7 +572,7 @@ pub fn add_move_update_child_with_keys_test() {
 
 pub fn add_move_replace_child_with_keys_test() {
   let fc = fn(ctx, _) { #(ctx, empty_element) }
-  let props = dynamic.from([])
+  let props = dynamic_from([])
 
   let first =
     ReconciledComponent(
@@ -705,7 +705,7 @@ pub fn add_move_replace_child_with_keys_test() {
 
 pub fn remove_middle_child_in_list_with_keys_test() {
   let fc = fn(ctx, _) { #(ctx, empty_element) }
-  let props = dynamic.from([])
+  let props = dynamic_from([])
 
   let first =
     ReconciledComponent(
@@ -832,7 +832,7 @@ pub fn remove_middle_child_in_list_with_keys_test() {
 
 pub fn restore_full_list_from_partial_with_keys_test() {
   let fc = fn(ctx, _) { #(ctx, empty_element) }
-  let props = dynamic.from([])
+  let props = dynamic_from([])
 
   let first =
     ReconciledComponent(
@@ -961,7 +961,7 @@ pub fn restore_full_list_from_partial_with_keys_test() {
 
 pub fn remove_first_couple_items_in_list_with_keys_test() {
   let fc = fn(ctx, _) { #(ctx, empty_element) }
-  let props = dynamic.from([])
+  let props = dynamic_from([])
 
   let first =
     ReconciledComponent(
@@ -1106,7 +1106,7 @@ pub fn remove_first_couple_items_in_list_with_keys_test() {
 
 pub fn noop_test() {
   let fc = fn(ctx, _) { #(ctx, empty_element) }
-  let props = dynamic.from([])
+  let props = dynamic_from([])
 
   let first =
     ReconciledComponent(
@@ -1202,7 +1202,7 @@ pub fn noop_test() {
 
 pub fn ignored_test() {
   let fc = fn(ctx, _) { #(ctx, empty_element) }
-  let props = dynamic.from([])
+  let props = dynamic_from([])
 
   let first =
     ReconciledComponent(
@@ -1302,7 +1302,7 @@ pub fn ignored_test() {
 
 pub fn shift_list_with_keys_test() {
   let fc = fn(ctx, _) { #(ctx, empty_element) }
-  let props = dynamic.from([])
+  let props = dynamic_from([])
 
   let first =
     ReconciledComponent(
@@ -1471,7 +1471,7 @@ pub fn shift_list_with_keys_test() {
 
 pub fn attribute_change_test() {
   let fc = fn(ctx, _) { #(ctx, empty_element) }
-  let props = dynamic.from([])
+  let props = dynamic_from([])
 
   let first =
     ReconciledComponent(
@@ -1570,7 +1570,7 @@ pub fn attribute_change_test() {
 }
 
 pub fn fc_change_test() {
-  let props = dynamic.from([])
+  let props = dynamic_from([])
 
   let fc1 = fn(ctx, _) { #(ctx, empty_element) }
 
@@ -1665,7 +1665,7 @@ pub fn fc_change_test() {
 pub fn fc_props_change_test() {
   let fc = fn(ctx, _) { #(ctx, empty_element) }
 
-  let original_props = dynamic.from(["hello"])
+  let original_props = dynamic_from(["hello"])
 
   let first =
     ReconciledComponent(
@@ -1690,7 +1690,7 @@ pub fn fc_props_change_test() {
       ),
     )
 
-  let new_props = dynamic.from(["changed"])
+  let new_props = dynamic_from(["changed"])
 
   let second =
     ReconciledComponent(
@@ -1757,7 +1757,7 @@ pub fn fc_props_change_test() {
 
 pub fn patch_to_json_test() {
   let fc = fn(ctx, _) { #(ctx, empty_element) }
-  let props = dynamic.from([])
+  let props = dynamic_from([])
 
   let first =
     ReconciledComponent(
@@ -1888,7 +1888,7 @@ pub fn patch_to_json_test() {
 
 pub fn patch_to_json_replace_list_with_component_test() {
   let fc = fn(ctx, _) { #(ctx, empty_element) }
-  let props = dynamic.from([])
+  let props = dynamic_from([])
 
   let first =
     ReconciledComponent(

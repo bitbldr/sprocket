@@ -15,16 +15,16 @@ type TimerMsg {
 }
 
 fn handle_timer_message(
-  msg: TimerMsg,
   state: TimerInterval,
-) -> Next(TimerMsg, TimerInterval) {
+  msg: TimerMsg,
+) -> Next(TimerInterval, TimerMsg) {
   case msg {
     Cancel -> {
-      actor.Stop(process.Normal)
+      actor.stop()
     }
     Timeout(cb) -> {
       cb()
-      actor.Stop(process.Normal)
+      actor.stop()
     }
     Interval(actor, interval_ms, cb) -> {
       cb()
@@ -35,8 +35,10 @@ fn handle_timer_message(
 }
 
 pub fn timer(interval_ms: Int, callback: fn() -> Nil) {
-  let assert Ok(actor) =
-    actor.start(interval_ms, handle_timer_message)
+  let assert Ok(actor.Started(data: actor, ..)) =
+    actor.new(interval_ms)
+    |> actor.on_message(handle_timer_message)
+    |> actor.start()
     |> result.map_error(fn(error) {
       logger.error("timer.timer: failed to start timer actor")
       error
@@ -47,8 +49,10 @@ pub fn timer(interval_ms: Int, callback: fn() -> Nil) {
 }
 
 pub fn interval(interval_ms: Int, callback: fn() -> Nil) {
-  let assert Ok(actor) =
-    actor.start(interval_ms, handle_timer_message)
+  let assert Ok(actor.Started(data: actor, ..)) =
+    actor.new(interval_ms)
+    |> actor.on_message(handle_timer_message)
+    |> actor.start()
     |> result.map_error(fn(error) {
       logger.error("timer.interval: failed to start timer actor")
       error
