@@ -13,4 +13,5 @@ complete them.
 
 When writing code, ensure that you follow best practices for the given language and framework.
 
-Implement Phase 0 tasks from the plan.md file.
+You are currently implementing the feature described in docs/features/client_components. Implement
+Phase 0 from the plan.md file.

@@ -1,0 +1,13 @@
+name = "sprocket_shared"
+version = "0.1.0"
+description = "Shared contracts and utilities for Sprocket server/client targets"
+gleam = ">= 1.11.0"
+
+licences = ["MIT"]
+repository = { type = "github", user = "bitbldr", repo = "sprocket" }
+
+[dependencies]
+gleam_stdlib = ">= 0.61.0 and < 1.0.0"
+
+[dev-dependencies]
+gleeunit = ">= 1.2.0 and < 2.0.0"

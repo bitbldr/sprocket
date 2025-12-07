@@ -3,11 +3,11 @@
 > Instructions: Every phase and task uses a checkbox. Check items as they complete. Each phase ends with a DEVOPS subsection; keep all feasible work in developer tasks and reserve DEVOPS only for actions that cannot be done in code or by the developer.
 
 ## Phase 0 — Project Bootstrapping
-- [ ] Create `shared/`, `server/`, `client/` Gleam project skeletons (`gleam new`) and move existing sources into the appropriate roots.
-- [ ] Wire local path dependencies (`server` → `shared`, `client` → `shared`) and ensure both BEAM/JS builds succeed.
-- [ ] Add root `package.json` scripts (`server:build`, `client:build`, `shared:test`) and verify `yarn` tasks run.
-- [ ] Add `mount` helper stub in server HTML DSL emitting placeholder tag with encoded props.
-- [ ] Document new layout in `README.md` and update AGENTS.md pointers if needed.
+- [x] Create `shared/`, `server/`, `client/` Gleam project skeletons (`gleam new`) and move existing sources into the appropriate roots.
+- [x] Wire local path dependencies (`server` → `shared`, `client` → `shared`) and ensure both BEAM/JS builds succeed.
+- [x] Add root `package.json` scripts (`server:build`, `client:build`, `shared:test`) and verify `yarn` tasks run.
+- [x] Add `mount` helper stub in server HTML DSL emitting placeholder tag with encoded props.
+- [x] Document new layout in `README.md` and update AGENTS.md pointers if needed.
 - DEVOPS
   - [ ] None (developer-owned).
 

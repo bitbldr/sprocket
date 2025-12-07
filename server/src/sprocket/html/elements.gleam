@@ -3,6 +3,7 @@ import gleam/dynamic/decode
 import gleam/json
 import gleam/list
 import gleam/option.{type Option, None, Some}
+import sprocket/html/attributes
 import sprocket/internal/context.{
   type Attribute, type Element, Attribute, Custom, Debug, Element, Fragment,
   IgnoreUpdate, Keyed, Text,
@@ -41,6 +42,31 @@ pub fn raw(tag: String, attrs: List(Attribute), html: String) {
     |> json.to_string()
 
   Custom("raw", data)
+}
+
+/// Placeholder helper for client components; emits a mount tag with encoded props.
+/// The props encoder should return JSON-safe data for embedding in `data-props`.
+pub fn mount(
+  component: String,
+  props: p,
+  encode_props: fn(p) -> json.Json,
+  attrs: List(Attribute),
+) -> Element {
+  let encoded_props =
+    props
+    |> encode_props
+    |> json.to_string()
+
+  el(
+    "spkt-mount",
+    [
+      attributes.attribute("data-component", component),
+      attributes.attribute("data-props", encoded_props),
+      attributes.attribute("data-mode", "client"),
+      ..attrs
+    ],
+    [],
+  )
 }
 
 pub fn fragment(children: List(Element)) {

@@ -40,13 +40,11 @@ No in-repo automation scripts. Use GitHub UI/CLI (`gh issue status|view|comment`
 
 ## Code Organization
 
-- `src/` — Gleam library
-  - Public API: `sprocket.gleam`, `sprocket/hooks.gleam`, `sprocket/render.gleam`, `sprocket/renderers/*`, `sprocket/html/*`, `sprocket/json.gleam`
-  - Internal (do not expose): `sprocket/internal/*` (context, reconcile, patch, runtime, utils)
-  - FFI: `src/sprocket_ffi.erl`
-- `client/` — TypeScript client (Parcel + Snabbdom): entry `client/src/sprocket.ts`, rendering/patching in `render.ts`, `patch.ts`, event & hook plumbing in `events.ts`, `hooks.ts`.
-- `test/` — gleeunit suites mirror server internals; `test/sprocket_test.gleam` runs the suite.
-- `build/`, `client/dist/`, `.parcel-cache/` — generated artifacts (keep out of git).
+- `server/` — BEAM-targeted Gleam project (runtime, hooks, renderers). Public API lives in `server/src/sprocket*.gleam`; internals under `server/src/sprocket/internal/*`; FFI in `server/src/sprocket_ffi.erl`. Tests live in `server/test/`.
+- `client/` — Gleam → JavaScript project scaffold for the future browser runtime (currently placeholder).
+- `shared/` — Gleam project for cross-target contracts/utilities compiled to both BEAM and JS (currently placeholder).
+- `client_ts/` — Existing TypeScript client (Parcel + Snabbdom): entry `client_ts/src/sprocket.ts`, rendering/patching in `render.ts`, `patch.ts`, event & hook plumbing in `events.ts`, `hooks.ts`.
+- Generated artifacts: `server/build/`, `client/build/`, `shared/build/`, `client_ts/dist/`, `.parcel-cache/` (keep out of git).
 
 ### File/Layout Rules
 
@@ -59,11 +57,13 @@ No in-repo automation scripts. Use GitHub UI/CLI (`gh issue status|view|comment`
 - Protocol stability matters: server runtime messages (`"ok"`, `"update"`, `"hook"`, `"error"`) must stay in sync with client handlers.
 - Hooks: `compare_deps` treats length changes as errors; `fetch_or_init_hook` panics if hooks are added conditionally. Preserve `trigger_reconciliation` semantics.
 - Keys & IDs: Node identity depends on `cuid` + `key_attr` (`spkt-key`). Keep IDs/keys stable when touching reconciliation or patch logic.
-- Testing commands:
-  - `yarn test` — runs `gleam test` + `jest`
-  - `gleam test` — server-only
-  - `yarn client:test` — client-only
-  - `yarn build` — `gleam build` + Parcel bundle
+- Testing/Build commands:
+  - `yarn server:build` — `cd server && gleam build`
+  - `yarn client:build` — `cd client && gleam build --target javascript`
+  - `yarn shared:test` — `cd shared && gleam test --target javascript`
+  - `yarn test` — runs server gleeunit, shared JS tests, and TS client jest suite
+  - `yarn client_ts:test` — jest against legacy TS client
+  - `yarn build` — server BEAM build + Gleam JS build + Parcel bundle for `client_ts`
   - `yarn clean` — remove build/dist caches
 - Formatting: `gleam format`; TS currently unopinionated—match existing style.
 - CI expectation: green tests before merge; no generated artifacts committed.

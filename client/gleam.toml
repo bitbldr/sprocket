@@ -1,0 +1,15 @@
+name = "sprocket_client"
+version = "0.1.0"
+description = "Gleam/JavaScript client runtime for Sprocket"
+gleam = ">= 1.11.0"
+
+licences = ["MIT"]
+repository = { type = "github", user = "bitbldr", repo = "sprocket" }
+
+[dependencies]
+gleam_stdlib = ">= 0.61.0 and < 1.0.0"
+gleam_json = ">= 3.0.0 and < 4.0.0"
+sprocket_shared = { path = "../shared" }
+
+[dev-dependencies]
+gleeunit = ">= 1.2.0 and < 2.0.0"

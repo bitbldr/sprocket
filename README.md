@@ -23,6 +23,14 @@ Typed component interfaces snap together and are used to create higher-level vie
 bubble up through event handler functions (which are also passed in as props, e.g.
 `on_some_event("Something happened")`).
 
+## Repository Layout (multi-target)
+
+- `server/` — BEAM-targeted Gleam project containing the runtime, hooks, renderers, and HTML DSL.
+- `shared/` — Target-agnostic Gleam project for contracts/utilities shared by server and browser runtimes.
+- `client/` — Gleam → JavaScript project scaffold for the upcoming browser runtime.
+- `client_ts/` — Existing TypeScript client (Parcel + Snabbdom) and its tests/bundle.
+- Generated artifacts: `server/build/`, `client/build/`, `shared/build/`, `client_ts/dist/`, `.parcel-cache/`.
+
 ## Key Features
 
 - Real-time server-side UI component framework
@@ -124,20 +132,29 @@ To get started with Sprocket, follow the instructions below:
 git clone https://github.com/bitbldr/sprocket_starter.git
 ```
 
-1. Install the required dependencies:
+1. Install the required dependencies for the multi-project layout:
 
 ```sh
-gleam deps download
-yarn
+cd server && gleam deps download
+cd ../shared && gleam deps download
+cd .. && yarn
 ```
 
-1. Start the development server:
+1. Build the Gleam projects and the legacy TS bundle:
 
 ```sh
-yarn run watch
+yarn server:build
+yarn client:build              # Gleam → JS (placeholder)
+yarn client_ts:build           # Parcel bundle
 ```
 
-1. Open your web browser and visit [http://localhost:3000](http://localhost:3000) to see the starter app.
+1. Run the test suites:
+
+```sh
+yarn test
+```
+
+The existing starter app served by `sprocket_starter` continues to run at [http://localhost:3000](http://localhost:3000).
 
 ## Installation
 
@@ -150,6 +167,29 @@ gleam add sprocket
 For getting started with Sprocket, refer to the [Official Docs](https://sprocket.live).
 Here you will find detailed examples and tutorials. These docs are
 build with sprocket, which also make them an excellent reference implementation [github.com/bitbldr/sprocket_docs](https://github.com/bitbldr/sprocket_docs).
+
+## Client component placeholders
+
+The HTML DSL includes a `mount/4` helper that emits a `<spkt-mount>` placeholder with JSON-encoded props for upcoming client components.
+
+```gleam
+import gleam/json
+import sprocket/html/elements.{mount}
+
+fn encode_props(props: MyProps) -> json.Json {
+  // replace with real encoder
+  json.object([#("message", json.string(props.message))])
+}
+
+pub fn view(ctx, props) {
+  render(
+    ctx,
+    mount("example_component", props, encode_props, []),
+  )
+}
+```
+
+At this stage the helper only renders the placeholder; hydration and runtime wiring arrive in later phases of the client components feature.
 
 ## API Documentation
 
