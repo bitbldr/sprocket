@@ -1,16 +1,14 @@
-import gleam/int
 import gleam/json.{type Json}
 import gleam/list
-import gleam/option.{type Option, None, Some}
-import sprocket/internal/context.{type ElementId}
 import sprocket/internal/reconcile.{
   type ReconciledAttribute, type ReconciledElement, ReconciledAttribute,
   ReconciledClientHook, ReconciledComponent, ReconciledCustom, ReconciledElement,
   ReconciledEventHandler, ReconciledFragment, ReconciledIgnoreUpdate,
   ReconciledText,
 }
-import sprocket/internal/utils/unique.{type Unique}
+import sprocket/internal/utils/unique
 import sprocket/render.{type Renderer, Renderer}
+import sprocket_shared/vdom
 
 /// Returns a JSON renderer used to render reconciled elements.
 pub fn json_renderer() -> Renderer(Json) {
@@ -18,118 +16,54 @@ pub fn json_renderer() -> Renderer(Json) {
 }
 
 fn render(el: ReconciledElement) -> Json {
+  el
+  |> to_shared_vdom()
+  |> vdom.encode()
+}
+
+fn to_shared_vdom(el: ReconciledElement) -> vdom.Node {
   case el {
-    ReconciledElement(
-      id: id,
-      tag: tag,
-      key: key,
-      attrs: attrs,
-      children: children,
-    ) -> element(id, tag, key, attrs, children)
-    ReconciledComponent(key: key, el: el, ..) -> component(key, el)
-    ReconciledFragment(key, children: children) -> fragment(key, children)
-    ReconciledIgnoreUpdate(el) -> render(el)
-    ReconciledText(text: t) -> text(t)
-    ReconciledCustom(kind: kind, data: data) -> custom(kind, data)
+    ReconciledElement(id, tag, key, attrs, children) -> {
+      let #(v_attrs, v_events, v_hooks) = map_attrs(attrs)
+
+      vdom.Element(
+        unique.to_string(id),
+        tag,
+        key,
+        v_attrs,
+        v_events,
+        v_hooks,
+        children |> list.map(to_shared_vdom),
+      )
+    }
+    ReconciledComponent(_fc, key, _props, _hooks, el) ->
+      vdom.Component(key, to_shared_vdom(el))
+    ReconciledFragment(key, children) ->
+      vdom.Fragment(key, children |> list.map(to_shared_vdom))
+    ReconciledIgnoreUpdate(el) -> to_shared_vdom(el)
+    ReconciledText(text) -> vdom.Text(text)
+    ReconciledCustom(kind, data) -> vdom.Custom(kind, data)
   }
 }
 
-fn element(
-  id: Unique(ElementId),
-  tag: String,
-  key: Option(String),
+fn map_attrs(
   attrs: List(ReconciledAttribute),
-  children: List(ReconciledElement),
-) -> Json {
-  let #(attrs, events, hooks) =
-    attrs
-    |> list.fold(#([], [], []), fn(acc, attr) {
-      let #(attrs, events, hooks) = acc
+) -> #(List(vdom.Attribute), List(vdom.Event), List(vdom.ClientHook)) {
+  attrs
+  |> list.fold(#([], [], []), fn(acc, attr) {
+    let #(v_attrs, v_events, v_hooks) = acc
 
-      case attr {
-        ReconciledAttribute(name, value) -> {
-          #([#(name, json.string(value)), ..attrs], events, hooks)
-        }
-        ReconciledEventHandler(element_id, kind) -> {
-          #(
-            attrs,
-            [
-              [
-                #("kind", json.string(kind)),
-                #("id", element_id |> unique.to_string() |> json.string()),
-              ]
-                |> json.object(),
-              ..events
-            ],
-            hooks,
-          )
-        }
-        ReconciledClientHook(name) -> {
-          #(attrs, events, [
-            [#("name", json.string(name))]
-              |> json.object(),
-            ..hooks
-          ])
-        }
-      }
-    })
-
-  let children =
-    children
-    |> list.index_map(fn(child, i) { #(int.to_string(i), render(child)) })
-
-  [
-    #("type", json.string("element")),
-    #("id", unique.to_string(id) |> json.string),
-    #("tag", json.string(tag)),
-    #("attrs", json.object(attrs)),
-    #("events", json.preprocessed_array(events)),
-    #("hooks", json.preprocessed_array(hooks)),
-  ]
-  |> maybe_append_string("key", key)
-  |> list.append(children)
-  |> json.object()
-}
-
-fn component(key: Option(String), el: ReconciledElement) -> Json {
-  [#("type", json.string("component"))]
-  |> maybe_append_string("key", key)
-  |> list.append([#("0", render(el))])
-  |> json.object()
-}
-
-fn fragment(key: Option(String), children: List(ReconciledElement)) -> Json {
-  let children =
-    children
-    |> list.index_map(fn(child, i) { #(int.to_string(i), render(child)) })
-
-  [#("type", json.string("fragment"))]
-  |> maybe_append_string("key", key)
-  |> list.append(children)
-  |> json.object()
-}
-
-fn text(t: String) -> Json {
-  json.string(t)
-}
-
-fn custom(kind: String, data: String) -> Json {
-  [
-    #("type", json.string("custom")),
-    #("kind", json.string(kind)),
-    #("data", json.string(data)),
-  ]
-  |> json.object()
-}
-
-// appends a string property to a json object if the value is present
-fn maybe_append_string(
-  json_object_builder: List(#(String, Json)),
-  key: String,
-  value: Option(String),
-) -> List(#(String, Json)) {
-  case value {
-    Some(v) -> list.append(json_object_builder, [#(key, json.string(v))])
-    None -> json_object_builder
-  }
+    case attr {
+      ReconciledAttribute(name, value) ->
+        #([vdom.Attribute(name, value), ..v_attrs], v_events, v_hooks)
+      ReconciledEventHandler(element_id, kind) ->
+        #(
+          v_attrs,
+          [vdom.Event(kind, unique.to_string(element_id)), ..v_events],
+          v_hooks,
+        )
+      ReconciledClientHook(name) ->
+        #(v_attrs, v_events, [vdom.ClientHook(name), ..v_hooks])
+    }
+  })
 }
