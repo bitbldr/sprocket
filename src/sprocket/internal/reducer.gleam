@@ -86,11 +86,10 @@ pub fn handle_message(
 /// Starts a new reducer actor with the initial state from the initializer, update function, and
 /// notify callback.
 /// 
-/// A reducer actor is a a wrapper around an OTP actor that manages a single piece of state. The
-//update function is called with the current state, a message and a dispatcher function. The dispatcher
-
-/// function can be used to dispatch messages to the reducer actor. The update function is expected to
-/// return the new state. The notify function is called whenever the state is updated.
+/// A reducer actor is a wrapper around an OTP actor that manages a single piece of state. The
+/// update function is called with the current state, a message and a dispatcher function. The
+/// dispatcher function can be used to dispatch messages to the reducer actor. The update function is
+/// expected to return the new state. The notify function is called whenever the state is updated.
 pub fn start(
   initialize: Initializer(model, msg),
   update: Updater(model, msg),
